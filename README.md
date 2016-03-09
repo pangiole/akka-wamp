@@ -1,5 +1,5 @@
 # akka-wamp
-WAMP - Web Application Messaging Protocol implementation written in Scala and based on Akka HTTP
+WAMP - Web Application Messaging Protocol implementation written in Scala and based on Akka HTTP and Akka Streams
 
 
 [![Build Status][travis-image]][travis-url] [![Coverage Status][coveralls-image]][coveralls-url]

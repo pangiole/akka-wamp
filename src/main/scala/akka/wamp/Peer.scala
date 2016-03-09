@@ -1,7 +1,9 @@
 package akka.wamp
 
-import akka.actor._
-
-class Peer extends Actor with ActorLogging {
-  def receive = Actor.emptyBehavior
-}
+/**
+  * A Peer communicates with another Peer by exchanging [[Message]]s 
+  * during a transient [[Session]] established over a [[WebsocketTransport]].
+  * 
+  * Each Peer MUST implement one [[Role]], and MAY implement more [[Role]]s.
+  */
+trait Peer 
