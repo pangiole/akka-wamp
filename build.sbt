@@ -11,7 +11,8 @@ scalaVersion := "2.11.7"
 
 
 libraryDependencies ++= Seq (
-  "com.typesafe.akka" % "akka-http-experimental_2.11" % "2.4.2",
+  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.2",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
   
   "com.typesafe.akka" % "akka-http-testkit_2.11" % "2.4.2" % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
