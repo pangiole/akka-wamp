@@ -13,4 +13,7 @@ package object messages {
     */
   type Dict = Map[String, Map[_, _]]
 
+  
+  val HELLO = 1
+  val WELCOME = 2
 }

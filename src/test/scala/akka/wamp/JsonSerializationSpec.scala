@@ -1,11 +1,11 @@
-package akka.wamp.serializations
+package akka.wamp
 
 import akka.wamp.messages._
 import org.scalatest._
 
 
 class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
-  val s = JsonSerialization
+  val s = new JsonSerialization
   
   "The wamp.2.json serialization" when {
     "deserializing from JSON to Message" should {
@@ -31,8 +31,8 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
       
       "deserialize HELLO" in {
         val m = s.deserialize("""   [  1  ,"test.realm.uri",  {"roles":{"caller":{},"callee":{}}}] """)
-        m.success.value mustBe an[HelloMessage]
-        val hello = m.success.value.asInstanceOf[HelloMessage]
+        m.success.value mustBe an[Hello]
+        val hello = m.success.value.asInstanceOf[Hello]
         hello.realm mustBe "test.realm.uri"
         hello.details mustBe Map("roles" -> Map("caller" -> Map(), "callee" -> Map()))
       }

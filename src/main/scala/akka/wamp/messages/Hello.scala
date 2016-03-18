@@ -14,11 +14,11 @@ import akka.wamp._
   * @param realm
   * @param details
   */
-case class HelloMessage(realm: Uri, details: Dict) extends Message(1)
+case class Hello(realm: Uri, details: Dict) extends Message(HELLO)
 
 
 /**
-  * Build an [[HelloMessage]] instance.
+  * Build an [[Hello]] instance.
   *
   * WAMP uses "roles & features announcement" instead of "protocol versioning" to allow
   *
@@ -36,13 +36,14 @@ case class HelloMessage(realm: Uri, details: Dict) extends Message(1)
   * @param realm
   * @param details
   */
-class HelloMessageBuilder private(var realm: String, var details: Dict) extends MessageBuilder {
+class HelloBuilder private(var realm: String, var details: Dict) extends MessageBuilder {
   def this() = this(null, null)
   def build() = {
     require(realm != null, "Missing realm")
     require(details != null, "Missing details")
     require(details.contains("roles"), "Missing details.roles")
     require(!details("roles").isEmpty, "Empty details.roles")
-    HelloMessage(realm, details)
+    Hello(realm, details)
   }
 }
+

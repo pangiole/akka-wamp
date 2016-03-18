@@ -1,7 +1,6 @@
-package akka.wamp.serializations
+package akka.wamp
 
-import akka.wamp.messages.HelloMessageBuilder
-import akka.wamp.{Message, MessageBuilder, ProtocolError, Serialization}
+import akka.wamp.messages._
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonToken._
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -10,14 +9,15 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import scala.util.Try
 
 
-object JsonSerialization extends Serialization[String] {
+class JsonSerialization extends Serialization[String] {
 
   private val factory = new JsonFactory()
   val mapper = new ObjectMapper()
   mapper.registerModule(DefaultScalaModule)
   
   
-  def serialize(message: Message): String = ???
+  // TODO implement a better serialize method
+  def serialize(message: Message): String = """[2,1,{"roles":{"broker":{}}}]"""
 
   
   def deserialize(text: String): Try[Message] = Try {
@@ -31,9 +31,8 @@ object JsonSerialization extends Serialization[String] {
         val code = parser.getIntValue
         code match {
           
-          // HELLO
-          case 1 => {
-            val hello = new HelloMessageBuilder()
+          case HELLO => {
+            val hello = new HelloBuilder()
             if (parser.nextToken() == VALUE_STRING) {
               hello.realm = parser.getValueAsString
               if (parser.nextToken() == START_OBJECT) {
