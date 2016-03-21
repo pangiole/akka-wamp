@@ -16,8 +16,17 @@ class JsonSerialization extends Serialization[String] {
   mapper.registerModule(DefaultScalaModule)
   
   
-  // TODO implement a better serialize method
-  def serialize(message: Message): String = """[2,1,{"roles":{"broker":{}}}]"""
+  def serialize(message: Message): String = {
+    def ser(any: Any): String = any match {
+      case m: Map[_,_] => m.map { case (k,v) => s""""$k":${ser(v)}""" }.mkString("{",",","}")
+      case _ => "???"
+      // TODO implement other serializing scenarios
+    }
+    message match {
+      case Welcome(sessionId, details) =>
+        s"""[$WELCOME,${sessionId},${ser(details)}]"""
+    }
+  }
 
   
   def deserialize(text: String): Try[Message] = Try {

@@ -37,6 +37,15 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         hello.details mustBe Map("roles" -> Map("caller" -> Map(), "callee" -> Map()))
       }
     }
+    
+    "serializing from Message to JSON" should {
+      
+      "serialize WELCOME" in {
+        val message = Welcome(123L, Map("roles" -> Map("broker" -> Map())))
+        val json = s.serialize(message)
+        json mustBe """[2,123,{"roles":{"broker":{}}}]"""
+      }
+    }
   }
   
 }

@@ -1,11 +1,11 @@
-package akka.wamp
+package akka.wamp.transports
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
-import akka.wamp.{Message => WampMessage}
+import akka.wamp.{JsonSerialization, Message => WampMessage, Signal, Transport}
 
 import scala.concurrent.ExecutionContext
 
@@ -22,7 +22,7 @@ import scala.concurrent.ExecutionContext
   * @param m the actor materializer
   */
 // TODO how about 5.3.2.  Transport and Session Lifetime
-class RequestHandler(router: ActorRef)(implicit system: ActorSystem, m: ActorMaterializer) {
+class HttpRequestHandler(router: ActorRef)(implicit system: ActorSystem, m: ActorMaterializer) {
 
   implicit val ec: ExecutionContext = system.dispatcher
   
@@ -89,7 +89,7 @@ class RequestHandler(router: ActorRef)(implicit system: ActorSystem, m: ActorMat
           }
         )
 
-        // Define topology
+        // Define stream topology
         /*|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|*/
         /*|                                                                                   |*/
         fromWebSocket ~> merge ~> transportSink /*transportActor~>*/                        /*|*/
