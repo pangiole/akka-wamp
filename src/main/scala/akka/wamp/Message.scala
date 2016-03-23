@@ -4,9 +4,9 @@ package akka.wamp
 /**
   * A message
   * 
-  * @param code is the message code (e.g. ``1`` for HELLO)
+  * @param tpy is the message type (e.g. ``1`` for HELLO)
   */
-class Message(val code: Int) extends Signal
+class Message(val tpy: Int) extends Signal
 
 
 /**

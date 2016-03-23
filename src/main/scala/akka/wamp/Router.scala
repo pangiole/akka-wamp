@@ -27,7 +27,7 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
     case Hello(realm, details) =>
       val peer2 = sender()
       val id = idgen(sessions)
-      sessions += (id -> new Session(id, self, peer2))
+      sessions += (id -> new Session(id, self, peer2, realm))
       peer2 ! Welcome(id, Map("roles" -> Map("broker" -> Map())))
       
     // TODO case Goodbye  

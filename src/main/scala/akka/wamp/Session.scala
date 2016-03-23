@@ -12,10 +12,11 @@ import scala.annotation.tailrec
   * Routing occurs only between [[Session]]s that have joined the same [[Realm]]
   * 
   * @param id is the globally unique identifer
-  * @param peer1
-  * @param peer2
+  * @param peer1 is the first peer (e.g. a [[Router]])
+  * @param peer2 is the second peer (e.g. a [[Client]])
+  * @param realm is the [[Realm]] this session is attached to
   */
-class Session(var id: Long, var peer1: ActorRef, var peer2: ActorRef /* TODO realm: Uri*/)
+class Session(val id: Long, val peer1: ActorRef, val peer2: ActorRef, val realm: Uri)
 
 
 object Session {
