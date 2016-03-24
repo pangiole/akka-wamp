@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonToken._
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import jdk.nashorn.internal.parser.JSONParser
 
 import scala.util.Try
 
@@ -30,16 +31,16 @@ class JsonSerialization extends Serialization[String] {
 
   
   def deserialize(text: String): Try[Message] = Try {
-    def fail(reason: String = "Bad message", cause: Exception = null) = throw new Exception(reason, cause)
-    def build(builder: MessageBuilder) = try { builder.build() } catch { case ex: Exception => fail(ex.getMessage, ex)}
-    
     val parser = factory.createParser(text)
+    
+    def fail(reason: String) = throw new JsonSerializingException(s"${reason} @${parser.getCurrentLocation.getLineNr}:${parser.getCurrentLocation.getColumnNr}")
+    
+    def build(builder: MessageBuilder) = try { builder.build() } catch { case ex: Exception => fail(ex.getMessage)}
     
     if (parser.nextToken() == START_ARRAY) {
       if (parser.nextToken() == VALUE_NUMBER_INT) {
-        val code = parser.getIntValue
-        code match {
-          
+        parser.getIntValue match {
+            
           case HELLO => {
             val hello = new HelloBuilder()
             if (parser.nextToken() == VALUE_STRING) {
@@ -47,23 +48,24 @@ class JsonSerialization extends Serialization[String] {
               if (parser.nextToken() == START_OBJECT) {
                 hello.details = mapper.readValue(parser, classOf[Dict])
                 parser.close()
-                build(hello)  
+                build(hello)
               }
               // no START_OBJECT for details
-              else fail()    
+              else fail("missing start of object")    
             }
             // no VALUE_STRING for realm  
-            else fail()
+            else fail("missing realm uri")
           }
-          case _ => fail(s"Unknown message code $code")
+          case t => fail("invalid message type")
         }
       }
       // no VALUE_NUMBER_INT for message type  
-      else fail()
+      else fail("missing message type")
     }
     // no START_ARRAY
-    else fail()
+    else fail("missing start of array")
   }
-  
-  
 }
+
+
+class JsonSerializingException(message: String) extends Exception(message)

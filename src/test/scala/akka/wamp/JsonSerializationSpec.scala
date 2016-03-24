@@ -18,15 +18,15 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
           """[1,null]""",
           """[1,"some.realm",null]""",
           """[1,"some.realm",{}]""",
-          """[1,"some.realm",{"roles":null}]"""
+          """[1,"some.realm",{"roles":null}]""",
+          """[1,"some.realm",{"roles":{}}]""",
+          """[1,"some.realm",{"roles":{"unknown":{}}}]""",
+          """[999,noscan] """
           
         ).foreach { json =>
-          s.deserialize(json).failure.exception must have message("Bad message")
+          val ex = s.deserialize(json).failure.exception
+          ex mustBe a[JsonSerializingException]
         }
-      }
-
-      "fail for unknown message code" in {
-        s.deserialize("""[999,noscan] """).failure.exception must have message("Unknown message code 999")
       }
       
       "deserialize HELLO" in {

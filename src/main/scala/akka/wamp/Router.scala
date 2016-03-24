@@ -13,6 +13,11 @@ import scala.annotation.tailrec
   */
 class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO with Dealer */ {
   import Router._
+
+  /**
+    * Map of existing realms
+    */
+  var realms = Set[Uri]("akka.wamp.realm")
   
   /**
     * Map of open [[Session]]s by their ids
@@ -39,15 +44,36 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
           peer2 ! ProtocolError("Session already open")   
           
         case None =>
-          val id = idgen(sessions)
-          sessions += (id -> new Session(id, self, peer2, realm))
-          peer2 ! Welcome(id, Dict.withRoles("broker"))    
+          if (!realms.contains(realm)) {
+            /*
+             * The behavior if a requested "Realm" does not presently 
+             * exist is router-specific.  A router may e.g. automatically create
+             * the realm, or deny the establishment of the session with a "ABORT"
+             * reply message. 
+             */
+            if (!autoCreateRealms) {
+              peer2 ! Abort(Dict.withMessage(s"The realm $realm does not exist."), "wamp.error.no_such_realm")  
+            } 
+            else {
+              realms += realm
+              openSession(peer2, realm)
+            }
+          }
+          else {
+            openSession(peer2, realm)
+          }
       }
+    
       
-    // TODO case Goodbye  
   }
-  
-  
+
+
+  private def openSession(peer2: ActorRef, realm: Uri): Unit = {
+    val id = idgen(sessions)
+    sessions += (id -> new Session(id, self, peer2, realm))
+    peer2 ! Welcome(id, Dict.withRoles("broker"))
+  }
+
   @tailrec
   private def newSessionId(id: Long = -1): Long = {
     if (id == -1 || sessions.contains(id)) newSessionId(Id.draw)
@@ -57,6 +83,8 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
   private def sessionFor(peer2: ActorRef) = {
     sessions.values.find(_.peer2 == peer2)
   }
+  
+  private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
 }
 
 

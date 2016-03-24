@@ -14,6 +14,10 @@ class Message(val tpy: Int) extends Signal
   */
 trait MessageBuilder {
   
+  def fail(message: String) = throw new IllegalArgumentException(message)
+  
+  def check(condition: Boolean, message: String) = if (!condition) fail(message)
+  
   def build(): Message
 }
 

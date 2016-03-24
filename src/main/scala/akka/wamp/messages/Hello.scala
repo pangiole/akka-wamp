@@ -38,12 +38,19 @@ case class Hello(realm: Uri, details: Dict) extends Message(HELLO)
   */
 class HelloBuilder private(var realm: String, var details: Dict) extends MessageBuilder {
   def this() = this(null, null)
+  
   def build() = {
-    require(realm != null, "Missing realm")
-    require(details != null, "Missing details")
-    require(details.contains("roles"), "Missing details.roles")
-    require(!details("roles").isEmpty, "Empty details.roles")
+    check(realm != null, "missing realm")
+    check(details != null, "missing details")
+    check(details.isDefinedAt("roles"), "missing details.roles")
+    details("roles") match {
+      case roles: Map[String, _] =>
+        check(!roles.isEmpty, "empty details.roles")
+        check(roles.keySet.forall(ClientRoles.contains(_)), "unknown details.roles")    
+      case _ => fail("invalid details.roles") 
+    }
     Hello(realm, details)
   }
+  val ClientRoles = Seq("publisher", "subscriber", "caller", "callee")
 }
 

@@ -14,7 +14,7 @@ import scala.annotation.tailrec
   * @param id is the globally unique identifer
   * @param peer1 is the first peer (e.g. a [[Router]])
   * @param peer2 is the second peer (e.g. a [[Client]])
-  * @param realm is the [[Realm]] this session is attached to
+  * @param realm is a string identifying the [[Realm]] this session should attach to
   */
 class Session(val id: Long, val peer1: ActorRef, val peer2: ActorRef, val realm: Uri)
 
