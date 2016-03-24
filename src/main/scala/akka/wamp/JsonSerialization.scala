@@ -30,8 +30,8 @@ class JsonSerialization extends Serialization[String] {
 
   
   def deserialize(text: String): Try[Message] = Try {
-    def fail() = throw new ProtocolError(BadMessage)
-    def build(builder: MessageBuilder) = try { builder.build() } catch { case ex: Throwable => throw new ProtocolError(BadMessage, ex) }
+    def fail(reason: String = "Bad message", cause: Exception = null) = throw new Exception(reason, cause)
+    def build(builder: MessageBuilder) = try { builder.build() } catch { case ex: Exception => fail(ex.getMessage, ex)}
     
     val parser = factory.createParser(text)
     
@@ -45,23 +45,25 @@ class JsonSerialization extends Serialization[String] {
             if (parser.nextToken() == VALUE_STRING) {
               hello.realm = parser.getValueAsString
               if (parser.nextToken() == START_OBJECT) {
-                hello.details = mapper.readValue(parser, classOf[Map[String, Map[_, _]]])
+                hello.details = mapper.readValue(parser, classOf[Dict])
                 parser.close()
                 build(hello)  
               }
+              // no START_OBJECT for details
               else fail()    
-            } 
+            }
+            // no VALUE_STRING for realm  
             else fail()
           }
-            
-          case _ => throw new ProtocolError(s"Unknown message code $code")
+          case _ => fail(s"Unknown message code $code")
         }
-      } 
+      }
+      // no VALUE_NUMBER_INT for message type  
       else fail()
     }
+    // no START_ARRAY
     else fail()
   }
   
   
-  private val BadMessage = "Bad message"
 }

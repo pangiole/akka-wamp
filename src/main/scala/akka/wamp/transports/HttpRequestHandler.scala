@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.wamp.{JsonSerialization, Message => WampMessage, Signal, Transport}
-
+import akka.wamp.Router.ProtocolError
 import scala.concurrent.ExecutionContext
 
 
@@ -80,12 +80,16 @@ class HttpRequestHandler(router: ActorRef)(implicit system: ActorSystem, m: Acto
         val merge = builder.add(Merge[Signal](2))
 
         // The toWebSocket flow
-        //   - receives outgoing wamp messages from transportActor, and
-        //   - serialize them to websocket messages for the connected client
+        //   - receives outgoing wamp messages from transportActor
+        //      - serialize them to websocket messages for the connected client
+        //   - receives exceptions from transportActor
+        //      - close connection
         val toWebSocket = builder.add(
           Flow[Signal].collect {
             case msg: WampMessage =>
               TextMessage(jsonSer.serialize(msg))
+            case err: ProtocolError =>
+              throw new Exception(err.message)
           }
         )
 

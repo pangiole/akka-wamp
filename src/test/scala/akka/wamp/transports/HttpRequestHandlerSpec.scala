@@ -42,26 +42,34 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
   
   "connection upgraded to websocket" should {
     
+    "handle ProtocolError('Bad message')" in {
+      pending
+      checkWith { wsClient =>
+        // TODO what shall we expect when client sends bad WAMP messages?
+        wsClient.sendMessage("""{bad}""")
+      }
+    }
+
+    
+    "handle ProtocolError('Others')" in {
+      pending
+    }
+    
+    
     "handle HELLO message" in {
-      val wsClient = WSProbe()
+      checkWith { wsClient =>
+        wsClient.sendMessage("""[1,"test.realm.uri",{"roles":{"subscriber":{}}}]""")
+        wsClient.expectMessage("""[2,0,{"roles":{"broker":{}}}]""")
+        //val msg = wsClient.expectMessage()
 
-      WS(Url, wsClient.flow, List("other", "wamp.2.json")) ~> handler.route ~> check {
-        expectWebSocketUpgradeWithProtocol { protocol =>
-          protocol mustBe "wamp.2.json"
+        //wsClient.sendMessage(BinaryMessage(ByteString("abcdef")))
+        // wsClient.expectNoMessage() // will be checked implicitly by next expectation
 
-          wsClient.sendMessage("""[1,"test.realm.uri",{"roles":{"subscriber":{}}}]""")
-          wsClient.expectMessage("""[2,0,{"roles":{"broker":{}}}]""")
-          //val msg = wsClient.expectMessage()
+        //wsClient.sendMessage("John")
+        //wsClient.expectMessage("Hello John!")
 
-          //wsClient.sendMessage(BinaryMessage(ByteString("abcdef")))
-          // wsClient.expectNoMessage() // will be checked implicitly by next expectation
-
-          //wsClient.sendMessage("John")
-          //wsClient.expectMessage("Hello John!")
-
-          //wsClient.sendCompletion()
-          //TODO wsClient.expectCompletion()
-        }
+        //wsClient.sendCompletion()
+        //TODO wsClient.expectCompletion()
       }
     }
     
@@ -70,8 +78,16 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
     }
   }
   
+  
   def fakegen(m: Map[Long, _]) = 0L
   val router = TestActorRef(Router.props(fakegen)) 
   val handler = new HttpRequestHandler(router)
   val Url = "http://localhost/wamp"
+  
+  def checkWith(fn: (WSProbe) => Unit) = {
+    val wsClient = WSProbe()
+    WS(Url, wsClient.flow, List("wamp.2.json")) ~> handler.route ~> check {
+      fn(wsClient)
+    }
+  }
 }

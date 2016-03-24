@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import akka.wamp.messages._
 
 import scala.annotation.tailrec
@@ -12,6 +12,7 @@ import scala.annotation.tailrec
   * @param idgen is the session identifiers generator
   */
 class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO with Dealer */ {
+  import Router._
   
   /**
     * Map of open [[Session]]s by their ids
@@ -24,11 +25,24 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
     * Handle session lifecycle related messages such as: HELLO, WELCOME, ABORT and GOODBYE
     */
   def handleSessions: Receive = {
+    
     case Hello(realm, details) =>
       val peer2 = sender()
-      val id = idgen(sessions)
-      sessions += (id -> new Session(id, self, peer2, realm))
-      peer2 ! Welcome(id, Map("roles" -> Map("broker" -> Map())))
+      sessionFor(peer2) match {
+        case Some(s) =>
+          /*
+           * It is a protocol error to receive a second "HELLO" message 
+           * during the lifetime of the session and the peer must fail 
+           * the session if that happens.
+           */
+          sessions -= s.id
+          peer2 ! ProtocolError("Session already open")   
+          
+        case None =>
+          val id = idgen(sessions)
+          sessions += (id -> new Session(id, self, peer2, realm))
+          peer2 ! Welcome(id, Dict.withRoles("broker"))    
+      }
       
     // TODO case Goodbye  
   }
@@ -39,11 +53,30 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
     if (id == -1 || sessions.contains(id)) newSessionId(Id.draw)
     else id
   }
+  
+  private def sessionFor(peer2: ActorRef) = {
+    sessions.values.find(_.peer2 == peer2)
+  }
 }
+
 
 
 object Router {
-  def props(idgen: IdGenerator = Session.randomIdNotIn()) = 
-    Props(new Router(idgen))
+  /**
+    * Create a Props for an actor of this type
+    *
+    * @param idgen is the identifier generator
+    * @return the props
+    */
+  def props(idgen: IdGenerator = Session.randomIdNotIn()) = Props(new Router(idgen))
+  
+  /**
+    * Sent when protocol errors occur
+    * 
+    * @param message
+    */
+  case class ProtocolError(message: String) extends Signal
+  
 }
+
 

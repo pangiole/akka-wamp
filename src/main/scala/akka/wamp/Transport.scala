@@ -26,11 +26,11 @@ class Transport(peer1: ActorRef) extends Actor with ActorLogging {
     case Connect(ref) =>
       peer2 = ref
       count = count + 1
-      log.debug(s"CONnect -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}")
+      log.debug(s"Connect -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}")
 
     case msg: Message =>
       peer1.tell(msg, peer2)
-      log.debug(s"Hello -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}")
+      log.debug(s"Hello -> sender:${hash(sender)}, peer2:${hash(peer2)}")
 
     case Disconnect =>
       count = count - 1
