@@ -32,18 +32,19 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
   def handleSessions: Receive = {
     
     case Hello(realm, details) =>
-      val peer2 = sender()
-      sessionFor(peer2) match {
-        case Some(s) =>
+      switchOn(sender())(
+        
+        (peer2,  session) => {
           /*
            * It is a protocol error to receive a second "HELLO" message 
            * during the lifetime of the session and the peer must fail 
            * the session if that happens.
            */
-          sessions -= s.id
-          peer2 ! ProtocolError("Session already open")   
-          
-        case None =>
+          sessions -= session.id
+          peer2 ! ProtocolError("Session already open")
+        },
+        
+        (peer2) => {
           if (!realms.contains(realm)) {
             /*
              * The behavior if a requested "Realm" does not presently 
@@ -52,8 +53,8 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
              * reply message. 
              */
             if (!autoCreateRealms) {
-              peer2 ! Abort(Dict.withMessage(s"The realm $realm does not exist."), "wamp.error.no_such_realm")  
-            } 
+              peer2 ! Abort(Dict.withMessage(s"The realm $realm does not exist."), "wamp.error.no_such_realm")
+            }
             else {
               realms += realm
               openSession(peer2, realm)
@@ -62,12 +63,35 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
           else {
             openSession(peer2, realm)
           }
-      }
-    
+        }
+      )
+
+      
+    // ignore ABORT message from client
+    case Abort => ()  
+
+      
+    case Goodbye(details, reason) =>
+      switchOn(sender())(
+        (peer2,  session) => {
+          sessions -= session.id
+          peer2 ! Goodbye(Dict.empty(), "wamp.error.goodbye_and_out")
+        },
+        (peer2) => {
+          peer2 ! ProtocolError("No session was open")
+        }
+      )
       
   }
 
-
+  
+  private def switchOn(peer2: ActorRef)(f1: (ActorRef, Session) => Unit, f2: (ActorRef) => Unit): Unit = {
+    sessions.values.find(_.peer2 == peer2) match {
+      case Some(session) => f1(peer2, session)
+      case None => f2(peer2)
+    }
+  }
+  
   private def openSession(peer2: ActorRef, realm: Uri): Unit = {
     val id = idgen(sessions)
     sessions += (id -> new Session(id, self, peer2, realm))
@@ -80,9 +104,6 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
     else id
   }
   
-  private def sessionFor(peer2: ActorRef) = {
-    sessions.values.find(_.peer2 == peer2)
-  }
   
   private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
 }

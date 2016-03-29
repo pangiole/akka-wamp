@@ -12,7 +12,7 @@ class Message(val tpy: Int) extends Signal
 /**
   * Build a message instance
   */
-trait MessageBuilder {
+trait Builder {
   
   def fail(message: String) = throw new IllegalArgumentException(message)
   

@@ -32,12 +32,10 @@ case class Hello(realm: Uri, details: Dict) extends Message(HELLO)
   *  - "subscriber"
   *  - "caller"
   *  - "callee"
-  *
-  * @param realm
-  * @param details
   */
-class HelloBuilder private(var realm: String, var details: Dict) extends MessageBuilder {
-  def this() = this(null, null)
+class HelloBuilder  extends Builder {
+  var realm: String = _ 
+  var details: Dict = _
   
   def build() = {
     check(realm != null, "missing realm")

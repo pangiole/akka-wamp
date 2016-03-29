@@ -21,6 +21,11 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
           """[1,"some.realm",{"roles":null}]""",
           """[1,"some.realm",{"roles":{}}]""",
           """[1,"some.realm",{"roles":{"unknown":{}}}]""",
+          
+          """[6,null]""",
+          """[6,{}]""",
+          """[6,{},null]""",
+          
           """[999,noscan] """
           
         ).foreach { json =>
@@ -36,14 +41,28 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         hello.realm mustBe "test.realm.uri"
         hello.details mustBe Map("roles" -> Map("caller" -> Map(), "callee" -> Map()))
       }
+
+      "deserialize GOODBYE" in {
+        val m = s.deserialize("""  [  6  ,  {"message": "The host is shutting down now."},  "wamp.error.system_shutdown"] """)
+        m.success.value mustBe a[Goodbye]
+        val goodbye = m.success.value.asInstanceOf[Goodbye]
+        goodbye.details mustBe Map("message" -> "The host is shutting down now.")
+        goodbye.reason mustBe "wamp.error.system_shutdown"
+      }
     }
     
     "serializing from Message to JSON" should {
       
       "serialize WELCOME" in {
-        val message = Welcome(123L, Map("roles" -> Map("broker" -> Map())))
-        val json = s.serialize(message)
+        val msg = Welcome(123L, Map("roles" -> Map("broker" -> Map())))
+        val json = s.serialize(msg)
         json mustBe """[2,123,{"roles":{"broker":{}}}]"""
+      }
+
+      "serialize GOODBYE" in {
+        val msg = Goodbye(Dict.empty(), "wamp.error.goodbye_and_out")
+        val json = s.serialize(msg)
+        json mustBe """[6,{},"wamp.error.goodbye_and_out"]"""
       }
     }
   }

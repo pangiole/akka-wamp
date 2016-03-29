@@ -10,7 +10,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
   "The router" when {
     "handling sessions" should {
 
-      "open a new session if client says HELLO" in new Fixture {
+      "reply WELCOME if client says HELLO for existing realm" in new Fixture {
         routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
         expectMsg(Welcome(0L, Dict.withRoles("broker")))
         router.realms must have size(1)
@@ -26,8 +26,8 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         )
       }
 
-      "abort if client says HELLO for unknown realm" in new Fixture {
-        routerRef ! Hello("unknown.realm", Dict.withRoles("any"))
+      "reply ABORT if client says HELLO for unknown realm" in new Fixture {
+        routerRef ! Hello("unknown.realm", Dict.withRoles("whatever.role"))
         expectMsg(Abort(Dict.withMessage("The realm unknown.realm does not exist."), "wamp.error.no_such_realm"))
         router.realms must have size(1)
         router.realms must contain only ("akka.wamp.realm")
@@ -40,7 +40,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       }
       
 
-      "protocol error if client says HELLO twice whatever realm" in new Fixture {
+      "protocol error if client says HELLO twice regardless the realm" in new Fixture {
         routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
         expectMsgType[Welcome]
         routerRef ! Hello("whatever.realm", Dict.withRoles("whatever.role"))
@@ -48,8 +48,23 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         router.sessions must have size(0)
       }
 
-
       // TODO WAMP specs don't clarify if client can open a second connection attached to a different realm?
+      
+      
+      "protocol error if client says GOODBYE before HELLO" in new Fixture {
+        routerRef ! Goodbye(Dict.empty(), "whatever.reason")
+        expectMsg(ProtocolError("No session was open"))
+      }
+      
+      "reply GOODBYE if client says GOODBYE after HELLO" in new Fixture {
+        routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
+        expectMsgType[Welcome]
+        routerRef ! Goodbye(Dict.withMessage("The host is shutting down now."), "wamp.error.system_shutdown")
+        expectMsg(Goodbye(Dict.empty(), "wamp.error.goodbye_and_out"))
+        router.sessions must have size(0)
+      }
+
+      
     }
     
     "handling subscriptions" should {

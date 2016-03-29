@@ -65,7 +65,10 @@ class HttpRequestHandler(router: ActorRef)(implicit system: ActorSystem, m: Acto
             case TextMessage.Strict(text) => {
               jsonSer.deserialize(text).get
             }
-            // TODO case tm: TextMessage => tm.textStream
+            case tm: TextMessage => {
+              // TODO jsonSer.deserialize(tm.textStream); // convert to java.io.Reader ???
+              ???
+            }
             // TODO case bm: BinaryMessage => bm.dataStream  
           }
         )

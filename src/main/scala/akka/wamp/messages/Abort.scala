@@ -11,3 +11,4 @@ import akka.wamp._
   * ```
   */
 case class Abort(details: Dict, reason: Uri) extends Message(ABORT)
+

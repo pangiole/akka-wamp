@@ -9,7 +9,7 @@ import scala.util.Try
   */
 trait Serialization[T] {
   
-  def serialize(m: Message): T
+  def serialize(msg: Message): T
   
   def deserialize(t: T): Try[Message]
 }
