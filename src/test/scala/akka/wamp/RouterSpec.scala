@@ -11,8 +11,8 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
     "handling sessions" should {
 
       "reply WELCOME if client says HELLO for existing realm" in new Fixture {
-        routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
-        expectMsg(Welcome(0L, Dict.withRoles("broker")))
+        routerRef ! Hello("akka.wamp.realm", DictBuilder().withRoles("publisher").build())
+        expectMsg(Welcome(0L, DictBuilder().withRoles("broker").withEntry("agent", "akka-wamp-0.1.0").build()))
         router.realms must have size(1)
         router.realms must contain only ("akka.wamp.realm")
         router.sessions must have size(1)
@@ -27,8 +27,8 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       }
 
       "reply ABORT if client says HELLO for unknown realm" in new Fixture {
-        routerRef ! Hello("unknown.realm", Dict.withRoles("whatever.role"))
-        expectMsg(Abort(Dict.withMessage("The realm unknown.realm does not exist."), "wamp.error.no_such_realm"))
+        routerRef ! Hello("unknown.realm", DictBuilder().withRoles("whatever.role").build())
+        expectMsg(Abort(DictBuilder().withEntry("message", "The realm unknown.realm does not exist.").build(), "wamp.error.no_such_realm"))
         router.realms must have size(1)
         router.realms must contain only ("akka.wamp.realm")
         router.sessions mustBe empty
@@ -41,9 +41,9 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       
 
       "protocol error if client says HELLO twice regardless the realm" in new Fixture {
-        routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
+        routerRef ! Hello("akka.wamp.realm", DictBuilder().withRoles("publisher").build())
         expectMsgType[Welcome]
-        routerRef ! Hello("whatever.realm", Dict.withRoles("whatever.role"))
+        routerRef ! Hello("whatever.realm", DictBuilder().withRoles("whatever.role").build())
         expectMsg(ProtocolError("Session already open"))
         router.sessions must have size(0)
       }
@@ -52,15 +52,15 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       
       
       "protocol error if client says GOODBYE before HELLO" in new Fixture {
-        routerRef ! Goodbye(Dict.empty(), "whatever.reason")
+        routerRef ! Goodbye(DictBuilder().build(), "whatever.reason")
         expectMsg(ProtocolError("No session was open"))
       }
       
       "reply GOODBYE if client says GOODBYE after HELLO" in new Fixture {
-        routerRef ! Hello("akka.wamp.realm", Dict.withRoles("publisher"))
+        routerRef ! Hello("akka.wamp.realm", DictBuilder().withRoles("publisher").build())
         expectMsgType[Welcome]
-        routerRef ! Goodbye(Dict.withMessage("The host is shutting down now."), "wamp.error.system_shutdown")
-        expectMsg(Goodbye(Dict.empty(), "wamp.error.goodbye_and_out"))
+        routerRef ! Goodbye(DictBuilder().withEntry("message", "The host is shutting down now.").build(), "wamp.error.system_shutdown")
+        expectMsg(Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out"))
         router.sessions must have size(0)
       }
 

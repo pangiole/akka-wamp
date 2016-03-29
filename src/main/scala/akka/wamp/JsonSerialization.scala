@@ -18,7 +18,8 @@ class JsonSerialization extends Serialization[String] {
   
   def serialize(msg: Message): String = {
     def ser(any: Any): String = any match {
-      case m: Map[_,_] => m.map { case (k,v) => s""""$k":${ser(v)}""" }.mkString("{",",","}")
+      case dict: Dict => dict.map { case (k,v) => s""""$k":${ser(v)}""" }.mkString("{",",","}")
+      case str: String => s""""$str""""
       case _ => "???"
       // TODO implement other serializing scenarios
     }

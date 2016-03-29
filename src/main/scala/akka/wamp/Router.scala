@@ -3,7 +3,6 @@ package akka.wamp
 import akka.actor.{ActorRef, Props}
 import akka.wamp.messages._
 
-import scala.annotation.tailrec
 
 /**
   * A Router is a [[Peer]] of the roles [[Broker]] and [[Dealer]] which is responsible 
@@ -40,7 +39,7 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
            * during the lifetime of the session and the peer must fail 
            * the session if that happens.
            */
-          sessions -= session.id
+          closeSession(session.id)
           peer2 ! ProtocolError("Session already open")
         },
         
@@ -53,10 +52,10 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
              * reply message. 
              */
             if (!autoCreateRealms) {
-              peer2 ! Abort(Dict.withMessage(s"The realm $realm does not exist."), "wamp.error.no_such_realm")
+              peer2 ! Abort(DictBuilder().withEntry("message", s"The realm $realm does not exist.").build(), "wamp.error.no_such_realm")
             }
             else {
-              realms += realm
+              createRealm(realm)
               openSession(peer2, realm)
             }
           }
@@ -74,8 +73,8 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
     case Goodbye(details, reason) =>
       switchOn(sender())(
         (peer2,  session) => {
-          sessions -= session.id
-          peer2 ! Goodbye(Dict.empty(), "wamp.error.goodbye_and_out")
+          closeSession(session.id)
+          peer2 ! Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
         },
         (peer2) => {
           peer2 ! ProtocolError("No session was open")
@@ -95,15 +94,18 @@ class Router (idgen: IdGenerator) extends Peer /* TODO with Broker*/ /* TODO wit
   private def openSession(peer2: ActorRef, realm: Uri): Unit = {
     val id = idgen(sessions)
     sessions += (id -> new Session(id, self, peer2, realm))
-    peer2 ! Welcome(id, Dict.withRoles("broker"))
-  }
-
-  @tailrec
-  private def newSessionId(id: Long = -1): Long = {
-    if (id == -1 || sessions.contains(id)) newSessionId(Id.draw)
-    else id
+    // TODO log.debug("New session open ...")
+    // TODO how to read the artifact version from build.sbt?
+    peer2 ! Welcome(id, DictBuilder().withEntry("agent", "akka-wamp-0.1.0").withRoles("broker").build())
   }
   
+  private def closeSession(id: Long) = {
+    sessions -= id
+  }
+  
+  private def createRealm(realm: Uri) = {
+    realms += realm
+  }
   
   private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
 }

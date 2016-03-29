@@ -56,10 +56,10 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
     }
     
     
-    "handle HELLO message" in {
+    "handle sessions" in {
       checkWith { wsClient =>
-        wsClient.sendMessage("""[1,"test.realm.uri",{"roles":{"subscriber":{}}}]""")
-        wsClient.expectMessage("""[2,0,{"roles":{"broker":{}}}]""")
+        wsClient.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
+        wsClient.expectMessage("""[2,0,{"agent":"akka-wamp-0.1.0","roles":{"broker":{}}}]""")
         //val msg = wsClient.expectMessage()
 
         //wsClient.sendMessage(BinaryMessage(ByteString("abcdef")))
