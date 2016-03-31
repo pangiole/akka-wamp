@@ -5,18 +5,20 @@ import akka.actor.ActorRef
 import scala.annotation.tailrec
 
 /**
-  * A Session is a transient conversation between two [[Peer]]s (for example
-  * a [[Client]] and a [[Router]]) attached to a [[Realm]] and running over 
+  * A Session is a transient conversation between two [[Peer]]s (tipically a
+  * a [[Router]] and a [[Client]]) attached to a [[Realm]] and running over 
   * a [[Transport]].
   * 
   * Routing occurs only between [[Session]]s that have joined the same [[Realm]]
   * 
   * @param id is the globally unique identifer
-  * @param peer1 is the first peer (e.g. a [[Router]])
-  * @param peer2 is the second peer (e.g. a [[Client]])
+  * @param routerRef is the [[Router]] actor reference
+  * @param routerRoles are the [[Router]]'s [[Role]]s
+  * @param clientRef is the [[Client]] actor reference
+  * @param clientRoles are the [[Client]]'s [[Role]]s
   * @param realm is a string identifying the [[Realm]] this session should attach to
   */
-class Session(val id: Long, val peer1: ActorRef, val peer2: ActorRef, val realm: Uri)
+class Session(val id: Id, val routerRef: ActorRef, val routerRoles: Set[String], val clientRef: ActorRef, val clientRoles: Set[String], val realm: Uri)
 
 
 object Session {
@@ -30,8 +32,8 @@ object Session {
     * @return the random identifier
     */
   @tailrec
-  def randomIdNotIn(id: Long = -1)(used: Map[Long, _]): Long = {
-    if (id == -1 || used.isDefinedAt(id)) randomIdNotIn(Id.draw)(used)
+  def generateId(used: Map[Id, Any], id: Id = -1): Id = {
+    if (id == -1 || used.isDefinedAt(id)) generateId(used, Id.draw)
     else id
   }
 }

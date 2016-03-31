@@ -16,7 +16,7 @@ trait Builder {
   
   def fail(message: String) = throw new IllegalArgumentException(message)
   
-  def check(condition: Boolean, message: String) = if (!condition) fail(message)
+  def require(condition: Boolean, message: String) = if (!condition) fail(message)
   
   def build(): Message
 }

@@ -34,21 +34,21 @@ case class Hello(realm: Uri, details: Dict) extends Message(HELLO)
   *  - "callee"
   */
 class HelloBuilder  extends Builder {
-  var realm: String = _ 
+  var realm: Uri = _ 
   var details: Dict = _
   
   def build() = {
-    check(realm != null, "missing realm")
-    check(details != null, "missing details")
-    check(details.isDefinedAt("roles"), "missing details.roles")
+    require(realm != null, "missing realm uri")
+    require(details != null, "missing details dict")
+    require(details.isDefinedAt("roles"), "missing details.roles dict")
     details("roles") match {
       case roles: Map[String, _] =>
-        check(!roles.isEmpty, "empty details.roles")
-        check(roles.keySet.forall(ClientRoles.contains(_)), "unknown details.roles")    
-      case _ => fail("invalid details.roles") 
+        require(!roles.isEmpty, "empty details.roles dict")
+        require(roles.keySet.forall(ValidRoles.contains(_)), "invalid details.roles dict")    
+      case _ => fail("invalid details.roles dict") 
     }
-    Hello(realm, details)
+    new Hello(realm, details)
   }
-  val ClientRoles = Seq("publisher", "subscriber", "caller", "callee")
+  val ValidRoles = Seq("publisher", "subscriber", "caller", "callee")
 }
 

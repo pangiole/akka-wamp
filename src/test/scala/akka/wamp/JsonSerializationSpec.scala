@@ -21,10 +21,14 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
           """[1,"some.realm",{"roles":null}]""",
           """[1,"some.realm",{"roles":{}}]""",
           """[1,"some.realm",{"roles":{"unknown":{}}}]""",
-          
+
           """[6,null]""",
           """[6,{}]""",
           """[6,{},null]""",
+          
+          """[32,null]""",
+          """[32,713845233,null]""",
+          """[32,713845233,{},null]""",
           
           """[999,noscan] """
           
@@ -49,12 +53,21 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         goodbye.details mustBe Map("message" -> "The host is shutting down now.")
         goodbye.reason mustBe "wamp.error.system_shutdown"
       }
+
+      "deserialize SUBSCRIBE" in {
+        val m = s.deserialize("""[32, 713845233, {}, "com.myapp.mytopic1"]""")
+        m.success.value mustBe a[Subscribe]
+        val subscribe = m.success.value.asInstanceOf[Subscribe]
+        subscribe.request mustBe 713845233L
+        subscribe.options must have size(0)
+        subscribe.topic mustBe "com.myapp.mytopic1"
+      }
     }
     
     "serializing from Message to JSON" should {
       
       "serialize WELCOME" in {
-        val msg = Welcome(123L, DictBuilder().withEntry("agent", "akka-wamp-0.1.0").withRoles("broker").build())
+        val msg = Welcome(123L, DictBuilder().withEntry("agent", "akka-wamp-0.1.0").withRoles(Set("broker")).build())
         val json = s.serialize(msg)
         json mustBe """[2,123,{"agent":"akka-wamp-0.1.0","roles":{"broker":{}}}]"""
       }
@@ -63,6 +76,12 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         val msg = Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
         val json = s.serialize(msg)
         json mustBe """[6,{},"wamp.error.goodbye_and_out"]"""
+      }
+
+      "serialize SUBSCRIBED" in {
+        val msg = Subscribed(713845233L, 5512315355L)
+        val json = s.serialize(msg)
+        json mustBe """[33,713845233,5512315355]"""
       }
     }
   }

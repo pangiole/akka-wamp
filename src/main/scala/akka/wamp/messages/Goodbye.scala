@@ -10,13 +10,22 @@ import akka.wamp._
   * [GOODBYE, Details|dict, Reason|uri]
   * ```
   * 
+  * @param details
+  * @param reason
   */
 case class Goodbye(details: Dict, reason: Uri) extends Message(GOODBYE)
 
+
+/**
+  * Build an [[Goodbye]] instance.
+  */ 
 class GoodbyeBuilder() extends Builder {
   var details: Dict = _
   var reason: Uri = _
-  override def build(): Message = {
-    Goodbye(details, reason)
+  
+  def build(): Message = {
+    require(details != null, "missing details dict")
+    require(reason != null, "missing reason uri")
+    new Goodbye(details, reason)
   }
 }

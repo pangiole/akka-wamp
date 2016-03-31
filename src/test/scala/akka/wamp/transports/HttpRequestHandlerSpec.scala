@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.{ExpectedWebSocketRequestRejection, Route, Unsu
 import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
 import akka.stream.scaladsl.Flow
 import akka.testkit.TestActorRef
-import akka.wamp.Router
+import akka.wamp.{Id, Router}
 import org.scalatest.{MustMatchers, WordSpec}
 
 
@@ -79,8 +79,8 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
   }
   
   
-  def fakegen(m: Map[Long, _]) = 0L
-  val router = TestActorRef(Router.props(fakegen)) 
+  def generateFakeId(m: Map[Id, _], id: Id) = 0L
+  val router = TestActorRef(Router.props(generateFakeId, generateFakeId)) 
   val handler = new HttpRequestHandler(router)
   val Url = "http://localhost/wamp"
   

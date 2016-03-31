@@ -9,6 +9,8 @@ package object wamp {
   val ABORT = 3
   val GOODBYE = 6
   val ERROR = 8
+  val SUBSCRIBE = 32
+  val SUBSCRIBED = 33
 
   /**
     * Unique identifiers being used to distinguish [[Session]]s, [[Publication]]s, 
@@ -19,11 +21,13 @@ package object wamp {
     val MAX = 9007199254740992L
     def draw = (scala.util.Random.nextDouble() * MAX).toLong
   }
+  
+  type Id = Long
 
   /**
     * An identifier generator
     */
-  type IdGenerator = (Map[Long, Any]) => Long
+  type IdGenerator = (Map[Id, Any], Id) => Id
   
   /**
     * Uniform Resource Identifier
@@ -37,7 +41,7 @@ package object wamp {
   
   
   class DictBuilder private(entries: MutableMap[String, Any]) {
-    def withRoles(rs: String*): DictBuilder = {
+    def withRoles(rs: Set[String]): DictBuilder = {
       var m = Map.empty[String, Any]
       rs.foreach(r => m += (r -> Map()))
       new DictBuilder(entries + ("roles" -> m))

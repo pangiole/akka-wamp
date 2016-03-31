@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.Actor
+import akka.actor.{ActorLogging, Actor}
 
 /**
   * A Peer communicates with another Peer by exchanging [[Message]]s 
@@ -8,4 +8,8 @@ import akka.actor.Actor
   * 
   * Each Peer MUST implement one [[Role]], and MAY implement more [[Role]]s.
   */
-trait Peer extends Actor
+abstract class Peer extends Actor with ActorLogging {
+  
+  val roles: Set[String]
+}
+
