@@ -1,5 +1,6 @@
 package akka.wamp.transports
 
+import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.server.{ExpectedWebSocketRequestRejection, Route, UnsupportedWebSocketSubprotocolRejection}
@@ -56,31 +57,32 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
     }
     
     
-    "handle sessions" in {
+    "handle typical sessions" in {
       checkWith { wsClient =>
+        
+        // -> HELLO
         wsClient.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
+        
+        // <- WELCOME
         wsClient.expectMessage("""[2,0,{"agent":"akka-wamp-0.1.0","roles":{"broker":{}}}]""")
-        //val msg = wsClient.expectMessage()
+        
+        // -> SUBSCRIBE
+        wsClient.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
+        
+        // <- SUBSCRIBED
+        wsClient.expectMessage("""[33,1,0]""")
+        
+        // -> GOODBYE
+        wsClient.sendMessage("""[6,{"message":"The host is shutting down now."},"wamp.error.system_shutdown"]""")
 
-        //wsClient.sendMessage(BinaryMessage(ByteString("abcdef")))
-        // wsClient.expectNoMessage() // will be checked implicitly by next expectation
-
-        //wsClient.sendMessage("John")
-        //wsClient.expectMessage("Hello John!")
-
-        //wsClient.sendCompletion()
-        //TODO wsClient.expectCompletion()
+        // -> GOODBYE
+        wsClient.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
       }
-    }
-    
-    "handle GOODBYE message" in {
-      pending
     }
   }
   
   
-  def generateFakeId(m: Map[Id, _], id: Id) = 0L
-  val router = TestActorRef(Router.props(generateFakeId, generateFakeId)) 
+  val router = TestActorRef(Router.props(_ + 1)) 
   val handler = new HttpRequestHandler(router)
   val Url = "http://localhost/wamp"
   

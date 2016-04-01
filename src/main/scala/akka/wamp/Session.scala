@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.ActorRef
+import akka.actor._
 
 import scala.annotation.tailrec
 
@@ -12,13 +12,13 @@ import scala.annotation.tailrec
   * Routing occurs only between [[Session]]s that have joined the same [[Realm]]
   * 
   * @param id is the globally unique identifer
-  * @param routerRef is the [[Router]] actor reference
+  * @param router is the [[Router]] actor reference
   * @param routerRoles are the [[Router]]'s [[Role]]s
-  * @param clientRef is the [[Client]] actor reference
+  * @param client is the [[Client]] actor reference
   * @param clientRoles are the [[Client]]'s [[Role]]s
   * @param realm is a string identifying the [[Realm]] this session should attach to
   */
-class Session(val id: Id, val routerRef: ActorRef, val routerRoles: Set[String], val clientRef: ActorRef, val clientRoles: Set[String], val realm: Uri)
+class Session(val id: Id, val router: ActorRef, val routerRoles: Set[String], val client: ActorRef, val clientRoles: Set[String], val realm: Uri)
 
 
 object Session {
@@ -27,8 +27,8 @@ object Session {
     * distribution over the complete range [ [[Id.MIN]], [[Id.MAX]] ] and MUST
     * not be actually in use.
     *
+    * @param used is the map of already used identifiers
     * @param id is the actual attempt (-1 by default)
-    * @param used are the actually used identifiers
     * @return the random identifier
     */
   @tailrec

@@ -1,19 +1,17 @@
 package akka.wamp
 
-import akka.actor.{ActorRef, Props}
-import akka.wamp.messages._
+import akka.actor._
+import akka.wamp.Messages._
 
+import scala.annotation.tailrec
 
 
 /**
   * A Router is a [[Peer]] of the roles [[Broker]] and [[Dealer]] which is responsible 
   * for generic call and event routing and do not run any application code.
   * 
-  * @param generateSessionId is the session IDs generator
-  * @param generateSubscriptionId is the subscription IDs generator
   */
-class Router (val generateSessionId: IdGenerator, val generateSubscriptionId: IdGenerator) 
-  extends Peer with Broker /* TODO with Dealer */ {
+class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with Dealer */ {
   
   import Router._
 
@@ -28,7 +26,7 @@ class Router (val generateSessionId: IdGenerator, val generateSubscriptionId: Id
   var realms = Set[Uri]("akka.wamp.realm")
   
   /**
-    * Map of open [[Session]]s by their ids
+    * Map of open [[Session]]s
     */
   var sessions = Map.empty[Long, Session]
 
@@ -43,19 +41,20 @@ class Router (val generateSessionId: IdGenerator, val generateSubscriptionId: Id
   def handleSessions: Receive = {
     
     case Hello(realm, details) => 
-      findSessionBy(sender()) (
-        whenFound = (session) => {
+      switchOn(sender()) (
+        whenSessionOpen = { session =>
           /*
            * It is a protocol error to receive a second "HELLO" message 
            * during the lifetime of the session and the peer must fail 
            * the session if that happens.
            */
-          closeSession(session.id)
-          session.clientRef ! ProtocolError("Session was already open.")
+          closeSession(session)
+          session.client ! ProtocolError("Session was already open.")
         },
-        otherwise = (clientRef) => {
+        otherwise = { client =>
           if (realms.contains(realm)) {
-            openSession(clientRef, details, realm)
+            val session = newSession(client, details, realm)
+            client ! Welcome(session.id, DictBuilder().withEntry("agent", agent).withRoles(roles).build())
           }
           else {
             /*
@@ -64,11 +63,11 @@ class Router (val generateSessionId: IdGenerator, val generateSubscriptionId: Id
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
             if (autoCreateRealms) {
-              createRealm(realm)
-              openSession(clientRef, details, realm)
+              val session = newSession(sender(), details, createRealm(realm))
+              client ! Welcome(session.id, DictBuilder().withEntry("agent", agent).withRoles(roles).build())
             }
             else {
-              clientRef ! Abort(DictBuilder().withEntry("message", s"The realm $realm does not exist.").build(), "wamp.error.no_such_realm")
+              client ! Abort(DictBuilder().withEntry("message", s"The realm $realm does not exist.").build(), "wamp.error.no_such_realm")
             } 
           }
         }
@@ -80,58 +79,66 @@ class Router (val generateSessionId: IdGenerator, val generateSubscriptionId: Id
 
       
     case Goodbye(details, reason) =>
-      findSessionBy(sender())(
-        whenFound = (session) => {
-          closeSession(session.id)
-          session.clientRef ! Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
+      switchOn(sender())(
+        whenSessionOpen = { session =>
+          closeSession(session)
+          session.client ! Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
         },
-        otherwise = (clientRef) => {
-          clientRef ! ProtocolError("Session was not open yet.")
+        otherwise = { client =>
+          client ! ProtocolError("Session was not open yet.")
         }
       )
       
   }
 
   
-  def findSessionBy(clientRef: ActorRef)(whenFound: (Session) => Unit, otherwise: (ActorRef) => Unit): Unit = {
-    sessions.values.find(_.clientRef == clientRef) match {
-      case Some(session) => whenFound(session)
-      case None => otherwise(clientRef)
+  def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
+    sessions.values.find(_.client == client) match {
+      case Some(session) => whenSessionOpen(session)
+      case None => otherwise(client)
     }
   }
   
-  private def openSession(clientRef: ActorRef, details: Dict, realm: Uri): Unit = {
-    val id = generateSessionId(sessions, -1)
-    sessions += (id -> new Session(id, routerRef = self, routerRoles = roles, clientRef, clientRoles = details("roles").asInstanceOf[Map[String, Any]].keySet, realm))
-    log.debug(s"Open session $id")
-    // TODO how to read the artifact version from build.sbt?
-    clientRef ! Welcome(id, DictBuilder().withEntry("agent", "akka-wamp-0.1.0").withRoles(roles).build())
+  private def newSession(client: ActorRef, details: Dict, realm: Uri) = {
+    val id = nextId(sessions, nextSessionId)
+    val session = new Session(id, router = self, routerRoles = roles, client, clientRoles = details("roles").asInstanceOf[Map[String, Any]].keySet, realm)
+    sessions += (id -> session)
+    session
   }
   
-  private def closeSession(id: Long) = {
-    log.debug(s"Close session $id")
-    sessions -= id
+  private def closeSession(session: Session) = {
+    subscriptions.foreach { case (_, subscription) => unsubscribe(session.client, subscription) }
+    // TODO remove client from registrations
+    sessions -= session.id
   }
   
   private def createRealm(realm: Uri) = {
-    log.debug(s"Create realm $realm")
     realms += realm
+    realm
   }
   
   private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
+
+  @tailrec
+  final def nextId(used: Map[Id, Any], idGen: IdGenerator, id: Id = -1): Id = {
+    if (id == -1 || used.isDefinedAt(id)) nextId(used, idGen, idGen(id))
+    else id
+  }
 }
 
 
 
 object Router {
+  // TODO how to read the artifact version from build.sbt?
+  val agent = "akka-wamp-0.1.0"
+  
   /**
     * Create a Props for an actor of this type
     *
-    * @param generateSessionId is the session IDs generator
-    * @param generateSubscriptionId is the subscription IDs generator
+    * @param newSessionId is the session IDs generator
     * @return the props
     */
-  def props(generateSessionId: IdGenerator = Session.generateId, generateSubscriptionId: IdGenerator = Subscription.generateId) = Props(new Router(generateSessionId, generateSubscriptionId))
+  def props(newSessionId: IdGenerator = (_) => Id.draw) = Props(new Router(newSessionId))
   
   
   /**
@@ -140,6 +147,7 @@ object Router {
     * @param message
     */
   case class ProtocolError(message: String) extends Signal
+
   
 }
 

@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 
 
 /**

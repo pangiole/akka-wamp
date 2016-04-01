@@ -4,14 +4,6 @@ import scala.collection.mutable.{Map => MutableMap}
 
 package object wamp {
 
-  val HELLO = 1
-  val WELCOME = 2
-  val ABORT = 3
-  val GOODBYE = 6
-  val ERROR = 8
-  val SUBSCRIBE = 32
-  val SUBSCRIBED = 33
-
   /**
     * Unique identifiers being used to distinguish [[Session]]s, [[Publication]]s, 
     * [[Subscription]]s, [[Registration]]s and [[Request]]s
@@ -27,7 +19,7 @@ package object wamp {
   /**
     * An identifier generator
     */
-  type IdGenerator = (Map[Id, Any], Id) => Id
+  type IdGenerator = (Id) => Id
   
   /**
     * Uniform Resource Identifier

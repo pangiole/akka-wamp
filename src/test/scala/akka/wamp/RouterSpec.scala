@@ -1,9 +1,9 @@
 package akka.wamp
 
 import akka.actor.ActorSystem
-import akka.testkit.{TestProbe, ImplicitSender, TestActorRef, TestKit}
-import akka.wamp.Router.ProtocolError
-import akka.wamp.messages._
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.wamp.Messages._
+import akka.wamp.Router._
 import org.scalatest._
 
 import scala.concurrent.duration._
@@ -27,16 +27,16 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       
       "reply WELCOME if client says HELLO for existing realm" in new RouterFixture {
         routerRef ! Hello("akka.wamp.realm", dictWithRoles("publisher"))
-        expectMsg(Welcome(1L, DictBuilder().withRoles(Set("broker")).withEntry("agent", "akka-wamp-0.1.0").build()))
+        expectMsg(Welcome(0, DictBuilder().withRoles(Set("broker")).withEntry("agent", "akka-wamp-0.1.0").build()))
         router.realms must have size(1)
         router.realms must contain only ("akka.wamp.realm")
         router.sessions must have size(1)
-        val session = router.sessions(1L)
+        val session = router.sessions(0)
         session must have (
-          'id (1L),
-          'routerRef (routerRef),
+          'id (0),
+          'router (routerRef),
           'routerRoles (Set("broker")),
-          'clientRef (testActor),
+          'client (testActor),
           'clientRoles (Set("publisher")),
           'realm ("akka.wamp.realm")
         )
@@ -73,82 +73,92 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
     "handling subscriptions" should {
 
       "protocol error if client says SUBSCRIBE before HELLO" in new RouterFixture {
-        routerRef ! Subscribe(713845233L, emptyDict, "com.myapp.mytopic1")
+        routerRef ! Subscribe(1, emptyDict, "topic1")
         expectMsg(ProtocolError("Session was not open yet."))
       }
 
-      "reply new SUBSCRIBED first time client C1 says SUBSCRIBE to topic T1" in new BrokerFixture {
-        val topic1 = "com.myapp.mytopic1"
-        val sid1 = topic1.hashCode
-        client1.send(routerRef, Subscribe(713845233L, emptyDict, topic1))
-        client1.expectMsg(Subscribed(713845233L, sid1))
-        router.subscriptions must have size(1)
-        router.subscriptions(sid1) must have (
-          'id (sid1),
-          'clientRefs (Set(client1.ref)),
-          'topic (topic1)
-        )
+      "create new subscription to topic1 first time client1 subscribes to it" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        client1.receiveOne(0.seconds) match {
+          case Subscribed(request, subscription) =>
+            request mustBe 1
+            router.subscriptions must have size(1)
+            router.subscriptions(subscription) must have (
+              'id (subscription),
+              'subscribers (Set(client1.ref)),
+              'topic ("topic1")
+            )
+          case _ => fail("Unexpected message")
+        } 
       }
 
-      "reply existing SUBSCRIBED second time client C1 says SUBSCRIBE to topic T1" in new BrokerFixture {
-        val topic1 = "com.myapp.mytopic1"
-        client1.send(routerRef, Subscribe(713845233L, emptyDict, topic1))
-        val sid1 = topic1.hashCode
-        client1.expectMsg(Subscribed(713845233L, sid1))
-        client1.send(routerRef, Subscribe(938843243L, emptyDict, topic1))
-        client1.expectMsg(Subscribed(938843243L, sid1))
-        router.subscriptions must have size(1)
-        router.subscriptions(sid1) must have (
-          'id (sid1),
-          'clientRefs (Set(client1.ref)),
-          'topic (topic1)
-        )
+      "confirm existing subscription to topic1 subsequent times client1 re-subscribes to it" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        client1.receiveOne(0.seconds)
+        client1.send(routerRef, Subscribe(2, emptyDict, "topic1"))
+        client1.receiveOne(0.seconds) match {
+          case Subscribed(request, subscription) =>
+            request mustBe 2
+            router.subscriptions must have size(1)
+            router.subscriptions(subscription) must have (
+              'id (subscription),
+              'subscribers (Set(client1.ref)),
+              'topic ("topic1")
+            )
+          case _ => fail("Unexpected message")
+        }
       }
       
-      "reply new SUBSCRIBED if client C1 says SUBSCRIBE to topic T2" in new BrokerFixture {
-        val topic1 = "com.myapp.mytopic1"
-        val sid1 = topic1.hashCode
-        client1.send(routerRef, Subscribe(713845233L, emptyDict, topic1))
-        client1.expectMsg(Subscribed(713845233L, sid1))
-        val topic2 = "com.myapp.mytopic2"
-        val sid2 = topic2.hashCode
-        client1.send(routerRef, Subscribe(1398123L, emptyDict, topic2))
-        client1.expectMsg(Subscribed(1398123L, sid2))
-        router.subscriptions must have size(2)
-        router.subscriptions(sid1) must have (
-          'id (sid1),
-          'clientRefs (Set(client1.ref)),
-          'topic (topic1)
-        )
-        router.subscriptions(sid2) must have (
-          'id (sid2),
-          'clientRefs (Set(client1.ref)),
-          'topic (topic2)
-        )
+      "create new subscription to topic2 if client1 subscribes to it after having subscribed to topic1" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        val subscription1 = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+        client1.send(routerRef, Subscribe(2, emptyDict, "topic2"))
+        client1.receiveOne(0.seconds) match {
+          case Subscribed(_, subscription2) =>
+            router.subscriptions must have size(2)
+            router.subscriptions(subscription1) must have (
+              'id (subscription1),
+              'subscribers (Set(client1.ref)),
+              'topic ("topic1")
+            )
+            router.subscriptions(subscription2) must have (
+              'id (subscription2),
+              'subscribers (Set(client1.ref)),
+              'topic ("topic2")
+            )
+          case _ => fail("Unexpected message")
+        }
       }
 
-      "reply existing SUBSCRIBED if client C2 says SUBSCRIBE to topic T1" in new BrokerFixture {
-        val topic1 = "com.myapp.mytopic1"
-        val sid1 = topic1.hashCode
-        client1.send(routerRef, Subscribe(713845233L, emptyDict, topic1))
+      "update existing subscription to topic1 if also client2 subscribes to it" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
         client1.receiveOne(1.second)
-        client2.send(routerRef, Subscribe(991233343L, emptyDict, topic1))
-        client2.expectMsg(Subscribed(991233343L, sid1))
-        router.subscriptions must have size(1)
-        router.subscriptions(sid1) must have (
-          'id (sid1),
-          'clientRefs (Set(client1.ref, client2.ref)),
-          'topic (topic1)
-        )
+        client2.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        client2.receiveOne(0.seconds) match {
+          case Subscribed(request, subscription) =>
+            request mustBe 1
+            router.subscriptions must have size(1)
+            router.subscriptions(subscription) must have (
+              'id (subscription),
+              'subscribers (Set(client1.ref, client2.ref)),
+              'topic ("topic1")
+            )
+          case _ => fail("Unexpected message")
+        }
+      }
+      
+      "unsubscribe from topic1 if client1 unsubscribe from it after having subscribed to it" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        val subscription = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+        client1.send(routerRef, Unsubscribe(2, subscription))
+        client1.expectMsg(Unsubscribed(2))
       }
     }
   }
   
   
   trait RouterFixture {
-    var sid = 0L
-    def generateProgressiveSessionId = (map: Map[Id, Any], id: Id) => { sid = sid + 1; sid}  
-    val routerRef = TestActorRef(Router.props(generateProgressiveSessionId))
+    val routerRef = TestActorRef(Router.props(_ + 1))
     val router = routerRef.underlyingActor.asInstanceOf[Router]
     def dictWithRoles(roles: String*) = DictBuilder().withRoles(roles.toSet).build()
     val emptyDict = DictBuilder().build()

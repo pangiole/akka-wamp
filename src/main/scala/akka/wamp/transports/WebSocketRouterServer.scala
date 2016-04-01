@@ -1,11 +1,11 @@
 package akka.wamp.transports
 
-import akka.actor.{ActorSystem, Props}
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
+import akka.actor._
+import akka.http.scaladsl._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route._
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream._
+import akka.stream.scaladsl._
 import akka.wamp.Router
 
 object WebSocketRouterServer {

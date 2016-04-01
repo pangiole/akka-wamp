@@ -1,10 +1,10 @@
 package akka.wamp
 
-import akka.wamp.messages._
-import com.fasterxml.jackson.core.JsonFactory
+import akka.wamp.Messages._
 import com.fasterxml.jackson.core.JsonToken._
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.core._
+import com.fasterxml.jackson.databind._
+import com.fasterxml.jackson.module.scala._
 
 import scala.util.Try
 
@@ -12,21 +12,23 @@ import scala.util.Try
 class JsonSerialization extends Serialization[String] {
 
   private val factory = new JsonFactory()
-  val mapper = new ObjectMapper()
+  private val mapper = new ObjectMapper()
   mapper.registerModule(DefaultScalaModule)
   
   
   def serialize(msg: Message): String = {
-    def ser(any: Any): String = any match {
-      case dict: Dict => dict.map { case (k,v) => s""""$k":${ser(v)}""" }.mkString("{",",","}")
+    def deep(any: Any): String = any match {
+      case dict: Dict => dict.map { case (k,v) => s""""$k":${deep(v)}""" }.mkString("{",",","}")
       case str: String => s""""$str""""
       case _ => "???"
       // TODO implement other serializing scenarios
     }
     msg match {
-      case Welcome(sessionId, details) => s"""[$WELCOME,${sessionId},${ser(details)}]"""
-      case Goodbye(details, reason) => s"""[$GOODBYE,${ser(details)},"${reason}"]"""
-      case Subscribed(request, subscription) => s"""[$SUBSCRIBED,${request},${subscription}]"""
+      case Welcome(sessionId, details) => s"""[$WELCOME,$sessionId,${deep(details)}]"""
+      case Goodbye(details, reason) => s"""[$GOODBYE,${deep(details)},"$reason"]"""
+      case Subscribed(requestId, subscriptionId) => s"""[$SUBSCRIBED,$requestId,$subscriptionId]"""
+      case Unsubscribed(requestId) => s"""[$UNSUBSCRIBED,$requestId]"""
+      case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestId,${deep(details)},$error]"""
     }
   }
 
@@ -79,7 +81,7 @@ class JsonSerialization extends Serialization[String] {
           case SUBSCRIBE => {
             val subscribe = new SubscribeBuilder
             if (parser.nextToken() == VALUE_NUMBER_INT) {
-              subscribe.request = parser.getValueAsLong
+              subscribe.requestId = parser.getValueAsLong
               if (parser.nextToken() == START_OBJECT) {
                 subscribe.options = mapper.readValue(parser, classOf[Dict])
                 if (parser.nextToken() == VALUE_STRING) {
@@ -92,6 +94,21 @@ class JsonSerialization extends Serialization[String] {
             else fail("missing request id")
             parser.close()
             subscribe.build()
+          }
+
+          //[UNSUBSCRIBE, Request|id, Subscription|id]  
+          case UNSUBSCRIBE => {
+            val unsubscribe = new UnsubscribeBuilder
+            if (parser.nextToken() == VALUE_NUMBER_INT) {
+              unsubscribe.requestId = parser.getValueAsLong
+              if (parser.nextToken() == VALUE_NUMBER_INT) {
+                unsubscribe.subscriptionId = parser.getValueAsLong
+              }
+              else fail("missing subscription id")
+            }
+            else fail("missing request id")
+            parser.close()
+            unsubscribe.build()
           }
             
           case t => fail("invalid message type")

@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor._
 
 /**
   * A Peer communicates with another Peer by exchanging [[Message]]s 

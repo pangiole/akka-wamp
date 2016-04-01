@@ -1,8 +1,7 @@
 package akka.wamp
 
-import akka.wamp.messages._
+import akka.wamp.Messages._
 import org.scalatest._
-
 
 class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
   val s = new JsonSerialization
@@ -58,9 +57,17 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         val m = s.deserialize("""[32, 713845233, {}, "com.myapp.mytopic1"]""")
         m.success.value mustBe a[Subscribe]
         val subscribe = m.success.value.asInstanceOf[Subscribe]
-        subscribe.request mustBe 713845233L
+        subscribe.requestId mustBe 713845233L
         subscribe.options must have size(0)
         subscribe.topic mustBe "com.myapp.mytopic1"
+      }
+
+      "deserialize UNSUBSCRIBE" in {
+        val m = s.deserialize("""[34, 713845233, 246643274"]""")
+        m.success.value mustBe a[Unsubscribe]
+        val subscribe = m.success.value.asInstanceOf[Unsubscribe]
+        subscribe.requestId mustBe 713845233L
+        subscribe.subscriptionId mustBe 246643274L
       }
     }
     
@@ -82,6 +89,12 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         val msg = Subscribed(713845233L, 5512315355L)
         val json = s.serialize(msg)
         json mustBe """[33,713845233,5512315355]"""
+      }
+
+      "serialize UNSUBSCRIBED" in {
+        val msg = Unsubscribed(85346237L)
+        val json = s.serialize(msg)
+        json mustBe """[35,85346237]"""
       }
     }
   }
