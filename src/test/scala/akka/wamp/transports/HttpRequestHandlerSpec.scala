@@ -1,14 +1,13 @@
 package akka.wamp.transports
 
-import akka.actor.Props
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
-import akka.http.scaladsl.server.{ExpectedWebSocketRequestRejection, Route, UnsupportedWebSocketSubprotocolRejection}
-import akka.http.scaladsl.testkit.{ScalatestRouteTest, WSProbe}
-import akka.stream.scaladsl.Flow
-import akka.testkit.TestActorRef
-import akka.wamp.{Id, Router}
-import org.scalatest.{MustMatchers, WordSpec}
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.testkit._
+import akka.stream.scaladsl._
+import akka.testkit._
+import akka.wamp._
+import org.scalatest._
 
 
 class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRouteTest {

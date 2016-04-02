@@ -1,7 +1,7 @@
 package akka.wamp
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.testkit._
 import akka.wamp.Messages._
 import akka.wamp.Router._
 import org.scalatest._
@@ -43,20 +43,20 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       }
 
       
-      "protocol error if client says HELLO twice (regardless the realm)" in new RouterFixture {
+      "fail if client says HELLO twice (regardless the realm)" in new RouterFixture {
         routerRef ! Hello("akka.wamp.realm", dictWithRoles("publisher"))
         receiveOne(0.seconds)
         routerRef ! Hello("whatever.realm", dictWithRoles("whatever.role"))
-        expectMsg(ProtocolError("Session was already open."))
+        expectMsg(Failure("Session was already open."))
         router.sessions must have size(0)
       }
 
       // TODO WAMP specs don't clarify if client can open a second connection attached to a different realm?
       
       
-      "protocol error if client says GOODBYE before HELLO" in new RouterFixture {
+      "fail if client says GOODBYE before HELLO" in new RouterFixture {
         routerRef ! Goodbye(DictBuilder().build(), "whatever.reason")
-        expectMsg(ProtocolError("Session was not open yet."))
+        expectMsg(Failure("Session was not open yet."))
       }
       
       
@@ -72,12 +72,12 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
     
     "handling subscriptions" should {
 
-      "protocol error if client says SUBSCRIBE before HELLO" in new RouterFixture {
+      "fail if client says SUBSCRIBE before session open" in new RouterFixture {
         routerRef ! Subscribe(1, emptyDict, "topic1")
-        expectMsg(ProtocolError("Session was not open yet."))
+        expectMsg(Failure("Session was not open yet."))
       }
 
-      "create new subscription to topic1 first time client1 subscribes to it" in new BrokerFixture {
+      "create a new subscription1 if client1 says SUBSCRIBE to topic1" in new BrokerFixture {
         client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
         client1.receiveOne(0.seconds) match {
           case Subscribed(request, subscription) =>
@@ -92,7 +92,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         } 
       }
 
-      "confirm existing subscription to topic1 subsequent times client1 re-subscribes to it" in new BrokerFixture {
+      "confirm existing subscription1 any time client1 repeats SUBSCRIBE to topic1" in new BrokerFixture {
         client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
         client1.receiveOne(0.seconds)
         client1.send(routerRef, Subscribe(2, emptyDict, "topic1"))
@@ -109,20 +109,20 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         }
       }
       
-      "create new subscription to topic2 if client1 subscribes to it after having subscribed to topic1" in new BrokerFixture {
+      "create a new subscription2 if client1 says SUBSCRIBE to topic2" in new BrokerFixture {
         client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
-        val subscription1 = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+        val id1 = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
         client1.send(routerRef, Subscribe(2, emptyDict, "topic2"))
         client1.receiveOne(0.seconds) match {
-          case Subscribed(_, subscription2) =>
+          case Subscribed(_, id2) =>
             router.subscriptions must have size(2)
-            router.subscriptions(subscription1) must have (
-              'id (subscription1),
+            router.subscriptions(id1) must have (
+              'id (id1),
               'subscribers (Set(client1.ref)),
               'topic ("topic1")
             )
-            router.subscriptions(subscription2) must have (
-              'id (subscription2),
+            router.subscriptions(id2) must have (
+              'id (id2),
               'subscribers (Set(client1.ref)),
               'topic ("topic2")
             )
@@ -130,7 +130,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         }
       }
 
-      "update existing subscription to topic1 if also client2 subscribes to it" in new BrokerFixture {
+      "update existing subscription1 if also client2 says SUBSCRIBE to topic1" in new BrokerFixture {
         client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
         client1.receiveOne(1.second)
         client2.send(routerRef, Subscribe(1, emptyDict, "topic1"))
@@ -146,12 +146,34 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
           case _ => fail("Unexpected message")
         }
       }
-      
-      "unsubscribe from topic1 if client1 unsubscribe from it after having subscribed to it" in new BrokerFixture {
+
+      "update existing multiple-subscribers subscription1 if client2 says UNSUBSCRIBE" in new BrokerFixture {
         client1.send(routerRef, Subscribe(1, emptyDict, "topic1"))
-        val subscription = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
-        client1.send(routerRef, Unsubscribe(2, subscription))
+        val sid11 = client1.receiveOne(1.second).asInstanceOf[Subscribed].subscriptionId
+        client2.send(routerRef, Subscribe(1, emptyDict, "topic1"))
+        val sid12 = client2.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+        sid11 must equal(sid12)
+        client2.send(routerRef, Unsubscribe(2, sid12))
+        client2.expectMsg(Unsubscribed(2))
+        router.subscriptions must have size(1)
+        router.subscriptions(sid11) must have (
+          'id (sid11),
+          'subscribers (Set(client1.ref)),
+          'topic ("topic1")
+        )
+      }
+      
+      "remove existing single-subscriber subscription2 if client1 says UNSUBSCRIBE" in new BrokerFixture {
+        client1.send(routerRef, Subscribe(1, emptyDict, "topic"))
+        val sid = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+        client1.send(routerRef, Unsubscribe(2, sid))
         client1.expectMsg(Unsubscribed(2))
+        router.subscriptions must have size(0)  
+      }
+      
+      "reply ERROR if client says UNSUBSCRIBE from unknown subscription" in new BrokerFixture {
+        client1.send(routerRef, Unsubscribe(2, 9999))
+        client1.expectMsg(Error(UNSUBSCRIBE, 2, DictBuilder().build(), "wamp.error.no_such_subscription"))
       }
     }
   }

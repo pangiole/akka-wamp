@@ -49,7 +49,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
            * the session if that happens.
            */
           closeSession(session)
-          session.client ! ProtocolError("Session was already open.")
+          session.client ! Failure("Session was already open.")
         },
         otherwise = { client =>
           if (realms.contains(realm)) {
@@ -58,7 +58,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
           }
           else {
             /*
-              * The behavior if a requested "Realm" does not presently exist 
+              * The behavior if a requested realm" does not presently exist 
               * is router-specific. A router may automatically create the realm, 
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
@@ -85,7 +85,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
           session.client ! Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
         },
         otherwise = { client =>
-          client ! ProtocolError("Session was not open yet.")
+          client ! Failure("Session was not open yet.")
         }
       )
       
@@ -142,13 +142,11 @@ object Router {
   
   
   /**
-    * Sent when protocol errors occur
+    * Sent when protocol errors occur and session must be failed
     * 
     * @param message
     */
-  case class ProtocolError(message: String) extends Signal
-
-  
+  case class Failure(message: String) extends Signal
 }
 
 

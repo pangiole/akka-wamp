@@ -93,7 +93,7 @@ class HttpRequestHandler(router: ActorRef)(implicit system: ActorSystem, m: Acto
           Flow[Signal].collect {
             case msg: Message =>
               TextMessage(jsonSer.serialize(msg))
-            case err: ProtocolError =>
+            case err: Failure =>
               throw new Exception(err.message)
           }
         )

@@ -28,7 +28,7 @@ class JsonSerialization extends Serialization[String] {
       case Goodbye(details, reason) => s"""[$GOODBYE,${deep(details)},"$reason"]"""
       case Subscribed(requestId, subscriptionId) => s"""[$SUBSCRIBED,$requestId,$subscriptionId]"""
       case Unsubscribed(requestId) => s"""[$UNSUBSCRIBED,$requestId]"""
-      case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestId,${deep(details)},$error]"""
+      case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestType,$requestId,${deep(details)},"$error"]"""
     }
   }
 

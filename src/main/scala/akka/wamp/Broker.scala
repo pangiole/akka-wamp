@@ -11,7 +11,7 @@ import akka.wamp.Messages._
 trait Broker extends Role { this: Router =>
 
   /**
-    * Map of subscriptions
+    * Map of subscriptions. Each subscription is for one topic and can have one or many subscribers
     */
   var subscriptions = Map.empty[Long, Subscription]
   
@@ -23,10 +23,7 @@ trait Broker extends Role { this: Router =>
         subscriptions.values.toList.filter(_.topic == topic) match {
           case Nil => {
             /**
-              * It's the first time the client subscribes to the topic and
-              * the subscription ID chosen by the broker may be assigned 
-              * to the topic, or the combination of the topic and some or all 
-              * options, such as the topic pattern matching method to be used. 
+              * It's the first time a client subscribes to that topic.
               */
             val subscriptionId = nextId(subscriptions, _ + 1)
             subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(session.client), topic))
@@ -74,17 +71,11 @@ trait Broker extends Role { this: Router =>
         fn(session)
       },
       otherwise = { _ =>
-        sender() ! ProtocolError("Session was not open yet.")
+        sender() ! Failure("Session was not open yet.")
       }
     )
   }
 
-  def findSubscriptionBy(clientRef: ActorRef, topic: Uri)(whenFound: (Subscription) => Unit, otherwise: (ActorRef) => Unit): Unit = {
-    subscriptions.values.find(s => s.subscribers.contains(clientRef) && s.topic == topic) match {
-      case Some(subscription) => whenFound(subscription)
-      case None => otherwise(clientRef)
-    }
-  }
   
   def unsubscribe(client: ActorRef, subscription: Subscription) = {
     if (subscription.subscribers.contains(client)) {
