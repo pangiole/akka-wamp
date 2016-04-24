@@ -62,24 +62,24 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
       }
 
       "deserialize PUBLISH" in {
-        val m = s.deserialize("""[16, 713845233, {"acknowledge":  true}, "com.myapp.mytopic1", [44.23,null,"paolo",true]]""")
+        val m = s.deserialize("""[16, 713845233, {"acknowledge":  true}, "topic1", [44.23,null,"paolo",true]]""")
         m.success.value mustBe a[Publish]
         val publish = m.success.value.asInstanceOf[Publish]
         publish.requestId mustBe 713845233
         publish.options must have size(1)
         publish.options("acknowledge") mustBe true
-        publish.topic mustBe "com.myapp.mytopic1"
+        publish.topic mustBe "topic1"
         publish.arguments must contain allOf (44.23,null,"paolo",true)
         publish.argumentsKw mustBe None
       }
       
       "deserialize SUBSCRIBE" in {
-        val m = s.deserialize("""[32, 713845233, {}, "com.myapp.mytopic1"]""")
+        val m = s.deserialize("""[32, 713845233, {}, "topic1"]""")
         m.success.value mustBe a[Subscribe]
         val subscribe = m.success.value.asInstanceOf[Subscribe]
         subscribe.requestId mustBe 713845233
         subscribe.options must have size(0)
-        subscribe.topic mustBe "com.myapp.mytopic1"
+        subscribe.topic mustBe "topic1"
       }
 
       "deserialize UNSUBSCRIBE" in {

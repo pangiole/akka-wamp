@@ -48,7 +48,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         receiveOne(0.seconds)
         routerRef ! Hello("whatever.realm", dictWithRoles("whatever.role"))
         expectMsg(Failure("Session was already open."))
-        router.sessions must have size(0)
+        router.sessions  mustBe empty
       }
 
       // TODO WAMP specs don't clarify if client can open a second connection attached to a different realm?
@@ -65,7 +65,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         expectMsgType[Welcome]
         routerRef ! Goodbye(DictBuilder().withEntry("message", "The host is shutting down now.").build(), "wamp.error.system_shutdown")
         expectMsg(Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out"))
-        router.sessions must have size(0)
+        router.sessions  mustBe empty
       }
     }
     
@@ -76,25 +76,33 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       "fail if client says PUBLISH before session has opened" in new RouterFixture {
         routerRef ! Publish(0, emptyDict, "topic1", List(), None)
         expectMsg(Failure("Session was not open yet."))
+        expectNoMsg()
+        router.publications mustBe empty
+        
       }
 
       "reply ERROR if client has no publisher role" in new BrokerFixture {
         client1.send(routerRef, Publish(0, ackDict, "topic1", List(), None))
         client1.expectMsg(Error(PUBLISH, 0, emptyDict, "akka.wamp.error.no_publisher_role"))
+        client1.expectNoMsg()
+        router.publications mustBe empty
       }
       
       "reply ERROR if client says PUBLISH to a topic with no subscribers" in new BrokerFixture {
         client3.send(routerRef, Publish(1, ackDict, "topic1", List(), None))
         client3.expectMsg(Error(PUBLISH, 1, emptyDict, "wamp.error.no_such_topic"))
+        client3.expectNoMsg()
+        router.publications mustBe empty
       }
       
       "dispatch EVENT if client says PUBLISH to a topic with subscribers" in new BrokerFixture {
         client1.send(routerRef, Subscribe(0, emptyDict, "topic1")); client1.receiveOne(1.second)
         client2.send(routerRef, Subscribe(0, emptyDict, "topic1"));client2.receiveOne(0.seconds)
         client3.send(routerRef, Publish(0, ackDict, "topic1", List(44.23,"paolo",null,true), None))
-        client3.expectMsg(Published(0, 0))
         client1.expectMsg(Event(0, 0, emptyDict, List(44.23,"paolo",null,true), None))
         client2.expectMsg(Event(0, 0, emptyDict, List(44.23,"paolo",null,true), None))
+        client3.expectMsg(Published(0, 0))
+        client3.expectNoMsg()
       }
     }
 
@@ -105,11 +113,14 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
       "fail if client says SUBSCRIBE before session has opened" in new RouterFixture {
         routerRef ! Subscribe(0, emptyDict, "topic1")
         expectMsg(Failure("Session was not open yet."))
+        expectNoMsg()
       }
       
       "reply ERROR if client has no subscriber role" in new BrokerFixture {
         client3.send(routerRef, Subscribe(0, emptyDict, "topic1"))
         client3.expectMsg(Error(SUBSCRIBE, 0, emptyDict, "akka.wamp.error.no_subscriber_role"))
+        router.subscriptions mustBe empty
+        client3.expectNoMsg()
       }
       
       "create a new subscription1 if client1 says SUBSCRIBE to topic1" in new BrokerFixture {
@@ -203,7 +214,7 @@ class RouterSpec extends TestKit(ActorSystem()) with ImplicitSender with WordSpe
         val sid = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
         client1.send(routerRef, Unsubscribe(1, sid))
         client1.expectMsg(Unsubscribed(1))
-        router.subscriptions must have size(0)  
+        router.subscriptions  mustBe empty  
       }
       
       "reply ERROR if client says UNSUBSCRIBE from unknown subscription" in new BrokerFixture {

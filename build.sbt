@@ -1,7 +1,7 @@
 
 name := "akka-wamp"
 
-description := "WAMP - Web Application Messaging Protocol implementation written in Scala and based on Akka HTTP and Akka Streams"
+description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka HTTP"
 
 organization := "com.github.angiolep"
 
@@ -9,16 +9,18 @@ version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
+enablePlugins(JavaAppPackaging)
+
+mainClass in Compile := Some("akka.wamp.transports.WebSocketRouter")
 
 libraryDependencies ++= Seq (
   "com.typesafe.akka" %% "akka-http-experimental" % "2.4.2",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
-  
   "com.typesafe.akka" % "akka-http-testkit_2.11" % "2.4.2" % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
-coverageEnabled := true
+//coverageEnabled := true
 
 publishMavenStyle := true
 
@@ -54,7 +56,6 @@ publishTo := {
 }
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
-
 
 
 //publishTo := Some(Resolver.file("file",  new File(Path.userHome.abqsolutePath+"/.m2/repository")))

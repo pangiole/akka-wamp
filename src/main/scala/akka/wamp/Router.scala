@@ -4,7 +4,7 @@ import akka.actor._
 import akka.wamp.Messages._
 
 import scala.annotation.tailrec
-
+import scala.collection.mutable
 
 /**
   * A Router is a [[Peer]] of the roles [[Broker]] and [[Dealer]] which is responsible 
@@ -16,6 +16,11 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   import Router._
 
   /**
+    * This router agent identification
+    */
+  val agent = context.system.settings.config.getString("akka.wamp.agent")
+  
+  /**
     * This router roles
     */
   val roles = Set("broker") // TODO Set("broker", "dealer")
@@ -23,12 +28,12 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   /**
     * Map of existing realms
     */
-  var realms = Set[Uri]("akka.wamp.realm")
+  private[wamp] val realms = mutable.Set[Uri]("akka.wamp.realm")
   
   /**
     * Map of open [[Session]]s
     */
-  var sessions = Map.empty[Long, Session]
+  private[wamp] val sessions = mutable.Map.empty[Long, Session]
 
   /**
     * Handle either sessions, subscriptions, publications, registrations or invocations
@@ -42,7 +47,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   /**
     * Handle session lifecycle related messages such as: HELLO, WELCOME, ABORT and GOODBYE
     */
-  def handleSessions: Receive = {
+  private def handleSessions: Receive = {
     
     case Hello(realm, details) => 
       switchOn(sender()) (
@@ -95,8 +100,8 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
       
   }
 
-  
-  def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
+
+  private[wamp] def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
     sessions.values.find(_.client == client) match {
       case Some(session) => whenSessionOpen(session)
       case None => otherwise(client)
@@ -104,7 +109,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   }
   
   private def newSession(client: ActorRef, details: Dict, realm: Uri) = {
-    val id = nextId(sessions, nextSessionId)
+    val id = nextId(sessions.toMap, nextSessionId)
     val session = new Session(id, router = self, routerRoles = roles, client, clientRoles = details("roles").asInstanceOf[Map[String, Any]].keySet, realm)
     sessions += (id -> session)
     session
@@ -133,8 +138,6 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
 
 
 object Router {
-  // TODO how to read the artifact version from build.sbt?
-  val agent = "akka-wamp-0.1.0"
   
   /**
     * Create a Props for an actor of this type

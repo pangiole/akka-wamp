@@ -10,7 +10,7 @@ import akka.actor._
   * @param peer1 is the first [[Peer]] connected by this transport (for example a [[Router]])
   *              
   */
-class Transport(peer1: ActorRef) extends Actor with ActorLogging {
+class Transport(val peer1: ActorRef) extends Actor with ActorLogging {
   import Transport._
   
   // TODO could we get rid of count?
