@@ -24,6 +24,11 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
           """[6,null]""",
           """[6,{}]""",
           """[6,{},null]""",
+
+          """[16,null]""",
+          """[16,713845233,null]""",
+          """[16,713845233,{},null]""",
+          """[16,713845233,{},"topic",null]""",
           
           """[32,null]""",
           """[32,713845233,null]""",
@@ -56,6 +61,18 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         goodbye.reason mustBe "wamp.error.system_shutdown"
       }
 
+      "deserialize PUBLISH" in {
+        val m = s.deserialize("""[16, 713845233, {"acknowledge":  true}, "com.myapp.mytopic1", [44.23,null,"paolo",true]]""")
+        m.success.value mustBe a[Publish]
+        val publish = m.success.value.asInstanceOf[Publish]
+        publish.requestId mustBe 713845233
+        publish.options must have size(1)
+        publish.options("acknowledge") mustBe true
+        publish.topic mustBe "com.myapp.mytopic1"
+        publish.arguments must contain allOf (44.23,null,"paolo",true)
+        publish.argumentsKw mustBe None
+      }
+      
       "deserialize SUBSCRIBE" in {
         val m = s.deserialize("""[32, 713845233, {}, "com.myapp.mytopic1"]""")
         m.success.value mustBe a[Subscribe]
@@ -92,6 +109,22 @@ class JsonSerializationSpec extends WordSpec with MustMatchers with TryValues {
         val msg = Error(SUBSCRIBE, 341284, DictBuilder().build(), "wamp.error.no_such_subscription")
         val json = s.serialize(msg)
         json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
+      }
+
+      "serialize PUBLISHED" in {
+        val msg = Published(713845233, 5512315)
+        val json = s.serialize(msg)
+        json mustBe """[17,713845233,5512315]"""
+      }
+      
+      "serialize EVENT" in {
+        val msg1 = Event(713845233, 5512315, DictBuilder().build(), List(44.23,null,"paolo",true), None)
+        val json1 = s.serialize(msg1)
+        json1 mustBe """[36,713845233,5512315,{},[44.23,null,"paolo",true]]"""
+        
+        val msg2 = Event(713845233, 5512315, DictBuilder().build(), List(), Some(DictBuilder().withEntry("arg0", 44.23).build()))
+        val json2 = s.serialize(msg2)
+        json2 mustBe """[36,713845233,5512315,{},[],{"arg0":44.23}]"""
       }
       
       "serialize SUBSCRIBED" in {

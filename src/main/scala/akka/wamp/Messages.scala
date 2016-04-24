@@ -8,10 +8,13 @@ object Messages {
   val ABORT = 3
   val GOODBYE = 6
   val ERROR = 8
+  val PUBLISH = 16
+  val PUBLISHED = 17
   val SUBSCRIBE = 32
   val SUBSCRIBED = 33
   val UNSUBSCRIBE = 34
   val UNSUBSCRIBED = 35
+  val EVENT = 36
   
   /**
     * Build a message instance
@@ -227,7 +230,7 @@ object Messages {
 
   /**
     *
-    * Acknowledge sent by a [[akka.wamp.Broker]] to a [[akka.wamp.Subscriber]] to acknowledge unsubscription.
+    * Acknowledge sent by a [[Broker]] to a [[Subscriber]] to acknowledge unsubscription.
     *
     * ```
     * [UNSUBSCRIBED, UNSUBSCRIBE.Request|id]
@@ -236,4 +239,63 @@ object Messages {
     * @param requestId is the ID from the original [[Subscribed]] request
     */
   case class Unsubscribed(requestId: Id) extends Message(UNSUBSCRIBED)
+
+
+  /**
+    * Sent by a [[Publisher]] to a [[Broker]] to publish an [[Event]].
+    * 
+    * ```
+    * [PUBLISH, Request|id, Options|dict, Topic|uri, Arguments|list, ArgumentsKw|dict]
+    * ```
+    * 
+    * @param requestId is a random, ephemeral ID chosen by the [[Publisher]] and used to correlate the [[Broker]]'s response with the request.
+    * @param options is a dictionary that allows to provide additional publication request details in an extensible way.
+    * @param topic is the topic published to.
+    * @param arguments is a list of application-level event payload elements. The list may be of zero length.
+    * @param argumentsKw is an optional dictionary containing application-level event payload, provided as keyword arguments. The dictionary may be empty.
+    */
+  case class Publish(requestId: Id, options: Dict, topic: Uri, arguments: List[Any], argumentsKw: Option[Dict]) extends Message(PUBLISH)
+
+  /**
+    * Build an [[Publish]] instance.
+    */
+  class PublishBuilder() extends Builder {
+    var requestId: Id = -1
+    var options: Dict = _
+    var topic: Uri = _
+    var arguments: List[Any] = _
+    var argumentsKw: Option[Dict] = _
+    override def build(): Message = {
+      require(requestId != -1, "missing requestId")
+      require(options != null, "missing options dict")
+      require(topic != null, "missing topic uri")
+      require(arguments != null, "missing arguments list")
+      new Publish(requestId, options, topic, arguments, argumentsKw)
+    }
+  }
+  
+  /**
+    * Acknowledge sent by a [[Broker]] to a [[Publisher]] for acknowledged [[Publication]]s.
+    *
+    * ```
+    * [PUBLISHED, PUBLISH.Request|id, Publication|id]
+    * ```
+    */
+  case class Published(requestId: Id, publicationId: Id) extends Message(PUBLISHED)
+
+
+  /**
+    * Event dispatched by [[Broker]] to [[Subscriber]]s for [[Subscription]]s the event was matching.
+    *
+    * ```
+    * [EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
+    * ```
+    * 
+    * @param subscriptionId is the ID for the subscription under which the [[Subscribe]] receives the event (the ID for the subscription originally handed out by the [[Broker]] to the [[Subscriber]].
+    * @param publicationId is the ID of the publication of the published event
+    * @param details is a dictionary that allows to provide additional event details in an extensible way.
+    * @param arguments is a list of application-level event payload elements. The list may be of zero length.
+    * @param argumentsKw is an optional dictionary containing application-level event payload, provided as keyword arguments. The dictionary may be empty.
+    */
+  case class Event(subscriptionId: Id, publicationId: Id, details: Dict, arguments: List[Any], argumentsKw: Option[Dict]) extends Message(EVENT)
 }

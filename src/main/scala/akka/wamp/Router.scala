@@ -31,9 +31,13 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   var sessions = Map.empty[Long, Session]
 
   /**
-    * Handle either sessions, subscriptions or procedure
+    * Handle either sessions, subscriptions, publications, registrations or invocations
     */
-  def receive = handleSessions orElse handleSubscriptions /* TODO orElse handleProcedures */
+  def receive = 
+    handleSessions orElse 
+      handleSubscriptions orElse
+        handlePublications
+        /* TODO orElse handleProcedures */
 
   /**
     * Handle session lifecycle related messages such as: HELLO, WELCOME, ABORT and GOODBYE

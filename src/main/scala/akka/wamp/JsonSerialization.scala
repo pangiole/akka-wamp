@@ -18,14 +18,17 @@ class JsonSerialization extends Serialization[String] {
   
   def serialize(msg: Message): String = {
     def deep(any: Any): String = any match {
+      case list: List[_] => list.map{ el => deep(el) }.mkString("[", ",", "]")
       case dict: Dict => dict.map { case (k,v) => s""""$k":${deep(v)}""" }.mkString("{",",","}")
       case str: String => s""""$str""""
-      case _ => "???"
-      // TODO implement other serializing scenarios
+      case null => null
+      case any => any.toString
     }
     msg match {
       case Welcome(sessionId, details) => s"""[$WELCOME,$sessionId,${deep(details)}]"""
       case Goodbye(details, reason) => s"""[$GOODBYE,${deep(details)},"$reason"]"""
+      case Published(requestId, publicationId) => s"""[$PUBLISHED,$requestId,$publicationId]"""
+      case Event(subscriptionId, publicationId, details, arguments, argumentsKw) => s"""[$EVENT,$subscriptionId,$publicationId,${deep(details)},${deep(arguments)}""" + (if(argumentsKw.isDefined) s""",${deep(argumentsKw.get)}]""" else "]")
       case Subscribed(requestId, subscriptionId) => s"""[$SUBSCRIBED,$requestId,$subscriptionId]"""
       case Unsubscribed(requestId) => s"""[$UNSUBSCRIBED,$requestId]"""
       case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestType,$requestId,${deep(details)},"$error"]"""
@@ -77,6 +80,33 @@ class JsonSerialization extends Serialization[String] {
             goodbye.build()
           }
 
+          //[PUBLISH, Request|id, Options|dict, Topic|uri, Arguments|list, ArgumentsKw|dict]  
+          case PUBLISH => {
+            val publish = new PublishBuilder
+            if (parser.nextToken() == VALUE_NUMBER_INT) {
+              publish.requestId = parser.getValueAsLong
+              if (parser.nextToken() == START_OBJECT) {
+                publish.options = mapper.readValue(parser, classOf[Dict])
+                if (parser.nextToken() == VALUE_STRING) {
+                  publish.topic = parser.getValueAsString
+                  if (parser.nextToken() == START_ARRAY) {
+                    publish.arguments = mapper.readValue(parser, classOf[List[Any]])
+                    if (parser.nextToken() == START_OBJECT) {
+                      publish.argumentsKw = Some(mapper.readValue(parser, classOf[Dict]))
+                    }
+                    else publish.argumentsKw = None
+                  }
+                  else fail("missing arguments list")
+                }
+                else fail("missing topic uri")
+              }
+              else fail("missing options dict")
+            }
+            else fail("missing request id")
+            parser.close()
+            publish.build()
+          }
+
           //[SUBSCRIBE, Request|id, Options|dict, Topic|uri]  
           case SUBSCRIBE => {
             val subscribe = new SubscribeBuilder
@@ -110,6 +140,9 @@ class JsonSerialization extends Serialization[String] {
             parser.close()
             unsubscribe.build()
           }
+
+            
+            
             
           case t => fail("invalid message type")
         }
