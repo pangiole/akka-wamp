@@ -17,7 +17,7 @@ libraryDependencies += "angiolep.github.com" %% "akka-wamp" % "0.1.0-SNAPSHOT"
 
 Instantiate and start the Router:
 ```scala
-//file: src/main/scala/myapp/myClass.scala
+//file: src/main/scala/myapp/MyApp.scala
 
 import akka.wamp.transports.WebSocketRouter
 
@@ -44,7 +44,7 @@ DO NOT use this software in production as it does NOT provide a complete WAMP im
  * Router with _broker_ role able to handle sessions, subscriptions and publications.
  * WAMP Basic Profile only!
  
-No _dealer_ role (hence no procedures registrations and invocations) and no WAMP Advanced Profile features are provided yet.
+No _dealer_ role (hence no procedures registrations or invocations) and no WAMP Advanced Profile features are provided yet.
  
 ## Client
 Not provided yet. Please use some other [WAMP Libraries](http://wamp-proto.org/implementations/).
@@ -53,5 +53,5 @@ Not provided yet. Please use some other [WAMP Libraries](http://wamp-proto.org/i
 [travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
 [travis-url]: https://travis-ci.org/angiolep/akka-wamp
 
-[codacy-image]: (https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1)]
-[codacy-url]: (https://www.codacy.com/app/paolo-angioletti/akka-wamp)
+[codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1)
+[codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp

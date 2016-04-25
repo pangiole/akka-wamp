@@ -5,7 +5,7 @@ description := "WAMP - Web Application Messaging Protocol implementation written
 
 organization := "com.github.angiolep"
 
-version := "0.1.0-SNAPSHOT"
+version := "0.1.0"
 
 scalaVersion := "2.11.7"
 
@@ -24,7 +24,7 @@ libraryDependencies ++= Seq (
 
 publishMavenStyle := true
 
-isSnapshot := true
+isSnapshot := false
 
 pomExtra :=
   <inceptionYear>2016</inceptionYear>
