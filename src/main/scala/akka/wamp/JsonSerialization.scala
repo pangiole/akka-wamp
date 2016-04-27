@@ -33,6 +33,7 @@ class JsonSerialization extends Serialization[String] {
       case Event(subscriptionId, publicationId, details, arguments, argumentsKw) => s"""[$EVENT,$subscriptionId,$publicationId,${deep(details)},${deep(arguments)}""" + (if(argumentsKw.isDefined) s""",${deep(argumentsKw.get)}]""" else "]")
       case Subscribe(requestId,options,topic) => s"""[$SUBSCRIBE,${deep(options)},"$topic"]"""
       case Subscribed(requestId, subscriptionId) => s"""[$SUBSCRIBED,$requestId,$subscriptionId]"""
+      case Unsubscribe(requestId, subscriptionId) => s"""[$UNSUBSCRIBE,$requestId,$subscriptionId]"""
       case Unsubscribed(requestId) => s"""[$UNSUBSCRIBED,$requestId]"""
       case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestType,$requestId,${deep(details)},"$error"]"""
     }

@@ -22,6 +22,8 @@ libraryDependencies ++= Seq (
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
+testOptions in Test += Tests.Setup( () => System.setProperty("akka.loglevel", "WARN") )
+
 publishMavenStyle := true
 
 isSnapshot := false

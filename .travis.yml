@@ -6,7 +6,7 @@ jdk:
 env:
   - CODACY_PROJECT_TOKEN=c77729ea848d41529e513607e45dfe96
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
+  - sbt -Dakka.loglevel=OFF ++$TRAVIS_SCALA_VERSION clean coverage test
   - sbt coverageReport
   - sbt codacyCoverage
   

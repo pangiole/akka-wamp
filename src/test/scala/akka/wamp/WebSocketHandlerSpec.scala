@@ -1,4 +1,4 @@
-package akka.wamp.transports
+package akka.wamp
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
@@ -6,14 +6,13 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.testkit._
 import akka.stream.scaladsl._
 import akka.testkit._
-import akka.wamp._
 import org.scalatest._
 
 
-class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRouteTest {
+class WebSocketHandlerSpec extends WordSpec with MustMatchers with ScalatestRouteTest {
   
-  "The HTTP request handler" when {
-    "connection not yet upgraded" should {
+  "The WebSocket handler" when {
+    "connection has not upgraded yet" should {
 
       "reject websocket requests if no subprotocol matches" in {
         WS(Url, Flow[WebSocketMessage]) ~> handler.route ~> check {
@@ -40,23 +39,9 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
     }
   }
   
-  "connection upgraded to websocket" should {
+  "connection has upgraded to WebSocket protocol" should {
     
-    "handle ProtocolError('Bad message')" in {
-      pending
-      checkWith { wsClient =>
-        // TODO what shall we expect when client sends bad WAMP messages?
-        wsClient.sendMessage("""{bad}""")
-      }
-    }
-
-    
-    "handle ProtocolError('Others')" in {
-      pending
-    }
-    
-    
-    "handle typical sessions" in {
+    "handle WAMP messages" in {
       checkWith { wsClient =>
         
         // -> HELLO
