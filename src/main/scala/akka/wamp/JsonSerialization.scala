@@ -25,10 +25,13 @@ class JsonSerialization extends Serialization[String] {
       case any => any.toString
     }
     msg match {
+      case Hello(realm, details) => s"""[$HELLO,"$realm",${deep(details)}]"""
       case Welcome(sessionId, details) => s"""[$WELCOME,$sessionId,${deep(details)}]"""
       case Goodbye(details, reason) => s"""[$GOODBYE,${deep(details)},"$reason"]"""
+      case Publish(requestId, options, topic, arguments, argumentsKw) => s"""[$PUBLISH,$requestId,${deep(options)},${deep(arguments)}""" + (if(argumentsKw.isDefined) s""",${deep(argumentsKw.get)}]""" else "]")
       case Published(requestId, publicationId) => s"""[$PUBLISHED,$requestId,$publicationId]"""
       case Event(subscriptionId, publicationId, details, arguments, argumentsKw) => s"""[$EVENT,$subscriptionId,$publicationId,${deep(details)},${deep(arguments)}""" + (if(argumentsKw.isDefined) s""",${deep(argumentsKw.get)}]""" else "]")
+      case Subscribe(requestId,options,topic) => s"""[$SUBSCRIBE,${deep(options)},"$topic"]"""
       case Subscribed(requestId, subscriptionId) => s"""[$SUBSCRIBED,$requestId,$subscriptionId]"""
       case Unsubscribed(requestId) => s"""[$UNSUBSCRIBED,$requestId]"""
       case Error(requestType, requestId, details, error) => s"""[$ERROR,$requestType,$requestId,${deep(details)},"$error"]"""
@@ -140,9 +143,6 @@ class JsonSerialization extends Serialization[String] {
             parser.close()
             unsubscribe.build()
           }
-
-            
-            
             
           case t => fail("invalid message type")
         }

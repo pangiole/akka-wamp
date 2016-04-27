@@ -1,4 +1,4 @@
-package akka.wamp.transports
+package akka.wamp
 
 import akka.actor._
 import akka.http.scaladsl._
@@ -6,7 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route._
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.wamp.Router
+
 
 
 class WebSocketRouter {
@@ -18,8 +18,7 @@ class WebSocketRouter {
     val agent = system.settings.config.getString("akka.wamp.agent")
     val iface = system.settings.config.getString("akka.wamp.iface")
     val port = system.settings.config.getInt("akka.wamp.port")
-    println(s"$agent listening on ws://$iface:$port/wamp")
-
+    
     val router = system.actorOf(Router.props())
 
     Http().bind(iface, port)
@@ -29,7 +28,7 @@ class WebSocketRouter {
         conn.handleWith(Flow[HttpRequest]
           // TODO .via(reactToConnectionFailure)
           .mapAsync(parallelism = 1)(asyncHandler(
-          new HttpRequestHandler(router).route
+          new WebSocketHandler(router).route
         ))
         )
       })

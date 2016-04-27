@@ -28,12 +28,23 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   /**
     * Map of existing realms
     */
-  private[wamp] val realms = mutable.Set[Uri]("akka.wamp.realm")
+  val realms = mutable.Set[Uri]("akka.wamp.realm")
   
   /**
     * Map of open [[Session]]s
     */
-  private[wamp] val sessions = mutable.Map.empty[Long, Session]
+  val sessions = mutable.Map.empty[Long, Session]
+
+  /**
+    * The JSON serializer (used for logging purposes only)
+    */
+  val ser = new JsonSerialization
+
+
+  @throws[Exception](classOf[Exception])
+  override def preStart(): Unit = {
+    log.info("Starting peer1/{}", self.path.name)
+  }
 
   /**
     * Handle either sessions, subscriptions, publications, registrations or invocations
@@ -49,8 +60,9 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
     */
   private def handleSessions: Receive = {
     
-    case Hello(realm, details) => 
-      switchOn(sender()) (
+    case msg @ Hello(realm, details) => 
+      log.debug("HELLO{} from peer2/{}", ser.serialize(msg), sender.path.name)
+      switchOn(sender) (
         whenSessionOpen = { session =>
           /*
            * It is a protocol error to receive a second "HELLO" message 
@@ -72,7 +84,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
             if (autoCreateRealms) {
-              val session = newSession(sender(), details, createRealm(realm))
+              val session = newSession(client, details, createRealm(realm))
               client ! Welcome(session.id, DictBuilder().withEntry("agent", agent).withRoles(roles).build())
             }
             else {
@@ -84,11 +96,14 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
 
       
     // ignore ABORT messages from client
-    case Abort => ()  
+    case msg: Abort =>
+      log.debug("ABORT{} from peer2/{}", ser.serialize(msg), sender.path.name)
+      ()  
 
       
-    case Goodbye(details, reason) =>
-      switchOn(sender())(
+    case msg @ Goodbye(details, reason) =>
+      log.debug("GOODBYE{} from peer2/{}", ser.serialize(msg), sender.path.name)
+      switchOn(sender)(
         whenSessionOpen = { session =>
           closeSession(session)
           session.client ! Goodbye(DictBuilder().build(), "wamp.error.goodbye_and_out")
@@ -101,7 +116,7 @@ class Router(nextSessionId: (Id) => Id) extends Peer with Broker /* TODO with De
   }
 
 
-  private[wamp] def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
+  def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
     sessions.values.find(_.client == client) match {
       case Some(session) => whenSessionOpen(session)
       case None => otherwise(client)

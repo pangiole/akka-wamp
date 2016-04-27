@@ -82,7 +82,7 @@ class HttpRequestHandlerSpec extends WordSpec with MustMatchers with ScalatestRo
   
   
   val router = TestActorRef(Router.props(_ + 1)) 
-  val handler = new HttpRequestHandler(router)
+  val handler = new WebSocketHandler(router)
   val Url = "http://localhost/wamp"
   
   def checkWith(fn: (WSProbe) => Unit) = {

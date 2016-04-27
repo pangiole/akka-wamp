@@ -11,41 +11,20 @@ scalaVersion := "2.11.7"
 
 enablePlugins(JavaAppPackaging)
 
-mainClass in Compile := Some("akka.wamp.transports.WebSocketRouter")
+mainClass in Compile := Some("akka.wamp.WebSocketRouter")
 
 libraryDependencies ++= Seq (
-  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.2",
+  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.4",
+  "com.typesafe.akka" %% "akka-slf4j" % "2.4.4",
+  "ch.qos.logback" % "logback-classic" % "1.1.3",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
   "com.typesafe.akka" % "akka-http-testkit_2.11" % "2.4.2" % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
-//coverageEnabled := true
-
 publishMavenStyle := true
 
 isSnapshot := false
-
-pomExtra :=
-  <inceptionYear>2016</inceptionYear>
-  <scm>
-    <url>git://github.com/akka-wamp/akka-wamp.git</url>
-    <connection>scm:git:git@github.com:akka-wamp/akka-wamp.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <name>Paolo Angioletti</name>
-      <name>paolo.angioletti@gmail.com</name>
-    </developer>
-  </developers>
-  <licenses>
-    <license>
-      <name>Apache 2</name>
-      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
@@ -55,7 +34,25 @@ publishTo := {
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
 
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+publishArtifact in Test := false
 
+pomIncludeRepository := { _ => false }
 
-//publishTo := Some(Resolver.file("file",  new File(Path.userHome.abqsolutePath+"/.m2/repository")))
+licenses := Seq("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt"))
+
+homepage := Some(url("http://angiolep.github.io/akka-wamp"))
+
+pomExtra :=
+  <scm>
+    <url>git://github.com/akka-wamp/akka-wamp.git</url>
+    <connection>scm:git:git@github.com:akka-wamp/akka-wamp.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <name>Paolo Angioletti</name>
+      <email>paolo.angioletti@gmail.com</email>
+      <url>http://angiolep.github.io</url>
+    </developer>
+  </developers>
+
+credentials += Credentials(Path.userHome / ".ivy2" / "sonatype")

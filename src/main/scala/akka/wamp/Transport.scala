@@ -12,36 +12,43 @@ import akka.actor._
   */
 class Transport(val peer1: ActorRef) extends Actor with ActorLogging {
   import Transport._
-  
-  // TODO could we get rid of count?
-  private var count: Int = 0
 
+  @throws[Exception](classOf[Exception])
+  override def preStart(): Unit = {
+    log.info("START transport/{} for peer1/{}", self.path.name, peer1.path.name)
+  }
+  
   /**
     * It is the second [[Peer]] connected by this transport,
     * for example, if [[peer1]] is a [[Router]] then peer2 is a [[Client]]
     */
-  var peer2: ActorRef = _
+  var peer2: Option[ActorRef] = _
 
   def receive: Receive = {
     case Connect(ref) =>
-      peer2 = ref
-      count = count + 1
-      log.debug(s"Connect -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}")
+      peer2 = Some(ref)
+      log.debug("CONNECT peer1/{} to peer2/{} via transport/{}", peer1.path.name, peer2.get.path.name, self.path.name)
 
     case msg: Message =>
-      peer1.tell(msg, peer2)
-      log.debug(s"Hello -> sender:${hash(sender)}, peer2:${hash(peer2)}")
+      if (peer2.isDefined) peer1.tell(msg, peer2.get)
+      // TODO else throw new IllegalStateException()
 
     case Disconnect =>
-      count = count - 1
-      log.debug(s"DISconnect -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}")
+      log.debug("DISCONNECT peer1/{} from peer2/{} via transport/{}", peer1.path.name, peer2.get.path.name, self.path.name)
+      peer2 = None
+      context.stop(self)
 
     case akka.actor.Status.Failure(ex) =>
       log.error(ex, ex.getMessage)
-      // TODO count = count - 1
       //log.debug(s"FAILure -> count:$count, sender:${hash(sender)}, peer2:${hash(peer2)}, ex:${ex.getMessage}")
   }
-  
+
+
+  @throws[Exception](classOf[Exception])
+  override def postStop(): Unit = {
+    log.debug("STOP transport/{}", self.path.name)
+  }
+
   private def hash(ref: ActorRef) = ref.hashCode()
 }
 

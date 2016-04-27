@@ -8,16 +8,14 @@ import akka.wamp.Messages._
   * A Broker routes events incoming from [[Publisher]]s to [[Subscriber]]s 
   * that are subscribed to respective [[Topic]]s
   */
-trait Broker extends Role {
-  this: Router =>
+trait Broker extends Role { this: Router =>
 
   /**
     * Map of subscriptions. Each entry is for one topic only 
     * and it can have one or many subscribers
     */
   var subscriptions = Map.empty[Long, Subscription]
-
-
+  
   /**
     * Map of publications
     */
@@ -30,7 +28,8 @@ trait Broker extends Role {
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case Publish(requestId, options, topic, arguments, argumentsKw) =>
+    case msg @ Publish(requestId, options, topic, arguments, argumentsKw) =>
+      log.debug("PUBLISH{} from peer2/{}", ser.serialize(msg), sender.path.name)
       ifSessionOpen { session =>
         val publisher = session.client
         if (session.clientRoles.contains("publisher")) {
@@ -82,7 +81,8 @@ trait Broker extends Role {
     */
   def handleSubscriptions: Receive = {
 
-    case Subscribe(requestId, options, topic) =>
+    case msg @ Subscribe(requestId, options, topic) =>
+      log.debug("SUBSCRIBE{} from peer2/{}", ser.serialize(msg), sender.path.name)
       ifSessionOpen { session =>
         val subscriber = session.client
         if (session.clientRoles.contains("subscriber")) {
@@ -123,7 +123,8 @@ trait Broker extends Role {
 
       }
 
-    case Unsubscribe(requestId, subscriptionId) =>
+    case msg @ Unsubscribe(requestId, subscriptionId) =>
+      log.debug("UNSUBSCRIBE{} from peer2/{}", ser.serialize(msg), sender.path.name)
       ifSessionOpen { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
