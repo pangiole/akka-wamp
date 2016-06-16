@@ -2,11 +2,13 @@ package akka.wamp
 
 import akka.actor._
 
+import akka.wamp.Wamp._
+
 /**
-  * The subscription of a [[Subscriber]] to a [[Topic]]
+  * The subscription of a Subscriber to a Topic
   * 
   * @param id is the subscription ID
-  * @param subscribers are the [[Subscriber]]s actor references
+  * @param subscribers are the Subscribers actor references
   * @param topic is the topic
   */
 case class Subscription(id: Id, subscribers: Set[ActorRef], topic: Uri)

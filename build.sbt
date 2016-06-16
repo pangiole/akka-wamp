@@ -5,7 +5,7 @@ description := "WAMP - Web Application Messaging Protocol implementation written
 
 organization := "com.github.angiolep"
 
-version := "0.1.0"
+version := "0.2.0"
 
 scalaVersion := "2.11.7"
 
@@ -14,8 +14,8 @@ enablePlugins(JavaAppPackaging)
 mainClass in Compile := Some("akka.wamp.WebSocketRouter")
 
 libraryDependencies ++= Seq (
-  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.4",
-  "com.typesafe.akka" %% "akka-slf4j" % "2.4.4",
+  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.6",
+  "com.typesafe.akka" %% "akka-slf4j" % "2.4.6",
   "ch.qos.logback" % "logback-classic" % "1.1.3",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
   "com.typesafe.akka" % "akka-http-testkit_2.11" % "2.4.2" % "test",

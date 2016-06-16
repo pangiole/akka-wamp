@@ -1,12 +1,14 @@
-package akka.wamp
+package akka.wamp.router
 
-import akka.actor.ActorRef
-import akka.wamp.Router._
-import akka.wamp.Messages._
+import akka.actor.Actor._
+import akka.actor._
+import akka.wamp.Wamp.Tpe._
+import akka.wamp.Wamp._
+import akka.wamp._
 
 /**
-  * A Broker routes events incoming from [[Publisher]]s to [[Subscriber]]s 
-  * that are subscribed to respective [[Topic]]s
+  * A Broker routes events incoming from Publishers to Subscribers 
+  * that are subscribed to respective Topics
   */
 trait Broker extends Role { this: Router =>
 
@@ -14,22 +16,19 @@ trait Broker extends Role { this: Router =>
     * Map of subscriptions. Each entry is for one topic only 
     * and it can have one or many subscribers
     */
-  var subscriptions = Map.empty[Long, Subscription]
+  var subscriptions = Map.empty[Id, Subscription]
   
   /**
-    * Map of publications
+    * Set of publication IDs
     */
-  var publications = Map.empty[Long, Publication]
-
-
-  val emptyDict = DictBuilder().build()
+  var publications = Set.empty[Id]
+  
 
   /**
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case msg @ Publish(requestId, options, topic, arguments, argumentsKw) =>
-      log.debug("PUBLISH{} from peer2/{}", ser.serialize(msg), sender.path.name)
+    case msg @ Publish(requestId, options, topic, payload) =>
       ifSessionOpen { session =>
         val publisher = session.client
         if (session.clientRoles.contains("publisher")) {
@@ -49,7 +48,7 @@ trait Broker extends Role { this: Router =>
                 * and "PUBLISH.Options.acknowledge == true", the Broker sends back an
                 * "ERROR" message to the Publisher
                 */
-              if (ack) publisher ! Error(PUBLISH, requestId, emptyDict, "wamp.error.no_such_topic")
+              if (ack) publisher ! Error(PUBLISH, requestId, Dict(), "wamp.error.no_such_topic")
               ()
             case subscription :: Nil =>
 
@@ -63,15 +62,15 @@ trait Broker extends Role { this: Router =>
                 */
               val publicationId = nextId(publications, _ + 1)
               subscription.subscribers.filter(_ != publisher).foreach { subscriber =>
-                publications += (publicationId -> new Publication(publicationId))
-                subscriber ! Event(subscription.id, publicationId, emptyDict, arguments, argumentsKw)
+                publications += publicationId
+                subscriber ! Event(subscription.id, publicationId, Dict(), payload)
               }
               if (ack) publisher ! Published(requestId, publicationId)
             case _ => throw new IllegalStateException()
           }
         }
         else {
-          publisher ! Error(PUBLISH, requestId, emptyDict, "akka.wamp.error.no_publisher_role")
+          publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
         }
       }
   }
@@ -82,7 +81,6 @@ trait Broker extends Role { this: Router =>
   def handleSubscriptions: Receive = {
 
     case msg @ Subscribe(requestId, options, topic) =>
-      log.debug("SUBSCRIBE{} from peer2/{}", ser.serialize(msg), sender.path.name)
       ifSessionOpen { session =>
         val subscriber = session.client
         if (session.clientRoles.contains("subscriber")) {
@@ -91,7 +89,7 @@ trait Broker extends Role { this: Router =>
               /**
                 * No subscribers has subscribed to the given topic yet
                 */
-              val subscriptionId = nextId(subscriptions, _ + 1)
+              val subscriptionId = nextId(subscriptions.keySet, _ + 1)
               subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(subscriber), topic))
               subscriber ! Subscribed(requestId, subscriptionId)
             }
@@ -118,20 +116,19 @@ trait Broker extends Role { this: Router =>
           }
         }
         else {
-          subscriber ! Error(SUBSCRIBE, requestId, emptyDict, "akka.wamp.error.no_subscriber_role")
+          subscriber ! Error(SUBSCRIBE, requestId, Dict(), "akka.wamp.error.no_subscriber_role")
         }
 
       }
 
     case msg @ Unsubscribe(requestId, subscriptionId) =>
-      log.debug("UNSUBSCRIBE{} from peer2/{}", ser.serialize(msg), sender.path.name)
       ifSessionOpen { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
             unsubscribe(session.client, subscription)
             session.client ! Unsubscribed(requestId)
           case None =>
-            session.client ! Error(UNSUBSCRIBE, requestId, DictBuilder().build(), "wamp.error.no_such_subscription")
+            session.client ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
         }
       }
   }

@@ -1,22 +1,22 @@
 package akka.wamp
 
+import akka.wamp.Wamp._
 import akka.actor._
-
 import scala.annotation.tailrec
 
 /**
-  * A Session is a transient conversation between two [[Peer]]s (tipically a
-  * a [[Router]] and a [[Client]]) attached to a [[Realm]] and running over 
-  * a [[Transport]].
+  * A Session is a transient conversation between two Peers (tipically a
+  * a Router and a Client) attached to a Realm and running over 
+  * a Transport.
   * 
-  * Routing occurs only between [[Session]]s that have joined the same [[Realm]]
+  * Routing occurs only between Sessions that have joined the same Realm
   * 
   * @param id is the globally unique identifer
-  * @param router is the [[Router]] actor reference
-  * @param routerRoles are the [[Router]]'s [[Role]]s
-  * @param client is the [[Client]] actor reference
-  * @param clientRoles are the [[Client]]'s [[Role]]s
-  * @param realm is a string identifying the [[Realm]] this session should attach to
+  * @param router is the Router actor reference
+  * @param routerRoles are the Router's Roles
+  * @param client is the Client actor reference
+  * @param clientRoles are the Client's Roles
+  * @param realm is a string identifying the Realm this session should attach to
   */
 class Session(val id: Id, val router: ActorRef, val routerRoles: Set[String], val client: ActorRef, val clientRoles: Set[String], val realm: Uri)
 
@@ -24,7 +24,7 @@ class Session(val id: Id, val router: ActorRef, val routerRoles: Set[String], va
 object Session {
   /**
     * New session IDs in the global scope MUST be drawn randomly from a uniform
-    * distribution over the complete range [ [[Id.MIN]], [[Id.MAX]] ] and MUST
+    * distribution over the complete range [ Id.MIN, Id.MAX ] and MUST
     * not be actually in use.
     *
     * @param used is the map of already used identifiers

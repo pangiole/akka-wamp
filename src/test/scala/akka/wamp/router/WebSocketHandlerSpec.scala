@@ -1,4 +1,4 @@
-package akka.wamp
+package akka.wamp.router
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
@@ -48,7 +48,7 @@ class WebSocketHandlerSpec extends WordSpec with MustMatchers with ScalatestRout
         wsClient.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
         
         // <- WELCOME
-        wsClient.expectMessage("""[2,0,{"agent":"akka-wamp-0.1.0","roles":{"broker":{}}}]""")
+        wsClient.expectMessage("""[2,0,{"agent":"akka-wamp-0.2.0","roles":{"broker":{}}}]""")
         
         // -> SUBSCRIBE
         wsClient.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
