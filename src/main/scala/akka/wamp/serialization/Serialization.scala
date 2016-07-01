@@ -1,12 +1,12 @@
 package akka.wamp.serialization
 
-import akka.wamp.Wamp.SpecifiedMessage
+import akka.wamp.Wamp.WampMessage
 
 trait Serialization[T] {
   
-  def serialize(msg: SpecifiedMessage): T
+  def serialize(msg: WampMessage): T
   
-  def deserialize(t: T): SpecifiedMessage
+  def deserialize(t: T): WampMessage
 }
 
 class SerializingException(message: String, cause: Throwable) extends Exception(message, cause) {

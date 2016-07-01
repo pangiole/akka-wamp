@@ -1,9 +1,14 @@
 package akka.wamp
 
+import java.net.InetSocketAddress
+
 import akka.actor.{ActorRef, ExtendedActorSystem, ExtensionId, Props}
-import akka.io.IO
+import akka.io.Inet.SocketOption
+import akka.io.{IO, TcpExt}
 import akka.stream.ActorMaterializer
 import akka.wamp.serialization.JsonSerialization
+
+import scala.collection.immutable
 
 
 /**
@@ -24,21 +29,65 @@ object Wamp extends ExtensionId[WampExt] with WampExtMessages {
 }
 
 
-private[wamp] trait WampExtMessages {
+/*TODO private[wamp]*/ trait WampExtMessages {
   sealed trait Message
 
   trait Command extends Message
-  final case class Connect(uri: String) extends Command
-  // TODO final case class Bind(???) extends Command
-  // TODO final case class Register(???) extends Command
-
   trait Signal extends Message
-  final case class Connected(transport: ActorRef) extends Signal
-  final case class CommandFailed(cmd: Command) extends Signal
-  final case object ConnectionClosed extends Signal
-  final case class Failure(message: String) extends Wamp.Signal
+
+  /**
+    * The Connect message is sent to the WAMP manager actor, which is obtained via
+    * [[WampExt#manager]]. Either the manager replies with a [[CommandFailed]]
+    * or the actor handling the new connection replies with a [[Connected]]
+    * message.
+    *
+    * @param uri is the URI to connect to (e.g. "ws://somehost.com:8080/wamp")
+    * @param subprotocol is the WebSocket subprotocol (e.g. "wamp.2.json" or "wamp.2.msgpack")
+    */
+  final case class Connect(uri: String, subprotocol: String) extends Command
   
-  sealed trait SpecifiedMessage extends Message {
+  /**
+    * The Bind message is send to the WAMP manager actor, which is obtained via
+    * [[WampExt#manager]] in order to bind to a listening socket. The manager
+    * replies either with a [[CommandFailed]] or the actor handling the listen
+    * socket replies with a [[Bound]] message. If the local port is set to 0 in
+    * the Bind message, then the [[Bound]] message should be inspected to find
+    * the actual port which was bound to.
+    *
+    * @param handler is actor which will receive all incoming connection requests in the form of [[Connected]] messages
+    * @param iface   is the socket interface to bind to (use "0.0.0.0" to bind to all of the underlying interfaces)
+    * @param port    is the socket port to bind to (use port zero for automatic assignment (i.e. an ephemeral port, see [[Bound]])
+    */
+  final case class Bind(handler: ActorRef, iface: String, port: Tpe) extends Command
+
+  /**
+    * The sender of a [[Bind]] command will — in case of success — receive confirmation
+    * in this form. If the bind address indicated a 0 port number, then the contained
+    * `localAddress` can be used to find out which port was automatically assigned.
+    */
+  final case class Bound(localAddress: InetSocketAddress) extends Signal
+  
+  final case object Unbind
+  
+  //TODO final case class Bound(???) extends Command
+  //TODO final case class Register(???) extends Command
+
+  /**
+    * The connection actor sends this message either to the sender of a [[Connect]]
+    * command (for outbound) or to the handler for incoming connections designated
+    * in the [[Bind]] message. 
+    */  
+  final case class Connected(ref: ActorRef) extends Signal
+  
+  final case class CommandFailed(cmd: Command) extends Signal
+  
+  final case object Disconnected extends Signal
+
+  final case object Disconnect extends Command
+  
+  final case class Failure(message: String) extends Signal
+  
+  sealed trait WampMessage extends Message {
     val tpe: Tpe
     // TODO def toJson = ???
   }
@@ -183,7 +232,7 @@ private[wamp] trait WampExtMessages {
     * @param realm
     * @param details
     */
-  final case class Hello(realm: Uri, details: Dict) extends SpecifiedMessage {
+  final case class Hello(realm: Uri, details: Dict) extends WampMessage {
     val tpe = Tpe.HELLO
     require(Uri.isValid(realm), "invalid_uri")
     require(details != null, "invalid_dict")
@@ -204,7 +253,7 @@ private[wamp] trait WampExtMessages {
     * @param sessionId is the session identifier
     * @param details is the session details
     */
-  final case class Welcome(sessionId: Id, details: Dict) extends SpecifiedMessage {
+  final case class Welcome(sessionId: Id, details: Dict) extends WampMessage {
     val tpe = Tpe.WELCOME
     require(Id.isValid(sessionId), "invalid_id")
     require(details != null, "invalid_dict")
@@ -219,7 +268,7 @@ private[wamp] trait WampExtMessages {
     * [ABORT, Details|dict, Reason|uri]
     * ```
     */
-  final case class Abort(details: Dict, reason: Uri) extends SpecifiedMessage {
+  final case class Abort(details: Dict, reason: Uri) extends WampMessage {
     val tpe = Tpe.ABORT
     require(details != null, "invalid_dict")
     require(Uri.isValid(reason), "invalid_uri")
@@ -238,7 +287,7 @@ private[wamp] trait WampExtMessages {
     * @param details
     * @param reason
     */
-  final case class Goodbye(details: Dict, reason: Uri) extends SpecifiedMessage {
+  final case class Goodbye(details: Dict, reason: Uri) extends WampMessage {
     val tpe = Tpe.GOODBYE
     require(details != null, "invalid_dict")
     require(Uri.isValid(reason), "invalid_uri")
@@ -261,7 +310,7 @@ private[wamp] trait WampExtMessages {
     * @param error
     * @param payload is either a list of any arguments or a key-value-pairs set
     */
-  final case class Error(requestType: Int, requestId: Id, details: Dict, error: Uri, payload: Option[Payload] = None) extends SpecifiedMessage {
+  final case class Error(requestType: Int, requestId: Id, details: Dict, error: Uri, payload: Option[Payload] = None) extends WampMessage {
     val tpe = Tpe.ERROR
     require(Tpe.isValid(requestType), "invalid_type")
     require(Id.isValid(requestId), "invalid_id")
@@ -286,7 +335,7 @@ private[wamp] trait WampExtMessages {
     * @param topic is the topic published to.
     * @param payload is either a list of any arguments or a key-value-pairs set 
     */
-  final case class Publish(requestId: Id, options: Dict, topic: Uri, payload: Option[Payload] = None) extends SpecifiedMessage {
+  final case class Publish(requestId: Id, options: Dict, topic: Uri, payload: Option[Payload] = None) extends WampMessage {
     val tpe = Tpe.PUBLISH
     require(Id.isValid(requestId), "invalid_id")
     require(options != null, "invalid_dict")
@@ -302,7 +351,7 @@ private[wamp] trait WampExtMessages {
     * [PUBLISHED, PUBLISH.Request|id, Publication|id]
     * ```
     */
-  final case class Published(requestId: Id, publicationId: Id) extends SpecifiedMessage {
+  final case class Published(requestId: Id, publicationId: Id) extends WampMessage {
     val tpe = Tpe.PUBLISHED
     require(Id.isValid(requestId), "invalid_id")
     require(Id.isValid(publicationId), "invalid_id")
@@ -320,7 +369,7 @@ private[wamp] trait WampExtMessages {
     * @param options is a dictionary that allows to provide additional subscription request details in a extensible way
     * @param topic is the topic the Subscribe  wants to subscribe to 
     */
-  final case class Subscribe(requestId: Id, options: Dict, topic: Uri) extends SpecifiedMessage {
+  final case class Subscribe(requestId: Id, options: Dict, topic: Uri) extends WampMessage {
     val tpe = Tpe.SUBSCRIBE
     require(Id.isValid(requestId), "invalid_id")
     require(options != null, "invalid_dict")
@@ -339,7 +388,7 @@ private[wamp] trait WampExtMessages {
     * @param requestId is the ID from the original Subscribe request
     * @param subscriptionId is an ID chosen by the Broker for the subscription
     */
-  final case class Subscribed(requestId: Id, subscriptionId: Id) extends SpecifiedMessage {
+  final case class Subscribed(requestId: Id, subscriptionId: Id) extends WampMessage {
     val tpe = Tpe.SUBSCRIBED
     require(Id.isValid(requestId), "invalid_id")
     require(Id.isValid(subscriptionId), "invalid_id")
@@ -355,7 +404,7 @@ private[wamp] trait WampExtMessages {
     * @param requestId is a random, ephemeral ID chosen by the Unsubscribe and used to correlate the Broker's response with the request
     * @param subscriptionId is the ID for the subscription to unsubscribe from, originally handed out by the Broker to the Subscriber
     */
-  final case class Unsubscribe(requestId: Id, subscriptionId: Id) extends SpecifiedMessage {
+  final case class Unsubscribe(requestId: Id, subscriptionId: Id) extends WampMessage {
     val tpe = Tpe.UNSUBSCRIBE
     require(Id.isValid(requestId), "invalid_id")
     require(Id.isValid(subscriptionId), "invalid_id")
@@ -373,7 +422,7 @@ private[wamp] trait WampExtMessages {
     *
     * @param requestId is the ID from the original Subscribed request
     */
-  final case class Unsubscribed(requestId: Id) extends SpecifiedMessage {
+  final case class Unsubscribed(requestId: Id) extends WampMessage {
     val tpe = Tpe.UNSUBSCRIBED
     require(Id.isValid(requestId), "invalid_id")
   }
@@ -395,7 +444,7 @@ private[wamp] trait WampExtMessages {
     * @param details is a dictionary that allows to provide additional event details in an extensible way.
     * @param payload is either a list of any arguments or a key-value-pairs set
     */
-  final case class Event(subscriptionId: Id, publicationId: Id, details: Dict, payload: Option[Payload] = None) extends SpecifiedMessage {
+  final case class Event(subscriptionId: Id, publicationId: Id, details: Dict, payload: Option[Payload] = None) extends WampMessage {
     val tpe = Tpe.EVENT
     require(Id.isValid(subscriptionId), "invalid_id")
     require(Id.isValid(publicationId), "invalid_id")
@@ -410,10 +459,9 @@ private[wamp] trait WampExtMessages {
 class WampExt(system: ExtendedActorSystem) extends IO.Extension {
   implicit val s = system
   implicit val m = ActorMaterializer()
-  val ser = new JsonSerialization
   val manager: ActorRef = {
     system.systemActorOf(
-      props = Props(new WampManager(ser)(s, m)),
+      props = Props(new WampManager()(s, m)),
       name = "IO-WAMP")
   }
 }

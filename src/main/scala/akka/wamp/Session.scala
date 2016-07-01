@@ -12,13 +12,11 @@ import scala.annotation.tailrec
   * Routing occurs only between Sessions that have joined the same Realm
   * 
   * @param id is the globally unique identifer
-  * @param router is the Router actor reference
-  * @param routerRoles are the Router's Roles
-  * @param client is the Client actor reference
-  * @param clientRoles are the Client's Roles
+  * @param transport is the Transport actor reference
+  * @param roles are the Client's Roles
   * @param realm is a string identifying the Realm this session should attach to
   */
-class Session(val id: Id, val router: ActorRef, val routerRoles: Set[String], val client: ActorRef, val clientRoles: Set[String], val realm: Uri)
+class Session(val id: Id, val transport: ActorRef, val roles: Set[String], val realm: Uri)
 
 
 object Session {

@@ -29,21 +29,21 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[1]""",
           """[1,null]""",
-          """[1,"akka.wamp.realm"]""",
-          """[1,"akka.wamp.realm",null]""",
-          """[1,"invalid !",{}]""",
-          """[1,"akka.wamp.realm",{}]"""",
-          """[1,"akka.wamp.realm",{"roles":null}]"""",
-          """[1,"akka.wamp.realm",{"roles":{}}]"""",
-          """[1,"akka.wamp.realm",{"roles":{"unknown":{}}}]""""
+          """[1,"myapp.realm"]""",
+          """[1,"myapp.realm",null]""",
+          """[1,"myapp.realm",{}]"""",
+          """[1,"myapp.realm",{"roles":null}]"""",
+          """[1,"myapp.realm",{"roles":{}}]"""",
+          """[1,"myapp.realm",{"roles":{"unknown":{}}}]"""",
+          """[1,"invalid!realm",{"roles":{"publisher":{}}}]""""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid HELLO" in {
-        s.deserialize("""[  1  ,"test.realm.uri",  {"roles":{"caller":{},"callee":{}}}]""") match {
+        s.deserialize("""[  1  ,"myapp.realm",  {"roles":{"caller":{},"callee":{}}}]""") match {
           case m: Hello =>
-            m.realm mustBe "test.realm.uri"
+            m.realm mustBe "myapp.realm"
             m.details mustBe Map("roles" -> Map("caller" -> Map(), "callee" -> Map()))
           case _ => fail
         }
@@ -54,10 +54,9 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[2]""",
           """[2,null]""",
-          """[2,1431253]""",
-          """[2,1431253,null]""",
-          """[2,421341248931241243312432434,{}]""",
-          """[2,9223372036854775807,{}]"""
+          """[2,1]""",
+          """[2,1,null]""",
+          """[2,9007199254740993,{"roles":{"broker":{}}}]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
@@ -100,7 +99,7 @@ class JsonSerializationSpec extends WordSpec
           """[6,null]""",
           """[6,{}]""",
           """[6,{},null]""",
-          """[6,{},"invalid uri"]"""
+          """[6,{},"invalid!uri"]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
@@ -123,22 +122,22 @@ class JsonSerializationSpec extends WordSpec
           """[8]""",
           """[8,null]""",
           """[8,34,null]""",
-          """[8,34,321443,null]""",
-          """[8,34,321443,{},null]""",
-          """[8,34,321443,{},"invalid uri"]""",
-          """[8,9999,321443,{},"wamp.error.no_such_subscription"]""",
-          """[8,34,471298473917493172,{},"wamp.error.no_such_subscription"]""",
-          """[8,34,321443,{},"wamp.error.no_such_subscription",null]""",
-          """[8,34,321443,{},"wamp.error.no_such_subscription",[],null]"""
+          """[8,34,1,null]""",
+          """[8,34,1,{},null]""",
+          """[8,34,1,{},"invalid!error"]""",
+          """[8,34,1,{},"wamp.error.no_such_subscription",null]""",
+          """[8,34,1,{},"wamp.error.no_such_subscription",[],null]""",
+          """[8,99,1,{},"wamp.error.no_such_subscription"]""",
+          """[8,34,9007199254740993,{},"wamp.error.no_such_subscription"]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid ERROR without payload" in {
-        s.deserialize("""[8, 34, 713845233, {}, "wamp.error.no_such_subscription"]""") match {
+        s.deserialize("""[8,34,1,{},"wamp.error.no_such_subscription"]""") match {
           case m: Error =>
             m.requestType mustBe 34
-            m.requestId mustBe 713845233
+            m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
             m.payload mustBe None
@@ -146,10 +145,10 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid ERROR with payload as list" in {
-        s.deserialize(s"""[8, 34, 713845233, {}, "wamp.error.no_such_subscription", $PayloadListJson]""") match {
+        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",$PayloadListJson]""") match {
           case m: Error =>
             m.requestType mustBe 34
-            m.requestId mustBe 713845233
+            m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
             m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
@@ -157,17 +156,13 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid ERROR with payload as map" in {
-        s.deserialize(s"""[8, 34, 713845233, {}, "wamp.error.no_such_subscription", [], $PayloadMapJson]""") match {
+        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",[],$PayloadMapJson]""") match {
           case m: Error =>
             m.requestType mustBe 34
-            m.requestId mustBe 713845233
+            m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
             m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
-            /*m.payload match {
-              case Some(Payload(Left(args))) => args mustBe PayloadMapObj.arguments.right.get
-              case _ => null
-            }*/
           case _ => fail
         }
       }
@@ -179,22 +174,21 @@ class JsonSerializationSpec extends WordSpec
       "fail for invalid PUBLISH" in {
         List(
           """[16]""",
-//          """[16,null]""",
-//          """[16,321443,null]""",
-//          """[16,321443,{},null]""",
-//          """[16,321443,{},"invalid uri"]""",
-//          """[16,471298473917493172,{},"myapp.topic1"]""",
-//          """[16,471298473917493172,{},"invalid topic"]""",
-//          """[16,321443,{},"myapp.topic1",null]""",
-          """[16,321443,{},"myapp.topic1",[],null]"""
+          """[16,null]""",
+          """[16,1,null]""",
+          """[16,1,{},null]""",
+          """[16,1,{},"invalid!topic"]""",
+          """[16,1,{},"myapp.topic1",null]""",
+          """[16,1,{},"myapp.topic1",[],null]""",
+          """[16,9007199254740993,{},"myapp.topic1",[],null]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid PUBLISH without payload" in {
-        s.deserialize("""[16, 713845233, {"acknowledge":  true}, "myapp.topic1"]"""") match {
+        s.deserialize("""[16,1,{"acknowledge":true},"myapp.topic1"]"""") match {
           case m: Publish =>
-            m.requestId mustBe 713845233
+            m.requestId mustBe 1
             m.options mustBe Map("acknowledge"->true)
             m.topic mustBe "myapp.topic1"
             m.payload mustBe None
@@ -202,11 +196,25 @@ class JsonSerializationSpec extends WordSpec
             fail("type mismatch")
         }
       }
-      "succeed for valid PUBLISH with payload as list" in { 
-        pending
+      "succeed for valid PUBLISH with payload as list" in {
+        s.deserialize(s"""[16,1,{},"myapp.topic1",$PayloadListJson]""") match {
+          case m: Publish =>
+            m.requestId mustBe 1
+            m.options mustBe empty
+            m.topic mustBe "myapp.topic1"
+            m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
+          case _ => fail
+        }
       }
       "succeed for valid PUBLISH with payload as map" in {
-        pending
+        s.deserialize(s"""[16,1,{},"myapp.topic1",[],$PayloadMapJson]""") match {
+          case m: Publish =>
+            m.requestId mustBe 1
+            m.options mustBe empty
+            m.topic mustBe "myapp.topic1"
+            m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
+          case _ => fail
+        }
       }
 
       
@@ -216,18 +224,19 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[17]""",
           """[17,null]""",
-          """[17,1431253]""",
-          """[17,1431253,null]""",
-          """[17,421341248931241243312432434,34]"""
+          """[17,1]""",
+          """[17,1,null]""",
+          """[17,9007199254740993,2]""",
+          """[17,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid PUBLISHED" in {
-        s.deserialize("""[17, 239714735, 4429313566]""") match {
+        s.deserialize("""[17,1,2]""") match {
           case m: Published =>
-            m.requestId mustBe 239714735
-            m.publicationId mustBe 4429313566L
+            m.requestId mustBe 1
+            m.publicationId mustBe 2
           case _ => fail
         }
       }
@@ -238,21 +247,20 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[32]""",
           """[32,null]""",
-          """[32,321443,null]""",
-          """[32,321443,{},null]""",
-          """[32,321443,{},"invalid uri"]""",
-          """[32,471298473917493172,{},"myapp.topic1"]""",
-          """[32,471298473917493172,{},"invalid topic"]"""
+          """[32,1,null]""",
+          """[32,1,{},null]""",
+          """[32,1,{},"invalid!uri"]""",
+          """[32,9007199254740993,{},"myapp.topic1"]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid SUBSCRIBE" in {
-        s.deserialize("""[32, 713845233, {}, "topic1"]""") match {
+        s.deserialize("""[32,1,{},"myapp.topic1"]""") match {
           case m: Subscribe =>
-            m.requestId mustBe 713845233
-            m.options must have size(0)
-            m.topic mustBe "topic1"
+            m.requestId mustBe 1
+            m.options mustBe empty
+            m.topic mustBe "myapp.topic1"
           case _ => fail
         }
       }
@@ -263,18 +271,19 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[33]""",
           """[33,null]""",
-          """[33,1431253]""",
-          """[33,1431253,null]""",
-          """[33,421341248931241243312432434,34]"""
+          """[33,1]""",
+          """[33,1,null]""",
+          """[33,9007199254740993,2]""",
+          """[33,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid SUBSCRIBED" in {
-        s.deserialize("""[33, 713845233, 5512315355]""") match {
+        s.deserialize("""[33,1,2]""") match {
           case m: Subscribed =>
-            m.requestId mustBe 713845233
-            m.subscriptionId mustBe 5512315355l
+            m.requestId mustBe 1
+            m.subscriptionId mustBe 2
           case _ => fail
         }
       }
@@ -285,18 +294,19 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[34]""",
           """[34,null]""",
-          """[34,1431253]""",
-          """[34,1431253,null]""",
-          """[34,421341248931241243312432434,34]"""
+          """[34,1]""",
+          """[34,1,null]""",
+          """[34,9007199254740993,2]""",
+          """[34,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid UNSUBSCRIBE" in {
-        s.deserialize("""[34, 713845233, 246643274]""") match {
+        s.deserialize("""[34,1,2]""") match {
           case m: Unsubscribe =>
-            m.requestId mustBe 713845233
-            m.subscriptionId mustBe 246643274
+            m.requestId mustBe 1
+            m.subscriptionId mustBe 2
           case _ => fail
         }
       }
@@ -307,15 +317,15 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[35]""",
           """[35,null]""",
-          """[35,421341248931241243312432434]"""
+          """[35,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid UNSUBSCRIBED" in {
-        s.deserialize("""[35, 85346237]""") match {
+        s.deserialize("""[35,1]""") match {
           case m: Unsubscribed => 
-            m.requestId mustBe 85346237
+            m.requestId mustBe 1
           case _ =>  fail
         }
       }
@@ -325,16 +335,48 @@ class JsonSerializationSpec extends WordSpec
       //[EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list]
       //[EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
       "fail for invalid EVENT" in {
-        pending
+        List(
+          """[36]""",
+          """[36,null]""",
+          """[36,1,null]""",
+          """[36,1,2,null]""",
+          """[36,1,2,{},null]""",
+          """[36,1,2,{},[],null]""",
+          """[36,9007199254740993,2,{}]""",
+          """[36,1,9007199254740993,{}]"""
+        ).foreach { text =>
+          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+        }
       }
       "succeed for valid EVENT without payload" in {
-        pending
+        s.deserialize("""[36,1,2,{}]""") match {
+          case m: Event =>
+            m.subscriptionId mustBe 1
+            m.publicationId mustBe 2
+            m.details mustBe empty
+            m.payload mustBe None
+          case _ => fail
+        }
       }
       "succeed for valid EVENT with payload as list" in {
-        pending
+        s.deserialize(s"""[36,1,2,{},$PayloadListJson]""") match {
+          case m: Event =>
+            m.subscriptionId mustBe 1
+            m.publicationId mustBe 2
+            m.details mustBe empty
+            m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
+          case _ => fail
+        }
       }
       "succeed for valid EVENT with payload as map" in {
-        pending
+        s.deserialize(s"""[36,1,2,{},[],$PayloadMapJson]""") match {
+          case m: Event =>
+            m.subscriptionId mustBe 1
+            m.publicationId mustBe 2
+            m.details mustBe empty
+            m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
+          case _ => fail
+        }
       }
     }
     
@@ -402,7 +444,6 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "serialize EVENT" in {
-        pending
         val msg1 = Event(713845233, 5512315, Dict())
         val json1 = s.serialize(msg1)
         json1 mustBe """[36,713845233,5512315,{}]"""

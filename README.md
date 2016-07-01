@@ -15,18 +15,21 @@ scalaVersion := "2.11.7"
 libraryDependencies += "com.github.angiolep" %% "akka-wamp" % "0.2.0"
 ```
 
-After having created the implicit Akka actor system and materializer, instantiate and start the router (with WebSocket transport) as follows:
+After having created the Akka actor system, just instantiate and start the router actor as follows:
 ```scala
 import akka.actor._
-import akka.stream._
 import akka.wamp.router._
 
-implicit val system = ActorSystem("myapp")
-implicit val m = ActorMaterializer()
-
-WebSocketRouter("0.0.0.0", 8080)
-  .start()
+implicit val system = ActorSystem("wamp")
+implicit val mat = ActorMaterializer()
+system.actorOf(Router.props(), "router")
 ```
+The router actor will automatically bind on a server socket by reading the following Akka configuration
+
+ - akka.wamp.iface
+ - akka.wamp.port
+ - akka.wamp.subprotocol
+
 
 ### Standalone
 Download and launch the router as standalone application:
@@ -63,7 +66,7 @@ class Client extends Actor {
   import Wamp._
   import context.system
 
-  IO(Wamp) ! Connect("ws://localhost:7070/wamp")
+  IO(Wamp) ! Connect("ws://localhost:7070/wamp", "wamp.2.json")
   
   def receive: Receive = {
    case Connected(transport) =>
@@ -103,7 +106,7 @@ Working in progress.
 ## Limitations
 
  * It works with Scala 2.11 only.
- * It provides WebSocket transport only.
+ * It provides WebSocket transport only without SSL/TLS encryption.  
  * The WebSocketRouter works as _broker_ only (_dealer_ is NOT provided yet).
  * It implements the WAMP Basic Profile only.
  

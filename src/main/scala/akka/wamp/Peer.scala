@@ -1,5 +1,7 @@
 package akka.wamp
 
+import akka.actor.ActorLogging
+
 
 /**
   * A Peer communicates with another Peer by exchanging Messages 
@@ -7,5 +9,7 @@ package akka.wamp
   * 
   * Each Peer MUST implement one Role, and MAY implement more Roles.
   */
-trait Peer
+private[wamp] trait Peer { this:  ActorLogging =>
+  
+}
 

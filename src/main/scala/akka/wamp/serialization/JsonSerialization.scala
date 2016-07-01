@@ -26,7 +26,7 @@ class JsonSerialization extends Serialization[String] {
     }
   }
   
-  def deserialize(text: String): SpecifiedMessage = {
+  def deserialize(text: String): WampMessage = {
     log.trace("Deserializing {}", text)
     try {
       val arr = mapper.readValue(text, classOf[Array[Any]])
@@ -113,7 +113,7 @@ class JsonSerialization extends Serialization[String] {
     }
   }
   
-  def serialize(msg: SpecifiedMessage): String = {
+  def serialize(msg: WampMessage): String = {
     log.trace("Serializing {}", msg)
     
     def toJson(any: Any): String = any match {

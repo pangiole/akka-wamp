@@ -1,6 +1,5 @@
 package akka.wamp.router
 
-import akka.actor.Actor._
 import akka.actor._
 import akka.wamp.Wamp.Tpe._
 import akka.wamp.Wamp._
@@ -10,7 +9,7 @@ import akka.wamp._
   * A Broker routes events incoming from Publishers to Subscribers 
   * that are subscribed to respective Topics
   */
-trait Broker extends Role { this: Router =>
+private[wamp] trait Broker extends Role { this: Router =>
 
   /**
     * Map of subscriptions. Each entry is for one topic only 
@@ -28,10 +27,10 @@ trait Broker extends Role { this: Router =>
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case msg @ Publish(requestId, options, topic, payload) =>
+    case Publish(requestId, options, topic, payload) =>
       ifSessionOpen { session =>
-        val publisher = session.client
-        if (session.clientRoles.contains("publisher")) {
+        val publisher = session.transport
+        if (session.roles.contains("publisher")) {
           /**
             * By default, publications are unacknowledged, and the Broker will
             * not respond, whether the publication was successful indeed or not.
@@ -80,10 +79,10 @@ trait Broker extends Role { this: Router =>
     */
   def handleSubscriptions: Receive = {
 
-    case msg @ Subscribe(requestId, options, topic) =>
+    case Subscribe(requestId, options, topic) =>
       ifSessionOpen { session =>
-        val subscriber = session.client
-        if (session.clientRoles.contains("subscriber")) {
+        val subscriber = session.transport
+        if (session.roles.contains("subscriber")) {
           subscriptions.values.toList.filter(_.topic == topic) match {
             case Nil => {
               /**
@@ -121,14 +120,14 @@ trait Broker extends Role { this: Router =>
 
       }
 
-    case msg @ Unsubscribe(requestId, subscriptionId) =>
+    case Unsubscribe(requestId, subscriptionId) =>
       ifSessionOpen { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
-            unsubscribe(session.client, subscription)
-            session.client ! Unsubscribed(requestId)
+            unsubscribe(session.transport, subscription)
+            session.transport ! Unsubscribed(requestId)
           case None =>
-            session.client ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
+            session.transport ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
         }
       }
   }
