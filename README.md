@@ -82,7 +82,7 @@ class Client extends Actor {
    case Welcome(sessionId, details) =>
      transport ! Subscribe(1, Dict(), "myapp.topic1")
      
-   case e @ Event(_, _, _, Some(Payload(args)) =>
+   case Event(_, _, _, Some(Payload(args)) =>
      println(args)
   
    case ConnectionClosed => 

@@ -10,16 +10,16 @@ import akka.wamp.serialization.Serializers
 import akka.{Done, NotUsed}
 
 import scala.concurrent.Future
-import scala.util
 
 
 class WampManager(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor with ActorLogging {
   import Wamp._
   import system.dispatcher
   
-  // TODO try to make this manager STATELESS!!!
-  var outgoingActor: ActorRef = _
+  // client -> outlet
+  var outlets = Map.empty[ActorRef, ActorRef] 
 
+  // router -> binding
   var bindings = Map.empty[ActorRef, Future[Http.ServerBinding]]
   
   def receive = {
@@ -64,15 +64,17 @@ class WampManager(implicit system: ActorSystem, mat: ActorMaterializer) extends 
           router ! CommandFailed(cmd)
       }
     }
-
+      
     case Unbind =>
       val router = sender()
       for { binding <- bindings(router) } yield (binding.unbind())
       
       
+      
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     case cmd @ Connect(uri, subprotocol) => {
       val client = sender()
+      
       log.debug("Connecting to {} with {}", uri, subprotocol)
 
       val outgoingSource: Source[WampMessage, ActorRef] =
@@ -87,26 +89,26 @@ class WampManager(implicit system: ActorSystem, mat: ActorMaterializer) extends 
         Sink.actorRef[WampMessage](incomingActor, Disconnected)
 
 
-      val ss = Serializers.streams(subprotocol)
+      val serializer = Serializers.streams(subprotocol)
       
       // upgradeResponse is a Future[WebSocketUpgradeResponse] that 
       // completes or fails when the connection succeeds or fails
       val (outgoingActor, upgradeResponse) =
         outgoingSource
-          .via(ss.serialize)
+          .via(serializer.serialize)
           .viaMat(webSocketFlow)(Keep.both) // keep the materialized Future[WebSocketUpgradeResponse]
-          .viaMat(ss.deserialize)(Keep.left)
+          .viaMat(serializer.deserialize)(Keep.left)
           .toMat(incomingSink)(Keep.left)
           .run()
 
-      // hold the actor ref for later usage
-      this.outgoingActor = outgoingActor
+      // hold the outlet reference for later usage
+      outlets += (client -> outgoingActor)
       
       // just like a regular http request we can get 404 NotFound etc.
       // that will be available from upgrade.response
       upgradeResponse.map { upgrade =>
         if (upgrade.response.status == SwitchingProtocols) {
-          client.tell(Connected(outgoingActor), outgoingActor)
+          client ! Connected(outgoingActor)
         } else {
           log.warning("Connection failed: {}", upgrade.response.status)
           client ! CommandFailed(cmd)
@@ -115,7 +117,7 @@ class WampManager(implicit system: ActorSystem, mat: ActorMaterializer) extends 
     }
 
     case m: WampMessage => {
-      outgoingActor ! m
+      outlets.get(sender()).foreach(c => c ! m)
     }
   }
 }

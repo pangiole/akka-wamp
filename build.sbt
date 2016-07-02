@@ -7,7 +7,7 @@ organization := "com.github.angiolep"
 
 version := "0.2.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 enablePlugins(JavaAppPackaging)
 
@@ -22,7 +22,7 @@ libraryDependencies ++= Seq (
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
-testOptions in Test += Tests.Setup( () => System.setProperty("akka.loglevel", "WARN") )
+testOptions in Test += Tests.Setup( () => System.setProperty("akka.loglevel", "warning") )
 
 publishMavenStyle := true
 
