@@ -5,7 +5,7 @@ description := "WAMP - Web Application Messaging Protocol implementation written
 
 organization := "com.github.angiolep"
 
-version := "0.2.0"
+version := "0.2.1"
 
 scalaVersion := "2.11.8"
 

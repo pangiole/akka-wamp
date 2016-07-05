@@ -10,9 +10,9 @@ It provides a WAMP Router that can be either embedded into your application or l
 ### Embedded
 Make your SBT build depend on akka-wamp:
 ```scala
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
-libraryDependencies += "com.github.angiolep" %% "akka-wamp" % "0.2.0"
+libraryDependencies += "com.github.angiolep" %% "akka-wamp" % "0.2.1"
 ```
 
 After having created the Akka actor system, just instantiate and start the router actor as follows:
@@ -35,9 +35,9 @@ The router actor will automatically bind on a server socket by reading the follo
 Download and launch the router as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/:akka-wamp-0.2.0.tgz
-tar xvfz akka-wamp-0.2.0.tar.gz
-cd akka-wamp-0.2.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.2.1.tgz
+tar xvfz akka-wamp-0.2.1.tar.gz
+cd akka-wamp-0.2.1
 ./bin/akka-wamp -Dakka.loglevel=DEBUG -Dakka.wamp.port=7070
 ```
 

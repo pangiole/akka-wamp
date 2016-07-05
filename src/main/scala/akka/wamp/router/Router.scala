@@ -15,11 +15,11 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-private[wamp] class Router (nextSessionId: (Id) => Id)(implicit mat: ActorMaterializer) 
+private[wamp] class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMaterializer) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
-
+   
   val iface = context.system.settings.config.getString("akka.wamp.iface")
   val port = context.system.settings.config.getInt("akka.wamp.port")
   
@@ -155,7 +155,7 @@ private[wamp] class Router (nextSessionId: (Id) => Id)(implicit mat: ActorMateri
   }
   
   private def addNewSession(transport: ActorRef, details: Dict, realm: Uri) = {
-    val id = nextId(sessions.keySet.toSet, nextSessionId)
+    val id = nextId(scopes('global), excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
     val session = new Session(id, transport, roles, realm)
     sessions += (id -> session)
@@ -179,8 +179,8 @@ private[wamp] class Router (nextSessionId: (Id) => Id)(implicit mat: ActorMateri
   private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
 
   @tailrec
-  final def nextId(used: Set[Id], idGen: IdGenerator, id: Id = -1): Id = {
-    if (id == -1 || used.contains(id)) nextId(used, idGen, idGen(id))
+  final def nextId(scope: IdScope, excludes: Set[Id] = Set(), id: Id = 0): Id = {
+    if (id == 0 || excludes.contains(id)) nextId(scope, excludes, scope(id))
     else id
   }
 }
@@ -191,10 +191,16 @@ object Router {
   /**
     * Create a Props for an actor of this type
     *
-    * @param newSessionId is the session IDs generator
+    * @param scopes is the ID scopes
     * @return the props
     */
-  def props(newSessionId: IdGenerator = (_) => Id.draw)(implicit mat: ActorMaterializer) = Props(new Router(newSessionId)(mat))
+  def props(
+    scopes: Map[Symbol, IdScope] = Map(
+      'global ->  { (_) => Id.draw() },
+      'router ->  { (_) => Id.draw() },
+      'session -> { _ + 1 }
+    )
+  )(implicit mat: ActorMaterializer) = Props(new Router(scopes)(mat))
 
 
   /**

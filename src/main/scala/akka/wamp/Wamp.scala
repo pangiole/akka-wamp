@@ -145,13 +145,14 @@ object Wamp extends ExtensionId[WampExt] with WampExtMessages {
   /**
     * An identifier generator
     */
-  type IdGenerator = (Id) => Id
+  type IdScope = (Id) => Id
 
   final object Id {
-    val MIN = 0L
-    val MAX = 9007199254740992L
-    def draw = (scala.util.Random.nextDouble() * MAX).toLong
-    def isValid(id: Id) : Boolean = id >= MIN && id <= MAX 
+    import scala.util.Random.{nextDouble => rnd}
+    val Min = 1L
+    val Max = 9007199254740992L
+    def draw(): Long = Min + (rnd() * (Max - Min + 1)).toLong
+    def isValid(id: Id) : Boolean = id >= Min && id <= Max 
   }
 
 

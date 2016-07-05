@@ -56,6 +56,7 @@ class JsonSerializationSpec extends WordSpec
           """[2,null]""",
           """[2,1]""",
           """[2,1,null]""",
+          """[2,0,{"roles":{"broker":{}}}]""",
           """[2,9007199254740993,{"roles":{"broker":{}}}]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -128,6 +129,7 @@ class JsonSerializationSpec extends WordSpec
           """[8,34,1,{},"wamp.error.no_such_subscription",null]""",
           """[8,34,1,{},"wamp.error.no_such_subscription",[],null]""",
           """[8,99,1,{},"wamp.error.no_such_subscription"]""",
+          """[8,34,0,{},"wamp.error.no_such_subscription"]""",
           """[8,34,9007199254740993,{},"wamp.error.no_such_subscription"]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -180,7 +182,8 @@ class JsonSerializationSpec extends WordSpec
           """[16,1,{},"invalid!topic"]""",
           """[16,1,{},"myapp.topic1",null]""",
           """[16,1,{},"myapp.topic1",[],null]""",
-          """[16,9007199254740993,{},"myapp.topic1",[],null]"""
+          """[16,9007199254740993,{},"myapp.topic1",[],null]""",
+          """[16,0,{},"myapp.topic1",[],null]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
         }
@@ -226,7 +229,9 @@ class JsonSerializationSpec extends WordSpec
           """[17,null]""",
           """[17,1]""",
           """[17,1,null]""",
+          """[17,0,2]""",
           """[17,9007199254740993,2]""",
+          """[17,1,0]""",
           """[17,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -250,6 +255,7 @@ class JsonSerializationSpec extends WordSpec
           """[32,1,null]""",
           """[32,1,{},null]""",
           """[32,1,{},"invalid!uri"]""",
+          """[32,0,{},"myapp.topic1"]""",
           """[32,9007199254740993,{},"myapp.topic1"]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -273,7 +279,9 @@ class JsonSerializationSpec extends WordSpec
           """[33,null]""",
           """[33,1]""",
           """[33,1,null]""",
+          """[33,0,2]""",
           """[33,9007199254740993,2]""",
+          """[33,1,0]""",
           """[33,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -296,7 +304,9 @@ class JsonSerializationSpec extends WordSpec
           """[34,null]""",
           """[34,1]""",
           """[34,1,null]""",
+          """[34,0,2]""",
           """[34,9007199254740993,2]""",
+          """[34,1,0]""",
           """[34,1,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -317,6 +327,7 @@ class JsonSerializationSpec extends WordSpec
         List(
           """[35]""",
           """[35,null]""",
+          """[35,0]""",
           """[35,9007199254740993]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -342,7 +353,9 @@ class JsonSerializationSpec extends WordSpec
           """[36,1,2,null]""",
           """[36,1,2,{},null]""",
           """[36,1,2,{},[],null]""",
+          """[36,0,2,{}]""",
           """[36,9007199254740993,2,{}]""",
+          """[36,1,0,{}]""",
           """[36,1,9007199254740993,{}]"""
         ).foreach { text =>
           a[SerializingException] mustBe thrownBy(s.deserialize(text))
@@ -390,9 +403,9 @@ class JsonSerializationSpec extends WordSpec
       }
       
       "serialize WELCOME" in {
-        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.2.0").withRoles("broker"))
+        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.2.1").withRoles("broker"))
         val json = s.serialize(msg)
-        json mustBe """[2,1233242,{"agent":"akka-wamp-0.2.0","roles":{"broker":{}}}]"""
+        json mustBe """[2,1233242,{"agent":"akka-wamp-0.2.1","roles":{"broker":{}}}]"""
       }
 
       "serialize GOODBYE" in {

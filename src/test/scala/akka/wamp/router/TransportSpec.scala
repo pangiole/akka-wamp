@@ -8,7 +8,10 @@ import akka.stream.scaladsl._
 import akka.testkit._
 import org.scalatest._
 
-class TransportSpec extends WordSpec with MustMatchers with ScalatestRouteTest {
+class TransportSpec extends WordSpec 
+  with MustMatchers with ScalatestRouteTest
+  with RouterFixture
+{
   
   "The WAMP manager" when {
     "connection has not upgraded yet" should {
@@ -47,13 +50,13 @@ class TransportSpec extends WordSpec with MustMatchers with ScalatestRouteTest {
         client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
         
         // <- WELCOME
-        client.expectMessage("""[2,0,{"agent":"akka-wamp-0.2.0","roles":{"broker":{}}}]""")
+        client.expectMessage("""[2,1,{"agent":"akka-wamp-0.2.1","roles":{"broker":{}}}]""")
         
         // -> SUBSCRIBE
         client.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
         
         // <- SUBSCRIBED
-        client.expectMessage("""[33,1,0]""")
+        client.expectMessage("""[33,1,1]""")
         
         // -> GOODBYE
         client.sendMessage("""[6,{"message":"The host is shutting down now."},"wamp.error.system_shutdown"]""")
@@ -64,7 +67,7 @@ class TransportSpec extends WordSpec with MustMatchers with ScalatestRouteTest {
     }
   }
 
-  val router = TestActorRef(Router.props(_ + 1))
+  val router = TestActorRef(Router.props(scopes))
   val transport = TestActorRef[Transport](Transport.props(router))
   val route = transport.underlyingActor.websocketHandler
   val url = "http://localhost:8080/wamp"

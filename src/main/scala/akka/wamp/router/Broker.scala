@@ -59,7 +59,7 @@ private[wamp] trait Broker extends Role { this: Router =>
                 * Note that the publisher of an event will never receive the published 
                 * event even if the publisher is also a subscriber of the topic published to.
                 */
-              val publicationId = nextId(publications, _ + 1)
+              val publicationId = nextId(scopes('global), excludes = publications)
               subscription.subscribers.filter(_ != publisher).foreach { subscriber =>
                 publications += publicationId
                 subscriber ! Event(subscription.id, publicationId, Dict(), payload)
@@ -86,9 +86,9 @@ private[wamp] trait Broker extends Role { this: Router =>
           subscriptions.values.toList.filter(_.topic == topic) match {
             case Nil => {
               /**
-                * No subscribers has subscribed to the given topic yet
+                * No subscribers has subscribed to the given topic yet.
                 */
-              val subscriptionId = nextId(subscriptions.keySet, _ + 1)
+              val subscriptionId = nextId(scopes('router), excludes = subscriptions.keySet)
               subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(subscriber), topic))
               subscriber ! Subscribed(requestId, subscriptionId)
             }
