@@ -70,7 +70,7 @@ class TransportSpec extends WordSpec
   val router = TestActorRef(Router.props(scopes))
   val transport = TestActorRef[Transport](Transport.props(router))
   val route = transport.underlyingActor.httpHandler
-  val url = "ws://localhost:8080/ws"
+  val url = "http://localhost:8080/ws"
   val subprotocols = List("wamp.2.json")
   
   

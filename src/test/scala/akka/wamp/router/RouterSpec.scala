@@ -48,6 +48,8 @@ class RouterSpec  extends TestKit(ActorSystem())
     
     "handling sessions" should {
       "reply ABORT if client says HELLO for unknown realm" in withRouter { router =>
+        pending
+        // TODO disable auto-create-realm to test this scenario
         router ! Hello("unknown.realm", Dict().withRoles("publisher"))
         expectMsg(Abort(Dict("message" -> "The realm unknown.realm does not exist."), "wamp.error.no_such_realm"))
         router.underlyingActor.realms must have size(1)

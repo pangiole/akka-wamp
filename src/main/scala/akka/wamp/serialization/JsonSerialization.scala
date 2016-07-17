@@ -140,7 +140,7 @@ class JsonSerialization extends Serialization {
       case Welcome(session, details) =>
         List(WELCOME, session, details)
 
-      case Goodbye(details, reason) =>
+      case Goodbye(reason, details) =>
         List(GOODBYE, details, reason)
 
       case Abort(details, reason) =>
