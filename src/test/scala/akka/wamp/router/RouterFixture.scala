@@ -1,6 +1,6 @@
 package akka.wamp.router
 
-import akka.wamp.Wamp._
+import akka.wamp._
 
 trait RouterFixture {
   val scopes = Map[Symbol, IdScope](

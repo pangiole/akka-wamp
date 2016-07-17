@@ -2,8 +2,6 @@ package akka.wamp
 
 import akka.actor._
 
-import akka.wamp.Wamp._
-
 /**
   * The subscription of a Subscriber to a Topic
   * 

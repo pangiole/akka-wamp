@@ -1,15 +1,15 @@
-
-name := "akka-wamp"
-
-description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka HTTP"
+import sbt.Keys._
 
 organization := "com.github.angiolep"
 
-version := "0.2.1"
+name := "akka-wamp"
+
+version := "0.3.0"
 
 scalaVersion := "2.11.8"
 
-enablePlugins(JavaAppPackaging)
+
+description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka"
 
 mainClass in Compile := Some("akka.wamp.WebSocketRouter")
 
@@ -47,14 +47,18 @@ homepage := Some(url("http://angiolep.github.io/akka-wamp"))
 pomExtra :=
   <scm>
     <url>git://github.com/akka-wamp/akka-wamp.git</url>
-    <connection>scm:git:git@github.com:akka-wamp/akka-wamp.git</connection>
+    <connection>scm:git:git@github.com:angiolep/akka-wamp.git</connection>
   </scm>
-  <developers>
-    <developer>
-      <name>Paolo Angioletti</name>
-      <email>paolo.angioletti@gmail.com</email>
-      <url>http://angiolep.github.io</url>
-    </developer>
-  </developers>
+    <developers>
+      <developer>
+        <name>Paolo Angioletti</name>
+        <email>paolo.angioletti@gmail.com</email>
+        <url>http://angiolep.github.io</url>
+      </developer>
+    </developers>
+
+apiURL := Some(url("http://angiolep.github.io/projects/akka-wamp/doc/index.html"))
 
 credentials += Credentials(Path.userHome / ".ivy2" / "sonatype")
+
+enablePlugins(JavaAppPackaging)

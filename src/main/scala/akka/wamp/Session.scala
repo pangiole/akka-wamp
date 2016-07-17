@@ -1,7 +1,7 @@
 package akka.wamp
 
-import akka.wamp.Wamp._
 import akka.actor._
+
 import scala.annotation.tailrec
 
 /**
@@ -11,10 +11,10 @@ import scala.annotation.tailrec
   * 
   * Routing occurs only between Sessions that have joined the same Realm
   * 
-  * @param id is the globally unique identifer
-  * @param transport is the Transport actor reference
-  * @param roles are the Client's Roles
-  * @param realm is a string identifying the Realm this session should attach to
+  * @param id is the session identifer in global scope
+  * @param transport is the transport actor reference
+  * @param roles are the client roles
+  * @param realm is the realm this session attaches to
   */
 class Session(val id: Id, val transport: ActorRef, val roles: Set[String], val realm: Uri)
 

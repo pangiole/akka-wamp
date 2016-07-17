@@ -1,15 +1,16 @@
 package akka.wamp.router
 
 import akka.actor._
-import akka.wamp.Wamp.Tpe._
+import akka.wamp.Tpe._
 import akka.wamp.Wamp._
 import akka.wamp._
+import akka.wamp.messages._
 
 /**
   * A Broker routes events incoming from Publishers to Subscribers 
   * that are subscribed to respective Topics
   */
-private[wamp] trait Broker extends Role { this: Router =>
+trait Broker extends Role { this: Router =>
 
   /**
     * Map of subscriptions. Each entry is for one topic only 
@@ -27,7 +28,7 @@ private[wamp] trait Broker extends Role { this: Router =>
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case Publish(requestId, options, topic, payload) =>
+    case Publish(requestId, topic, payload, options) =>
       ifSessionOpen { session =>
         val publisher = session.transport
         if (session.roles.contains("publisher")) {
@@ -79,7 +80,7 @@ private[wamp] trait Broker extends Role { this: Router =>
     */
   def handleSubscriptions: Receive = {
 
-    case Subscribe(requestId, options, topic) =>
+    case Subscribe(requestId, topic, options) =>
       ifSessionOpen { session =>
         val subscriber = session.transport
         if (session.roles.contains("subscriber")) {

@@ -1,8 +1,8 @@
 package akka.wamp.serialization
 
-import akka.wamp.Wamp.Tpe._
-import akka.wamp.Wamp._
+import akka.wamp.Tpe._
 import akka.wamp._
+import akka.wamp.messages._
 import org.scalatest._
 
 class JsonSerializationSpec extends WordSpec 
@@ -11,7 +11,7 @@ class JsonSerializationSpec extends WordSpec
   val s = new JsonSerialization
   
   "The wamp.2.json serialization" when {
-    "deserializing from JSON" should {
+    "deserializing" should {
       
       "fail for invalid messages" in {
         List(
@@ -20,7 +20,7 @@ class JsonSerializationSpec extends WordSpec
           """[null,""",
           """[999,noscan] """
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       
@@ -37,7 +37,7 @@ class JsonSerializationSpec extends WordSpec
           """[1,"myapp.realm",{"roles":{"unknown":{}}}]"""",
           """[1,"invalid!realm",{"roles":{"publisher":{}}}]""""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid HELLO" in {
@@ -59,7 +59,7 @@ class JsonSerializationSpec extends WordSpec
           """[2,0,{"roles":{"broker":{}}}]""",
           """[2,9007199254740993,{"roles":{"broker":{}}}]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid WELCOME" in {
@@ -80,7 +80,7 @@ class JsonSerializationSpec extends WordSpec
           """[3,{}]""",
           """[3,{},null]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid ABORT" in {
@@ -102,7 +102,7 @@ class JsonSerializationSpec extends WordSpec
           """[6,{},null]""",
           """[6,{},"invalid!uri"]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid GOODBYE" in {
@@ -132,7 +132,7 @@ class JsonSerializationSpec extends WordSpec
           """[8,34,0,{},"wamp.error.no_such_subscription"]""",
           """[8,34,9007199254740993,{},"wamp.error.no_such_subscription"]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid ERROR without payload" in {
@@ -147,24 +147,24 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid ERROR with payload as list" in {
-        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",$PayloadListJson]""") match {
+        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",["paolo",40,true]]""") match {
           case m: Error =>
             m.requestType mustBe 34
             m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
-            m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
+            m.payload.value.arguments mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
       "succeed for valid ERROR with payload as map" in {
-        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",[],$PayloadMapJson]""") match {
+        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: Error =>
             m.requestType mustBe 34
             m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
-            m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
+            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
           case _ => fail
         }
       }
@@ -185,7 +185,7 @@ class JsonSerializationSpec extends WordSpec
           """[16,9007199254740993,{},"myapp.topic1",[],null]""",
           """[16,0,{},"myapp.topic1",[],null]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid PUBLISH without payload" in {
@@ -200,22 +200,22 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid PUBLISH with payload as list" in {
-        s.deserialize(s"""[16,1,{},"myapp.topic1",$PayloadListJson]""") match {
+        s.deserialize(s"""[16,1,{},"myapp.topic1",["paolo",40,true]]""") match {
           case m: Publish =>
             m.requestId mustBe 1
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
-            m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
+            m.payload.value.arguments mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
       "succeed for valid PUBLISH with payload as map" in {
-        s.deserialize(s"""[16,1,{},"myapp.topic1",[],$PayloadMapJson]""") match {
+        s.deserialize(s"""[16,1,{},"myapp.topic1",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: Publish =>
             m.requestId mustBe 1
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
-            m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
+            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
           case _ => fail
         }
       }
@@ -234,7 +234,7 @@ class JsonSerializationSpec extends WordSpec
           """[17,1,0]""",
           """[17,1,9007199254740993]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid PUBLISHED" in {
@@ -258,7 +258,7 @@ class JsonSerializationSpec extends WordSpec
           """[32,0,{},"myapp.topic1"]""",
           """[32,9007199254740993,{},"myapp.topic1"]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid SUBSCRIBE" in {
@@ -284,7 +284,7 @@ class JsonSerializationSpec extends WordSpec
           """[33,1,0]""",
           """[33,1,9007199254740993]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid SUBSCRIBED" in {
@@ -309,7 +309,7 @@ class JsonSerializationSpec extends WordSpec
           """[34,1,0]""",
           """[34,1,9007199254740993]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid UNSUBSCRIBE" in {
@@ -330,7 +330,7 @@ class JsonSerializationSpec extends WordSpec
           """[35,0]""",
           """[35,9007199254740993]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid UNSUBSCRIBED" in {
@@ -358,9 +358,10 @@ class JsonSerializationSpec extends WordSpec
           """[36,1,0,{}]""",
           """[36,1,9007199254740993,{}]"""
         ).foreach { text =>
-          a[SerializingException] mustBe thrownBy(s.deserialize(text))
+          a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
+      
       "succeed for valid EVENT without payload" in {
         s.deserialize("""[36,1,2,{}]""") match {
           case m: Event =>
@@ -371,30 +372,33 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
+      
       "succeed for valid EVENT with payload as list" in {
-        s.deserialize(s"""[36,1,2,{},$PayloadListJson]""") match {
+        s.deserialize(s"""[36,1,2,{},["paolo",40,true]]""") match {
           case m: Event =>
             m.subscriptionId mustBe 1
             m.publicationId mustBe 2
             m.details mustBe empty
-            m.payload.value.arguments.left.value mustBe PayloadListObj.arguments.left.get
+            m.payload.value.arguments mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
+      
       "succeed for valid EVENT with payload as map" in {
-        s.deserialize(s"""[36,1,2,{},[],$PayloadMapJson]""") match {
+        s.deserialize(s"""[36,1,2,{},[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: Event =>
             m.subscriptionId mustBe 1
             m.publicationId mustBe 2
             m.details mustBe empty
-            m.payload.value.arguments.right.value mustBe PayloadMapObj.arguments.right.get
+            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
           case _ => fail
         }
       }
     }
     
     
-    "serializing to JSON" should {
+    
+    "serializing" should {
 
       "serialize HELLO" in {
         val msg = Hello("akka.wamp.realm", Dict().withRoles("publisher"))
@@ -403,13 +407,13 @@ class JsonSerializationSpec extends WordSpec
       }
       
       "serialize WELCOME" in {
-        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.2.1").withRoles("broker"))
+        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.3.0").withRoles("broker"))
         val json = s.serialize(msg)
-        json mustBe """[2,1233242,{"agent":"akka-wamp-0.2.1","roles":{"broker":{}}}]"""
+        json mustBe """[2,1233242,{"agent":"akka-wamp-0.3.0","roles":{"broker":{}}}]"""
       }
 
       "serialize GOODBYE" in {
-        val msg = Goodbye(Dict(), "wamp.error.goobye_and_out")
+        val msg = Goodbye("wamp.error.goobye_and_out", Dict())
         val json = s.serialize(msg)
         json mustBe """[6,{},"wamp.error.goobye_and_out"]"""
       }
@@ -423,13 +427,28 @@ class JsonSerializationSpec extends WordSpec
         val json1 = s.serialize(msg1)
         json1 mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
 
-        val msg2 = Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(PayloadListObj))
+        val msg2 = Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(Payload("paolo", 40, true)))
         val json2 = s.serialize(msg2)
-        json2 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",$PayloadListJson]"""
+        json2 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",["paolo",40,true]]"""
 
-        val msg3 = Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(PayloadMapObj))
+        val msg3 = Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(Payload("paolo", "age"->40, true)))
         val json3 = s.serialize(msg3)
-        json3 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",[],$PayloadMapJson]"""
+        json3 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]"""
+      }
+
+
+      "serialize PUBLISH" in {
+        val msg1 = Publish(341284, "myapp.topic1")
+        val json1 = s.serialize(msg1)
+        json1 mustBe """[16,341284,{},"myapp.topic1"]"""
+
+        val msg2 = Publish(341284, "myapp.topic1", Some(Payload("paolo", 40, true)))
+        val json2 = s.serialize(msg2)
+        json2 mustBe """[16,341284,{},"myapp.topic1",["paolo",40,true]]"""
+
+        val msg3 = Publish(341284, "myapp.topic1", Some(Payload("paolo", "age"->40, true)))
+        val json3 = s.serialize(msg3)
+        json3 mustBe """[16,341284,{},"myapp.topic1",[],{"arg0":"paolo","age":40,"arg2":true}]"""
       }
 
       "serialize PUBLISHED" in {
@@ -439,7 +458,7 @@ class JsonSerializationSpec extends WordSpec
       }
       
       "serialize SUBSCRIBE" in {
-        val msg = Subscribe(1, Dict(), "myapp.topic1")
+        val msg = Subscribe(1, "myapp.topic1", Dict())
         val json = s.serialize(msg)
         json mustBe """[32,1,{},"myapp.topic1"]"""
       }
@@ -461,20 +480,20 @@ class JsonSerializationSpec extends WordSpec
         val json1 = s.serialize(msg1)
         json1 mustBe """[36,713845233,5512315,{}]"""
         
-        val msg2 = Event(713845233, 5512315, Dict(), Some(PayloadListObj))
+        val msg2 = Event(713845233, 5512315, Dict(), Some(Payload("paolo", 40, true)))
         val json2 = s.serialize(msg2)
-        json2 mustBe s"""[36,713845233,5512315,{},$PayloadListJson]"""
+        json2 mustBe s"""[36,713845233,5512315,{},["paolo",40,true]]"""
 
-        val msg3 = Event(713845233, 5512315, Dict(), Some(PayloadMapObj))
+        val msg3 = Event(713845233, 5512315, Dict(), Some(Payload("paolo", "age"->40, true)))
         val json3 = s.serialize(msg3)
-        json3 mustBe s"""[36,713845233,5512315,{},[],$PayloadMapJson]"""
+        json3 mustBe s"""[36,713845233,5512315,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""
       }
 
     }
   }
   
-  val PayloadListJson = """["paolo",42.5,true,null,["nested"],{"key":"value"}]"""
-  val PayloadListObj = Payload(List("paolo", 42.5, true, null, List("nested"), Map("key" -> "value")))
-  val PayloadMapJson = """{"name":"paolo","age":42.5,"object":{"nested":"value"},"array":["value"],"male":true,"notes":null}"""
-  val PayloadMapObj = Payload(Map("name"->"paolo", "age"->42.5, "male"->true, "notes"->null, "array"->List("value"), "object"->Map("nested"->"value")))
+//  val PayloadListJson = """["paolo",42.5,true,null,["nested"],{"key":"value"}]"""
+//  val Payload("paolo", 40, true) = Payload(List("paolo", 42.5, true, null, List("nested"), Map("key" -> "value")))
+//  val PayloadMapJson = """{"name":"paolo","age":42.5,"object":{"nested":"value"},"array":["value"],"male":true,"notes":null}"""
+//  val Payload("paolo", "age"->40, true) = Payload(Map("name"->"paolo", "age"->42.5, "male"->true, "notes"->null, "array"->List("value"), "object"->Map("nested"->"value")))
 }

@@ -6,6 +6,7 @@ import akka.io.IO
 import akka.stream.ActorMaterializer
 import akka.wamp.Wamp._
 import akka.wamp._
+import akka.wamp.messages._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -15,7 +16,7 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-private[wamp] class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMaterializer) 
+final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMaterializer) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
@@ -75,6 +76,9 @@ private[wamp] class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: Acto
     * Handle transports connection and disconnection
     */
   private def handleTransports: Receive = {
+    case Wamp.Bound(localAddress) =>
+      log.info("[{}] - Successfully bound on {}", self.path.name, localAddress)
+      
     case conn: Http.IncomingConnection =>
       val transport = context.actorOf(Transport.props(self)(mat))
       transport ! conn
@@ -135,7 +139,7 @@ private[wamp] class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: Acto
       switchOn(sender())(
         whenSessionOpen = { session =>
           closeSession(session)
-          session.transport ! Goodbye(Dict(), "wamp.error.goodbye_and_out")
+          session.transport ! Goodbye("wamp.error.goodbye_and_out", Dict())
           // DO NOT disconnectTransport
         },
         otherwise = { transport =>

@@ -7,8 +7,10 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.testkit._
-import akka.wamp.Wamp.Tpe._
+import akka.wamp._
 import akka.wamp.Wamp._
+import akka.wamp.messages._
+import akka.wamp.Tpe._
 import org.scalatest._
 
 import scala.concurrent.duration._
@@ -65,7 +67,7 @@ class RouterSpec  extends TestKit(ActorSystem())
       
       "reply WELCOME if client says HELLO for existing realm" in withRouter { router =>
         router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
-        expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.2.1")))
+        expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.3.0")))
         router.underlyingActor.realms must have size(1)
         router.underlyingActor.realms must contain only ("akka.wamp.realm")
         router.underlyingActor.sessions must have size(1)
@@ -91,7 +93,7 @@ class RouterSpec  extends TestKit(ActorSystem())
       
       
       "fail if client says GOODBYE before HELLO" in withRouter { router =>
-        router ! Goodbye(Dict(), "whatever.reason")
+        router ! Goodbye()
         expectMsg(Failure("Session was not open yet."))
       }
       
@@ -99,8 +101,8 @@ class RouterSpec  extends TestKit(ActorSystem())
       "reply GOODBYE if client says GOODBYE after HELLO" in withRouter { router =>
         router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
         expectMsgType[Welcome]
-        router ! Goodbye(Dict("message" -> "The host is shutting down now."), "wamp.error.system_shutdown")
-        expectMsg(Goodbye(Dict(), "wamp.error.goodbye_and_out"))
+        router ! Goodbye("wamp.error.system_shutdown", Dict("message" -> "The host is shutting down now."))
+        expectMsg(Goodbye("wamp.error.goodbye_and_out", Dict()))
         router.underlyingActor.sessions  mustBe empty
       }
     }
@@ -110,7 +112,7 @@ class RouterSpec  extends TestKit(ActorSystem())
     "handling publications" should {
       
       "fail if client says PUBLISH before session has opened" in withRouter { router =>
-        router ! Publish(1, Dict(), "topic1")
+        router ! Publish(1, "topic1", options = Dict())
         expectMsg(Failure("Session was not open yet."))
         expectNoMsg()
         router.underlyingActor.publications mustBe empty
@@ -121,7 +123,7 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client.receiveOne(0.seconds)
-        client.send(router, Publish(1, Dict("acknowledge" -> true), "topic1"))
+        client.send(router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
         client.expectMsg(Error(PUBLISH, 1, Dict(), "akka.wamp.error.no_publisher_role"))
         client.expectNoMsg()
         router.underlyingActor.publications mustBe empty
@@ -131,7 +133,7 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
         client.receiveOne(0.seconds)
-        client.send(router, Publish(1, Dict("acknowledge" -> true), "topic1"))
+        client.send(router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
         client.expectMsg(Error(PUBLISH, 1, Dict(), "wamp.error.no_such_topic"))
         client.expectNoMsg()
         router.underlyingActor.publications mustBe empty
@@ -148,9 +150,9 @@ class RouterSpec  extends TestKit(ActorSystem())
         client3.send(router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
         client3.receiveOne(0.seconds)
         
-        client1.send(router, Subscribe(1, Dict(), "topic1")); client1.receiveOne(1.second)
-        client2.send(router, Subscribe(1, Dict(), "topic1"));client2.receiveOne(0.seconds)
-        client3.send(router, Publish(1, Dict("acknowledge" -> true), "topic1", Some(Payload(List(44.23,"paolo",null,true)))))
+        client1.send(router, Subscribe(1, "topic1", Dict())); client1.receiveOne(1.second)
+        client2.send(router, Subscribe(1, "topic1", Dict()));client2.receiveOne(0.seconds)
+        client3.send(router, Publish(1, "topic1", Some(Payload(List(44.23,"paolo",null,true))), Dict("acknowledge" -> true)))
         client1.expectMsg(Event(1, 1, Dict(), Some(Payload(List(44.23,"paolo",null,true)))))
         client2.expectMsg(Event(1, 1, Dict(), Some(Payload(List(44.23,"paolo",null,true)))))
         client3.expectMsg(Published(1, 1))
@@ -163,7 +165,7 @@ class RouterSpec  extends TestKit(ActorSystem())
     "handling subscriptions" should {
       
       "fail if client says SUBSCRIBE before session has opened" in withRouter { router =>
-        router ! Subscribe(1, Dict(), "topic1")
+        router ! Subscribe(1, "topic1", Dict())
         expectMsg(Failure("Session was not open yet."))
         expectNoMsg()
       }
@@ -172,7 +174,7 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(1, Dict(), "topic1"))
+        client.send(router, Subscribe(1, "topic1", Dict()))
         client.expectMsg(Error(SUBSCRIBE, 1, Dict(), "akka.wamp.error.no_subscriber_role"))
         router.underlyingActor.subscriptions mustBe empty
         client.expectNoMsg()
@@ -182,7 +184,7 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(1, Dict(), "topic1"))
+        client.send(router, Subscribe(1, "topic1", Dict()))
         client.receiveOne(0.seconds) match {
           case Subscribed(requestId, subscriptionId) =>
             requestId mustBe 1
@@ -200,9 +202,9 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(1, Dict(), "topic1"))
+        client.send(router, Subscribe(1, "topic1", Dict()))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(2, Dict(), "topic1"))
+        client.send(router, Subscribe(2, "topic1", Dict()))
         client.receiveOne(0.seconds) match {
           case Subscribed(requestId, subscriptionId) =>
             requestId mustBe 2
@@ -220,9 +222,9 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(1, Dict(), "topic1"))
+        client.send(router, Subscribe(1, "topic1", Dict()))
         val id1 = client.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
-        client.send(router, Subscribe(2, Dict(), "topic2"))
+        client.send(router, Subscribe(2, "topic2", Dict()))
         client.receiveOne(0.seconds) match {
           case Subscribed(_, id2) =>
             router.underlyingActor.subscriptions must have size(2)
@@ -244,12 +246,12 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client1 = TestProbe("client1")
         client1.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client1.receiveOne(0.seconds)
-        client1.send(router, Subscribe(1, Dict(), "topic1"))
+        client1.send(router, Subscribe(1, "topic1", Dict()))
         client1.receiveOne(0.second)
         val client2 = TestProbe("client2")
         client2.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber","publisher")))
         client2.receiveOne(0.seconds)
-        client2.send(router, Subscribe(2, Dict(), "topic1"))
+        client2.send(router, Subscribe(2, "topic1", Dict()))
         client2.receiveOne(0.seconds) match {
           case Subscribed(requestId, subscriptionId) =>
             requestId mustBe 2
@@ -267,12 +269,12 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client1 = TestProbe("client1")
         client1.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client1.receiveOne(0.seconds)
-        client1.send(router, Subscribe(1, Dict(), "topic1"))
+        client1.send(router, Subscribe(1, "topic1", Dict()))
         val sid11 = client1.receiveOne(0.second).asInstanceOf[Subscribed].subscriptionId
         val client2 = TestProbe("client2")
         client2.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber","publisher")))
         client2.receiveOne(0.seconds)
-        client2.send(router, Subscribe(2, Dict(), "topic1"))
+        client2.send(router, Subscribe(2, "topic1", Dict()))
         val sid12 = client2.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
         sid11 must equal(sid12)
         client2.send(router, Unsubscribe(3, sid12))
@@ -289,7 +291,7 @@ class RouterSpec  extends TestKit(ActorSystem())
         val client = TestProbe("client1")
         client.send(router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
         client.receiveOne(0.seconds)
-        client.send(router, Subscribe(1, Dict(), "topic"))
+        client.send(router, Subscribe(1, "topic", Dict()))
         val sid = client.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
         client.send(router, Unsubscribe(2, sid))
         client.expectMsg(Unsubscribed(2))

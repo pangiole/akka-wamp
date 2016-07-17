@@ -50,7 +50,7 @@ class TransportSpec extends WordSpec
         client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
         
         // <- WELCOME
-        client.expectMessage("""[2,1,{"agent":"akka-wamp-0.2.1","roles":{"broker":{}}}]""")
+        client.expectMessage("""[2,1,{"agent":"akka-wamp-0.3.0","roles":{"broker":{}}}]""")
         
         // -> SUBSCRIBE
         client.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
@@ -69,8 +69,8 @@ class TransportSpec extends WordSpec
 
   val router = TestActorRef(Router.props(scopes))
   val transport = TestActorRef[Transport](Transport.props(router))
-  val route = transport.underlyingActor.websocketHandler
-  val url = "http://localhost:8080/wamp"
+  val route = transport.underlyingActor.httpHandler
+  val url = "ws://localhost:8080/ws"
   val subprotocols = List("wamp.2.json")
   
   

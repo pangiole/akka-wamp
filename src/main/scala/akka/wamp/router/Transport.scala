@@ -10,18 +10,20 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.wamp.Wamp._
 import akka.wamp._
+import akka.wamp.messages.{Message => WampMessage, _}
 import akka.wamp.serialization._
 
 
 /**
-  * A Transport connects two Peers and provides a channel over which
-  * Messages for a Session can flow in both directions.
-  * 
+  * A Transport connects two [[Peer]]s and provides a channel over which 
+  * [[Message]]s for a [[Session]] can flow in both directions.
+  *
   * @param router is the first peer that will be connected by this transport
   */
-private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
-  extends Actor with ActorLogging {
-
+class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
+extends akka.wamp.Transport 
+with Actor with ActorLogging 
+{
   /**
     * It is the second peer that will be connected by this transport
     */
@@ -30,7 +32,7 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
   /**
     * It is the WebSocket flow handler for WAMP
     */
-  val wampHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
+  val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
     val serializer = Serializers.streams("wamp.2.json")
 
     // A stream source that will be materialized as an actor and
@@ -46,7 +48,9 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
         // then the following materialized outlet:
         //   - will emit the Connected signal carrying the clientActor reference, and
         //   - will go downstream to the transportSink via a merge junction
-        val onConnect = builder.materializedValue.map(clientActorRef => Connected(clientActorRef))
+        val onConnect = builder.materializedValue.map(clientActorRef => 
+          Connected(clientActorRef)
+        )
 
         // The fromWebSocket flow
         //   - receives incoming WebSocketMessages from the connected client, and
@@ -54,10 +58,10 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
         val fromWebSocket = builder.add(serializer.deserialize)
 
         // Create a new transportSink which delivers any message to this transportActor (self)
-        val transportSink = Sink.actorRef[Message](self, onCompleteMessage = Disconnected)
+        val transportSink = Sink.actorRef[AbstractMessage](self, onCompleteMessage = Disconnected)
 
         // The merge junction forwards all messages fromWebSocket downstream to the transportSink
-        val merge = builder.add(Merge[Message](2))
+        val merge = builder.add(Merge[AbstractMessage](2))
 
         // The toWebSocket flow
         //   - receives outgoing WampMessages from the transportSource
@@ -78,10 +82,10 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
     })
   }
   
-  val websocketHandler: Route = {
+  val httpHandler: Route = {
     get {
-      path("wamp") {
-        handleWebSocketMessagesForProtocol(wampHandler, "wamp.2.json")
+      path("ws") {
+        handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
         // TODO ~ handleWebSocketMessagesForProtocol(flow, "wamp.2.msgpack")
       }
     }
@@ -99,7 +103,7 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
   def receive: Receive = {
     case conn: Http.IncomingConnection =>
       log.debug("[{}] Connected to router [{}]", self.path.name, router.path.name)
-      conn.handleWith(websocketHandler)
+      conn.handleWith(httpHandler)
       
     case conn: Wamp.Connected =>
       client = conn.ref
@@ -129,7 +133,7 @@ private[wamp] class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
 }
 
 
-private[wamp] object Transport {
+object Transport {
   /**
     * Create a Props for an actor of this type
     * 

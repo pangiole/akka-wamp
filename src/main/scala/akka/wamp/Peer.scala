@@ -1,15 +1,16 @@
 package akka.wamp
 
-import akka.actor.ActorLogging
-
+import akka.wamp.client._
+import akka.wamp.messages._
+import akka.wamp.router._
 
 /**
-  * A Peer communicates with another Peer by exchanging Messages 
-  * during a transient Session established over a Transport.
+  * A Peer communicates with another Peer by exchanging [[Message]]s 
+  * during a transient [[Session]] established over a [[Transport]].
   * 
-  * Each Peer MUST implement one Role, and MAY implement more Roles.
+  * A Peer could be either a [[Client]] or a [[Router]] 
+  *  - it must implement one [[Role]], and
+  *  - may implement more [[Role]]s.
   */
-private[wamp] trait Peer { this:  ActorLogging =>
-  
-}
+trait Peer
 
