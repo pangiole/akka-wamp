@@ -46,7 +46,7 @@ homepage := Some(url("http://angiolep.github.io/akka-wamp"))
 
 pomExtra :=
   <scm>
-    <url>git://github.com/akka-wamp/akka-wamp.git</url>
+    <url>git://github.com/angiolep/akka-wamp.git</url>
     <connection>scm:git:git@github.com:angiolep/akka-wamp.git</connection>
   </scm>
     <developers>
