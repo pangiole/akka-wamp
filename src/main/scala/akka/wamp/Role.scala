@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.wamp.client._
+//import akka.wamp.client._
 import akka.wamp.router._
 
 /**

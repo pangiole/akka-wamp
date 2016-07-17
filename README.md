@@ -5,7 +5,9 @@ Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org
 ## Client
 Akka Wamp provides an API specifically designed for [Akka Actor](http://doc.akka.io/docs/akka/2.4.8/scala/actors.html) users. 
 
-Detailed documentation is published [here](http://angiolep.github.io/projects/akka-wamp/index.html), but here it follows a quick example to appreciate the potentialities:
+Detailed documentation is published [here](http://angiolep.github.io/projects/akka-wamp/index.html)
+
+Following is just a an _"hello world"_ example:
 
 ```scala
 import akka.actor._
