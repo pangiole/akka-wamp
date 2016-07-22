@@ -1,10 +1,10 @@
-import sbt.Keys._
+import Dependencies._
 
 organization := "com.github.angiolep"
 
 name := "akka-wamp"
 
-version := "0.3.0"
+version := "0.4.0"
 
 scalaVersion := "2.11.8"
 
@@ -14,15 +14,22 @@ description := "WAMP - Web Application Messaging Protocol implementation written
 mainClass in Compile := Some("akka.wamp.WebSocketRouter")
 
 libraryDependencies ++= Seq (
-  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.6",
-  "com.typesafe.akka" %% "akka-slf4j" % "2.4.6",
-  "ch.qos.logback" % "logback-classic" % "1.1.3",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
-  "com.typesafe.akka" % "akka-http-testkit_2.11" % "2.4.2" % "test",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-)
+  akkaHttp, 
+  akkaSlf4j, 
+  logback, 
+  jackson,
+  scalactic
+) ++ Seq(
+  akkaHttpTestkit, 
+  scalatest, 
+  pegdown
+).map(_ % Test)
 
-testOptions in Test += Tests.Setup( () => System.setProperty("akka.loglevel", "warning") )
+testOptions in Test += Tests.Setup { () =>
+  System.setProperty("akka.loglevel", "error")
+  System.setProperty("akka.stdout-loglevel", "error")
+}
+// TODO add -P4 as testOptions for ScalaTest
 
 publishMavenStyle := true
 

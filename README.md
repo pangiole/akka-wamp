@@ -3,30 +3,31 @@
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
 ## Client
-Akka Wamp provides an API specifically designed for [Akka Actor](http://doc.akka.io/docs/akka/2.4.8/scala/actors.html) users. 
+Akka Wamp has been written as Akka IO extension and it's been specifically designed for [Akka Actor](http://doc.akka.io/docs/akka/2.4.8/scala/actors.html) users. 
 
 Detailed documentation is published [here](http://angiolep.github.io/projects/akka-wamp/index.html)
 
-Following is just a an _"hello world"_ example:
+Following is just a trivial example to quickly understand what you could do with it:
 
 ```scala
 import akka.actor._
 import akka.io._
 import akka.wamp._
 
-object HelloApp extends App {
+object Example extends App {
   import Wamp._
   import messages._
   
   implicit val system = ActorSystem("hello")
   val client = system.actorOf(Props(classOf[Client]))
+  
+  // it all starts sending Connect to the Akka IO extension 
   IO(Wamp) ! Connect(client, url = "ws://127.0.0.1:8080/ws")
+
 
   class Client extends Actor with ActorLogging with SessionScope {
     import context.dispatcher
     import scala.concurrent.duration._
-
-    // it sends a "tick" to itself at each second ... forever
     context.system.scheduler.schedule(500 millis, 1000 millis, self, "tick")
 
     var counter = 0
@@ -65,11 +66,11 @@ Detailed documentation is published [here](http://angiolep.github.io/projects/ak
 ## Limitations
 
  * It works with Scala 2.11 only.
- * It provides WebSocket transport only without SSL/TLS encryption.  
- * The router works as _broker_ only (_dealer_ is NOT provided yet).
- * The client works as _publisher_ and _subscriber_ only (_callee_ and _caller_ are NOT provided yet).
- * It implements the WAMP Basic Profile only (WAMP Advanced Profile is NOT provided yet)
- 
+ * WebSocket transport only without SSL/TLS encryption (no raw TCP yet)  
+ * Router works as _broker_ only (no _dealer_ yet).
+ * Client works as _publisher_/_subscriber_ only (no _callee_/_caller_ yet).
+ * It implements the WAMP Basic Profile only (no Advanced Profile yet)
+ * It provides JSON serialization only (no MsgPack yet)
 
 
 [travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
