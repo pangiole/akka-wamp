@@ -78,3 +78,4 @@ Detailed documentation is published [here](http://angiolep.github.io/projects/ak
 
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
+

@@ -31,7 +31,7 @@ class DefaultRouterSpec extends RouterSpec(ActorSystem()) {
   
   it should "reply WELCOME if client says HELLO for existing realm" in { f =>
     f.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
-    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.4.0")))
+    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.4.1")))
     f.router.underlyingActor.realms must have size(1)
     f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
     f.router.underlyingActor.sessions must have size(1)

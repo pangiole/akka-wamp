@@ -50,7 +50,7 @@ class TransportSpec
       client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
       
       // <<< WELCOME
-      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.4.0","roles":{"broker":{}}}]""")
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.4.1","roles":{"broker":{}}}]""")
       
       // >>> SUBSCRIBE
       client.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")

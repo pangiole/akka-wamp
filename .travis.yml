@@ -1,12 +1,20 @@
 language: scala
 scala:
-  - 2.11.7
+  - 2.11.8
 jdk:
   - oraclejdk8
 env:
   - CODACY_PROJECT_TOKEN=c77729ea848d41529e513607e45dfe96
 script:
-  - sbt -Dakka.loglevel=OFF ++$TRAVIS_SCALA_VERSION clean coverage test
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
   - sbt coverageReport
   - sbt codacyCoverage
-  
+sudo: false
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+before_cache:
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt -name "*.lock" -delete
