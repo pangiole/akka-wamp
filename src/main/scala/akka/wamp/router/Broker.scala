@@ -60,7 +60,7 @@ trait Broker extends Role { this: Router =>
                 * Note that the publisher of an event will never receive the published 
                 * event even if the publisher is also a subscriber of the topic published to.
                 */
-              val publicationId = nextId(scopes('global), excludes = publications)
+              val publicationId = scopes('global).nextId(excludes = publications)
               subscription.subscribers.filter(_ != publisher).foreach { subscriber =>
                 publications += publicationId
                 subscriber ! Event(subscription.id, publicationId, Dict(), payload)
@@ -89,7 +89,7 @@ trait Broker extends Role { this: Router =>
               /**
                 * No subscribers has subscribed to the given topic yet.
                 */
-              val subscriptionId = nextId(scopes('router), excludes = subscriptions.keySet)
+              val subscriptionId = scopes('router).nextId(excludes = subscriptions.keySet)
               subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(subscriber), topic))
               subscriber ! Subscribed(requestId, subscriptionId)
             }

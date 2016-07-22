@@ -1,6 +1,7 @@
 package akka.wamp.router
 
-import akka.actor._
+
+import akka.actor.{Scope => _, _}
 import akka.http.scaladsl.Http
 import akka.io.IO
 import akka.stream.ActorMaterializer
@@ -8,7 +9,6 @@ import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.messages._
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 
 /**
@@ -16,18 +16,16 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMaterializer) 
+final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef])(implicit mat: ActorMaterializer) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
-   
-  val iface = context.system.settings.config.getString("akka.wamp.iface")
-  val port = context.system.settings.config.getInt("akka.wamp.port")
+  val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.router.auto-create-realms")
   
   val roles = Set("broker")
   
   val welcomeDetails = Dict()
-    .withAgent(context.system.settings.config.getString("akka.wamp.agent"))
+    .withAgent(context.system.settings.config.getString("akka.wamp.router.agent"))
     .withRoles("broker")
   
   /**
@@ -46,22 +44,7 @@ final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMateria
     */
   val sessions = mutable.Map.empty[Id, Session]
   
-
-  @throws[Exception](classOf[Exception])
-  override def preStart(): Unit = {
-    log.info("[{}] - Starting", self.path.name)
-    import context.system
-    IO(Wamp) ! Bind(self, iface, port)
-  }
-
-
-  @scala.throws[Exception](classOf[Exception])
-  override def postStop(): Unit = {
-    import context.system
-    IO(Wamp) ! Unbind
-    log.info("[{}] - Stopped", self.path.name)
-  }
-
+  
   /**
     * Handle either transports, sessions, subscriptions, publications, 
     * registrations or invocations
@@ -76,8 +59,9 @@ final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMateria
     * Handle transports connection and disconnection
     */
   private def handleTransports: Receive = {
-    case Wamp.Bound(localAddress) =>
+    case msg @ Wamp.Bound(localAddress) =>
       log.info("[{}] - Successfully bound on {}", self.path.name, localAddress)
+      for (lstnr <- listener) lstnr ! msg
       
     case conn: Http.IncomingConnection =>
       val transport = context.actorOf(Transport.props(self)(mat))
@@ -125,7 +109,7 @@ final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMateria
               transport ! Welcome(session.id, welcomeDetails)
             }
             else {
-              transport ! Abort(Dict("message" -> s"The realm $realm does not exist."), "wamp.error.no_such_realm")
+              transport ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
             } 
           }
         }
@@ -159,7 +143,7 @@ final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMateria
   }
   
   private def addNewSession(transport: ActorRef, details: Dict, realm: Uri) = {
-    val id = nextId(scopes('global), excludes = sessions.keySet.toSet)
+    val id = scopes('global).nextId(excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
     val session = new Session(id, transport, roles, realm)
     sessions += (id -> session)
@@ -177,16 +161,7 @@ final class Router(val scopes: Map[Symbol, IdScope] )(implicit mat: ActorMateria
     realms += realm
     realm
   }
-  
-  
-  
-  private val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.auto-create-realms")
 
-  @tailrec
-  final def nextId(scope: IdScope, excludes: Set[Id] = Set(), id: Id = 0): Id = {
-    if (id == 0 || excludes.contains(id)) nextId(scope, excludes, scope(id))
-    else id
-  }
 }
 
 
@@ -195,16 +170,12 @@ object Router {
   /**
     * Create a Props for an actor of this type
     *
-    * @param scopes is the ID scopes
+    * @param scopes is the [[Scope]] map used for [[Id]] generation
+    * @param listener is the actor to notify router signals
     * @return the props
     */
-  def props(
-    scopes: Map[Symbol, IdScope] = Map(
-      'global ->  { (_) => Id.draw() },
-      'router ->  { (_) => Id.draw() },
-      'session -> { _ + 1 }
-    )
-  )(implicit mat: ActorMaterializer) = Props(new Router(scopes)(mat))
+  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
+    Props(new Router(scopes, listener)(mat))
 
 
   /**
@@ -215,7 +186,9 @@ object Router {
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("wamp")
     implicit val mat = ActorMaterializer()
-    system.actorOf(Router.props(), "router")
+
+    val router = system.actorOf(Router.props(), "router")
+    IO(Wamp) ! Bind(router)
   }
 }
 

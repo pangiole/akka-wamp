@@ -2,7 +2,7 @@ package akka.wamp
 
 import java.net.InetSocketAddress
 
-import akka.actor.{ActorRef, ExtendedActorSystem, ExtensionId, Props}
+import akka.actor.{ActorRef, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, Props}
 import akka.io.IO
 import akka.stream.ActorMaterializer
 
@@ -14,18 +14,23 @@ import akka.stream.ActorMaterializer
   * implementation please refer to <a href="http://doc.akka.io/">the Akka online documentation</a>.
   *
   * In order to open an outbound connection send a [[Wamp.Connect]] message
-  * to the [[WampExt#manager]].
+  * to the [[WampExtension#manager]].
   *
   * In order to start listening for inbound connections send a [[Wamp.Bind]]
-  * message to the [[WampExt#manager]].
+  * message to the [[WampExtension#manager]].
   */
-object Wamp extends ExtensionId[WampExt] {
+object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
+  
+  /**
+    * Returns the canonical ExtensionId for this Extension
+    */
+  override def lookup(): ExtensionId[_ <: Extension] = Wamp
 
   /**
     * Is used by Akka to instantiate the Extension identified by this ExtensionId,
     * internal use only.
     */
-  override def createExtension(system: ExtendedActorSystem): WampExt = new WampExt(system)
+  override def createExtension(system: ExtendedActorSystem): WampExtension = new WampExtension(system)
 
   /**
     * The common interface for [[Command]] and [[Signal]].
@@ -39,7 +44,7 @@ object Wamp extends ExtensionId[WampExt] {
 
   /**
     * The Connect message is sent to the WAMP manager actor, which is obtained via
-    * [[WampExt#manager]]. Either the manager replies with a [[CommandFailed]]
+    * [[WampExtension#manager]]. Either the manager replies with a [[CommandFailed]]
     * or the actor handling the new connection replies with a [[Connected]]
     * message.
     *
@@ -52,17 +57,15 @@ object Wamp extends ExtensionId[WampExt] {
 
   /**
     * The Bind message is send to the WAMP manager actor, which is obtained via
-    * [[WampExt#manager]] in order to bind to a listening socket. The manager
+    * [[WampExtension#manager]] in order to bind to a listening socket. The manager
     * replies either with a [[CommandFailed]] or the actor handling the listen
     * socket replies with a [[Bound]] message. If the local port is set to 0 in
     * the Bind message, then the [[Bound]] message should be inspected to find
     * the actual port which was bound to.
     *
-    * @param handler is actor which will receive all incoming connection requests in the form of [[Connected]] messages
-    * @param iface   is the socket interface to bind to (use "0.0.0.0" to bind to all of the underlying interfaces)
-    * @param port    is the socket port to bind to (use port zero for automatic assignment (i.e. an ephemeral port, see [[Bound]])
+    * @param router is the actor which will receive all incoming connection requests in the form of [[Connected]] messages
     */
-  final case class Bind(handler: ActorRef, iface: String, port: Tpe) extends Command
+  final case class Bind(router: ActorRef) extends Command
 
 
   /**
@@ -91,7 +94,7 @@ object Wamp extends ExtensionId[WampExt] {
     * command (for outbound) or to the handler for incoming connections designated
     * in the [[Bind]] message. 
     */
-  final case class Connected(ref: ActorRef) extends Signal
+  final case class Connected(peer: ActorRef) extends Signal
 
   /**
     * Whenever a command cannot be completed, the queried actor will reply with
@@ -109,12 +112,8 @@ object Wamp extends ExtensionId[WampExt] {
 
 
 
-class WampExt(system: ExtendedActorSystem) extends IO.Extension {
+class WampExtension(system: ExtendedActorSystem) extends IO.Extension {
   implicit val s = system
   implicit val m = ActorMaterializer()
-  val manager: ActorRef = {
-    system.systemActorOf(
-      props = Props(new Manager()(s, m)),
-      name = "IO-WAMP")
-  }
+  val manager = system.actorOf(Manager.props(), name = "IO-Wamp")
 }

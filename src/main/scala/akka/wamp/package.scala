@@ -1,7 +1,7 @@
 package akka
 
 /**
-  * == akka-wamp 0.3.0 ==
+  * == akka-wamp 0.4.0 ==
   *
   * [[http://wamp-proto.org WAMP - Web Application Messaging Protocol]] implementation written in Scala with Akka
   */
@@ -29,7 +29,6 @@ package object wamp {
       HELLO, WELCOME, ABORT, GOODBYE, ERROR,
       PUBLISH, PUBLISHED, SUBSCRIBE, SUBSCRIBED, UNSUBSCRIBE, UNSUBSCRIBED, EVENT
     )
-
     def isValid(tpy: Tpe): Boolean = ALL.contains(tpy)
   }
 
@@ -39,23 +38,16 @@ package object wamp {
     */
   type Id = Long
 
-  /**
-    * An identifier generator
-    */
-  type IdScope = (Id) => Id
 
   final object Id {
-
     import scala.util.Random.{nextDouble => rnd}
-
     val Min = 1L
     val Max = 9007199254740992L
-
     def draw(): Long = Min + (rnd() * (Max - Min + 1)).toLong
-
     def isValid(id: Id): Boolean = id >= Min && id <= Max
   }
 
+  
   /**
     * Uniform Resource Identifier
     */
@@ -64,7 +56,6 @@ package object wamp {
   final object Uri {
     // strict URI check disallowing empty URI components
     val regex = "^([0-9a-z_]+\\.)*([0-9a-z_]+)$".r
-
     def isValid(uri: Uri) = regex.pattern.matcher(uri).matches
   }
 
@@ -76,7 +67,6 @@ package object wamp {
 
   final object Dict {
     def apply(): Dict = Map.empty[String, Any]
-
     def apply(entries: (String, Any)*): Dict = entries.toMap
   }
 

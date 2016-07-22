@@ -407,9 +407,9 @@ class JsonSerializationSpec extends WordSpec
       }
       
       "serialize WELCOME" in {
-        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.3.0").withRoles("broker"))
+        val msg = Welcome(1233242, Dict().withAgent("akka-wamp-0.4.0").withRoles("broker"))
         val json = s.serialize(msg)
-        json mustBe """[2,1233242,{"agent":"akka-wamp-0.3.0","roles":{"broker":{}}}]"""
+        json mustBe """[2,1233242,{"agent":"akka-wamp-0.4.0","roles":{"broker":{}}}]"""
       }
 
       "serialize GOODBYE" in {

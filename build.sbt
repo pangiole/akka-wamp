@@ -29,7 +29,8 @@ testOptions in Test += Tests.Setup { () =>
   System.setProperty("akka.loglevel", "error")
   System.setProperty("akka.stdout-loglevel", "error")
 }
-// TODO add -P4 as testOptions for ScalaTest
+
+parallelExecution in Test := true
 
 publishMavenStyle := true
 

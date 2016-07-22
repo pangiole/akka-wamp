@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.server.Directives.{get, handleWebSocketMessagesForProtocol, path}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Route, RouteResult}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.wamp.Wamp._
@@ -82,14 +82,19 @@ with Actor with ActorLogging
     })
   }
   
-  val httpHandler: Route = {
+  
+  private val pm = context.system.settings.config.getString("akka.wamp.router.path")
+  val httpRoute: Route = {
     get {
-      path("ws") {
+      path(pm) {
         handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
         // TODO ~ handleWebSocketMessagesForProtocol(flow, "wamp.2.msgpack")
       }
     }
   }
+
+  
+  
   
   override def preStart(): Unit = {
     log.info("[{}] Starting", self.path.name)
@@ -103,18 +108,18 @@ with Actor with ActorLogging
   def receive: Receive = {
     case conn: Http.IncomingConnection =>
       log.debug("[{}] Connected to router [{}]", self.path.name, router.path.name)
-      conn.handleWith(httpHandler)
+      conn.handleWith(httpRoute)
       
     case conn: Wamp.Connected =>
-      client = conn.ref
+      client = conn.peer
       log.debug("[{}] Connected to client [{}]", self.path.name, client.path.name)
 
     case msg: WampMessage if (sender() == router) =>
-      log.debug("[{}] ~> {}", self.path.name, msg)
+      log.debug("[{}] >>> {}", self.path.name, msg)
       client ! msg
       
     case msg: WampMessage /* couldAssert (sender() == client) */ =>
-      log.debug("[{}] <~ {}", self.path.name, msg)
+      log.debug("[{}] <<< {}", self.path.name, msg)
       router ! msg
       
     case Wamp.Disconnected =>
