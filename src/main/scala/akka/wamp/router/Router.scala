@@ -2,7 +2,6 @@ package akka.wamp.router
 
 
 import akka.actor.{Scope => _, _}
-import akka.http.scaladsl.Http
 import akka.io.IO
 import akka.stream.ActorMaterializer
 import akka.wamp.Wamp._
@@ -16,7 +15,7 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef])(implicit mat: ActorMaterializer) 
+final class Router(val scopes: Map[Symbol, Scope], val probe: Option[ActorRef])(implicit mat: ActorMaterializer) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
@@ -59,22 +58,17 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     * Handle transports connection and disconnection
     */
   private def handleTransports: Receive = {
+    
     case msg @ Wamp.Bound(localAddress) =>
       log.info("[{}] - Successfully bound on {}", self.path.name, localAddress)
-      for (lstnr <- listener) lstnr ! msg
-      
-    case conn: Http.IncomingConnection =>
-      val transport = context.actorOf(Transport.props(self)(mat))
-      transport ! conn
+      for (p <- probe) p ! msg
       
     case Wamp.Disconnect => 
       switchOn(sender())(
         whenSessionOpen = { session =>
           closeSession(session)
         },
-        otherwise = { transport =>
-          ()
-        }
+        otherwise = { _ => () }
       )
   }
   
@@ -83,7 +77,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     */
   private def handleSessions: Receive = {
     case Hello(realm, details) => {
-      switchOn(transport = sender())(
+      switchOn(client = sender())(
         whenSessionOpen = { session =>
           /*
            * It is a protocol error to receive a second "HELLO" message 
@@ -91,12 +85,12 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
            * the session if that happens.
            */
           closeSession(session)
-          session.transport ! Failure("Session was already open.")
+          session.client ! Failure("Session was already open.")
         },
-        otherwise = { transport =>
+        otherwise = { client =>
           if (realms.contains(realm)) {
-            val session = addNewSession(transport, details, realm)
-            transport ! Welcome(session.id, welcomeDetails)
+            val session = addNewSession(client, details, realm)
+            client ! Welcome(session.id, welcomeDetails)
           }
           else {
             /*
@@ -105,11 +99,11 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
             if (autoCreateRealms) {
-              val session = addNewSession(transport, details, createRealm(realm))
-              transport ! Welcome(session.id, welcomeDetails)
+              val session = addNewSession(client, details, createRealm(realm))
+              client ! Welcome(session.id, welcomeDetails)
             }
             else {
-              transport ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
+              client ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
             } 
           }
         }
@@ -123,7 +117,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
       switchOn(sender())(
         whenSessionOpen = { session =>
           closeSession(session)
-          session.transport ! Goodbye("wamp.error.goodbye_and_out", Dict())
+          session.client ! Goodbye("wamp.error.goodbye_and_out", Dict())
           // DO NOT disconnectTransport
         },
         otherwise = { transport =>
@@ -135,23 +129,23 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   }
 
 
-  def switchOn(transport: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
-    sessions.values.find(_.transport == transport) match {
+  def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
+    sessions.values.find(_.client == client) match {
       case Some(session) => whenSessionOpen(session)
-      case None => otherwise(transport)
+      case None => otherwise(client)
     }
   }
   
-  private def addNewSession(transport: ActorRef, details: Dict, realm: Uri) = {
+  private def addNewSession(client: ActorRef, details: Dict, realm: Uri) = {
     val id = scopes('global).nextId(excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
-    val session = new Session(id, transport, roles, realm)
+    val session = new Session(id, client, roles, realm)
     sessions += (id -> session)
     session
   }
   
   private def closeSession(session: Session) = {
-    subscriptions.foreach { case (_, subscription) => unsubscribe(session.transport, subscription) }
+    subscriptions.foreach { case (_, subscription) => unsubscribe(session.client, subscription) }
     // TODO remove transport from registrations
     sessions -= session.id
   }
@@ -171,24 +165,35 @@ object Router {
     * Create a Props for an actor of this type
     *
     * @param scopes is the [[Scope]] map used for [[Id]] generation
-    * @param listener is the actor to notify router signals
+    * @param probe is the actor to notify Bind to
     * @return the props
     */
-  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
-    Props(new Router(scopes, listener)(mat))
-
-
+  def props(scopes: Map[Symbol, Scope] = Scope.defaults, probe: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
+    Props(new Router(scopes, probe)(mat))
+  
   /**
     * Starts the router as standalone application
     * 
     * @param args
     */
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("wamp")
+    val system = ActorSystem("wamp")
+    system.actorOf(Props(new Binder()), name = "binder")
+  }
+  
+  class Binder extends Actor with ActorLogging {
+    implicit val s = context.system
     implicit val mat = ActorMaterializer()
-
-    val router = system.actorOf(Router.props(), "router")
+    implicit val ec = context.system.dispatcher
+    
+    val router = context.system.actorOf(Router.props(), "router")
     IO(Wamp) ! Bind(router)
+    
+    def receive = {
+      case Wamp.CommandFailed(cmd, cause) =>
+        log.error(cause, "Command failed {}", cmd)
+        context.system.terminate().map[Unit](_ => System.exit(-1))
+    }
   }
 }
 

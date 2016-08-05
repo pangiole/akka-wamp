@@ -100,7 +100,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     * Whenever a command cannot be completed, the queried actor will reply with
     * this message, wrapping the original command which failed.
     */
-  final case class CommandFailed(cmd: Command) extends Signal
+  final case class CommandFailed(cmd: Command, cause: Throwable) extends Signal
 
   final case object Disconnected extends Signal
 

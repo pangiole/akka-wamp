@@ -30,7 +30,7 @@ trait Broker extends Role { this: Router =>
   def handlePublications: Receive = {
     case Publish(requestId, topic, payload, options) =>
       ifSessionOpen { session =>
-        val publisher = session.transport
+        val publisher = session.client
         if (session.roles.contains("publisher")) {
           /**
             * By default, publications are unacknowledged, and the Broker will
@@ -82,7 +82,7 @@ trait Broker extends Role { this: Router =>
 
     case Subscribe(requestId, topic, options) =>
       ifSessionOpen { session =>
-        val subscriber = session.transport
+        val subscriber = session.client
         if (session.roles.contains("subscriber")) {
           subscriptions.values.toList.filter(_.topic == topic) match {
             case Nil => {
@@ -125,10 +125,10 @@ trait Broker extends Role { this: Router =>
       ifSessionOpen { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
-            unsubscribe(session.transport, subscription)
-            session.transport ! Unsubscribed(requestId)
+            unsubscribe(session.client, subscription)
+            session.client ! Unsubscribed(requestId)
           case None =>
-            session.transport ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
+            session.client ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
         }
       }
   }

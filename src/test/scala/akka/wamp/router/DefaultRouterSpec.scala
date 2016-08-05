@@ -13,32 +13,24 @@ import scala.concurrent.duration._
 // it tests the default router configuration
 class DefaultRouterSpec extends RouterSpec(ActorSystem()) {
 
-  
-  "The router" should "spawn a new transport actor on incoming connection" in { f =>
-    f.router ! Http.IncomingConnection(null, null, null)
-    f.router.children must have size(1)
-    // TODO f.router.children.head mustBe actorOf[Transport] 
-  }
-  
-
-  it should "auto-create realm if client says HELLO for unknown realm" in { f =>
+  "The router" should "auto-create realm if client says HELLO for unknown realm" in { f =>
     f.router ! Hello("myapp.realm", Dict().withRoles("publisher"))
     expectMsgType[Welcome]
     f.router.underlyingActor.realms must have size(2)
     f.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "myapp.realm")
   }
-
+  
   
   it should "reply WELCOME if client says HELLO for existing realm" in { f =>
     f.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
-    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.4.1")))
+    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.5.0")))
     f.router.underlyingActor.realms must have size(1)
     f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
     f.router.underlyingActor.sessions must have size(1)
     val session = f.router.underlyingActor.sessions(1)
     session must have (
       'id (1),
-      'transport (testActor),
+      'client (testActor),
       'roles (Set("publisher")),
       'realm ("akka.wamp.realm")
     )

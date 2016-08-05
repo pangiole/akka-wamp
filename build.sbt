@@ -4,7 +4,7 @@ organization := "com.github.angiolep"
 
 name := "akka-wamp"
 
-version := "0.4.1"
+version := "0.5.0"
 
 scalaVersion := "2.11.8"
 

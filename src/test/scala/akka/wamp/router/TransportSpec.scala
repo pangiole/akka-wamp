@@ -46,22 +46,22 @@ class TransportSpec
   it should "handle subscription scenario" in { f =>
     scenario(f.route) { client =>
       
-      // >>> HELLO
+      // --> HELLO
       client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
       
-      // <<< WELCOME
-      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.4.1","roles":{"broker":{}}}]""")
+      // <-- WELCOME
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.5.0","roles":{"broker":{}}}]""")
       
-      // >>> SUBSCRIBE
+      // --> SUBSCRIBE
       client.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
       
-      // <<< SUBSCRIBED
+      // <-- SUBSCRIBED
       client.expectMessage("""[33,1,1]""")
       
-      // >>> GOODBYE
+      // --> GOODBYE
       client.sendMessage("""[6,{"message":"The host is shutting down now."},"wamp.error.close_realm"]""")
 
-      // <<< GOODBYE
+      // <-- GOODBYE
       client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
     }
   }
@@ -85,7 +85,7 @@ class TransportSpec
     )
     val router = TestActorRef[Router](Router.props(scopes))
     val transport = TestActorRef[Transport](Transport.props(router))
-    val route = transport.underlyingActor.httpRoute
+    val route: Route = transport.underlyingActor.httpRoute
     
     val theFixture = FixtureParam(route)
     try {

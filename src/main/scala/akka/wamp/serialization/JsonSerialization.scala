@@ -6,6 +6,7 @@ import akka.wamp.messages._
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.module.scala._
 import org.slf4j.LoggerFactory
+import org.scalactic.{Good, Bad, Or}
 
 class JsonSerialization extends Serialization {
 
@@ -32,89 +33,94 @@ class JsonSerialization extends Serialization {
     def asId = any match {
       case int: Int => int.toLong
       case long: Long => long
+      // DO NOT case bigint: BigInt => bigint.toLong
     }
   }
 
-  def deserialize(text: String): Message = {
+  def deserialize(text: String): Message Or DeserializationError = {
     log.trace("Deserializing {}", text)
     try {
       val arr = mapper.readValue(text, classOf[Array[Any]])
       arr(0) match {
         case HELLO => {
-          Hello(
+          Good(Hello(
             realm = arr(1).asString,
             details = arr(2).asDict
-          )
+          ))
         }
         case WELCOME => {
-          Welcome(
+          Good(Welcome(
             sessionId = arr(1).asId,
             details = arr(2).asDict
-          )
+          ))
         }
         case ABORT => {
-          Abort(
+          Good(Abort(
             details = arr(1).asDict,
             reason = arr(2).asUri
-          )
+          ))
         }
         case GOODBYE => {
-          Goodbye(
+          Good(Goodbye(
             details = arr(1).asDict,
             reason = arr(2).asUri
-          )
+          ))
         }
         case ERROR => {
           arr.length match {
-            case 5 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri)
-            case 6 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(5).asSomePayload)
-            case 7 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(6).asSomePayload)
+            case 5 => Good(Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri))
+            case 6 => Good(Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(5).asSomePayload))
+            case 7 => Good(Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(6).asSomePayload))
           }
         }
         case PUBLISH => {
           arr.length match {
-            case 4 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, options = arr(2).asDict)
-            case 5 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
-            case 6 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
+            case 4 => Good(Publish(requestId = arr(1).asId, topic = arr(3).asUri, options = arr(2).asDict))
+            case 5 => Good(Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict))
+            case 6 => Good(Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict))
           }
         }
         case PUBLISHED => {
-          Published(
+          Good(Published(
             requestId = arr(1).asId,
             publicationId = arr(2).asId
-          )
+          ))
         }
         case SUBSCRIBE => {
-          Subscribe(requestId = arr(1).asId, topic = arr(3).asString, options = arr(2).asDict)
+          Good(Subscribe(
+            requestId = arr(1).asId, 
+            topic = arr(3).asString, 
+            options = arr(2).asDict
+          ))
         }
         case SUBSCRIBED => {
-          Subscribed(
+          Good(Subscribed(
             requestId = arr(1).asId,
             subscriptionId = arr(2).asId
-          )
+          ))
         }
         case UNSUBSCRIBE => {
-          Unsubscribe(
+          Good(Unsubscribe(
             requestId = arr(1).asId,
             subscriptionId = arr(2).asId
-          )
+          ))
         }
         case UNSUBSCRIBED => {
-          Unsubscribed(
+          Good(Unsubscribed(
             requestId = arr(1).asId
-          )
+          ))
         }
         case EVENT => {
           arr.length match {
-            case 4 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict)
-            case 5 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(4).asSomePayload)
-            case 6 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(5).asSomePayload)
+            case 4 => Good(Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict))
+            case 5 => Good(Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(4).asSomePayload))
+            case 6 => Good(Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(5).asSomePayload))
           }
         }
       }
     } catch {
       case ex: Throwable =>
-        throw new SerializationException(s"Bad message $text", ex)
+        Bad(new DeserializationError(s"Bad message $text", ex))
     }
   }
 

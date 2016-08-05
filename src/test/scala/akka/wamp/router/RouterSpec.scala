@@ -4,10 +4,11 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.testkit.TestActorRef
 import akka.wamp.Wamp.Bind
-import akka.wamp.{Scope, Wamp, ActorSpec}
+import akka.wamp.{ActorSpec, Scope, Wamp}
+import org.scalatest.ParallelTestExecution
 
 
-class RouterSpec(_system: ActorSystem) extends ActorSpec(_system) {
+class RouterSpec(_system: ActorSystem) extends ActorSpec(_system) with ParallelTestExecution {
   
   // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
   case class FixtureParam(router: TestActorRef[Router])

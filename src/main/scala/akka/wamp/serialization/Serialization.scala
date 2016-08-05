@@ -1,6 +1,7 @@
 package akka.wamp.serialization
 
 import akka.wamp.messages._
+import org.scalactic.Or
 
 trait Serialization {
   
@@ -8,11 +9,8 @@ trait Serialization {
   
   def serialize(msg: Message): T
   
-  @throws[SerializationException]
-  def deserialize(t: T): Message
+  def deserialize(t: T): Message Or DeserializationError
 }
 
 
-class SerializationException(message: String, cause: Throwable) extends Exception(message, cause) {
-  def this(message: String) = this(message, null)
-}
+class DeserializationError(val message: String, val throwable: Throwable)
