@@ -55,7 +55,7 @@ package object wamp {
 
   final object Uri {
     // strict URI check disallowing empty URI components
-    val regex = "^([0-9a-z_]+\\.)*([0-9a-z_]+)$".r
+    val regex = "^([0-9a-zA-Z_]+\\.)*([0-9a-zA-Z_]+)$".r
     def isValid(uri: Uri) = regex.pattern.matcher(uri).matches
   }
 
