@@ -372,6 +372,28 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
+
+      "succeed for valid EVENT with Long subscriptionId" in {
+        s.deserialize("""[36,9007199254740991,2,{}]""") match {
+          case m: Event =>
+            m.subscriptionId mustBe 9007199254740991L
+            m.publicationId mustBe 2
+            m.details mustBe empty
+            m.payload mustBe None
+          case _ => fail
+        }
+      }
+
+      "succeed for valid EVENT with Long publicationId" in {
+        s.deserialize("""[36,1,9007199254740991,{}]""") match {
+          case m: Event =>
+            m.subscriptionId mustBe 1
+            m.publicationId mustBe 9007199254740991L
+            m.details mustBe empty
+            m.payload mustBe None
+          case _ => fail
+        }
+      }
       
       "succeed for valid EVENT with payload as list" in {
         s.deserialize(s"""[36,1,2,{},["paolo",40,true]]""") match {

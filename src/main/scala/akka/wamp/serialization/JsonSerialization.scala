@@ -106,9 +106,9 @@ class JsonSerialization extends Serialization {
         }
         case EVENT => {
           arr.length match {
-            case 4 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict)
-            case 5 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(4).asSomePayload)
-            case 6 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(5).asSomePayload)
+            case 4 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict)
+            case 5 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(4).asSomePayload)
+            case 6 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(5).asSomePayload)
           }
         }
       }
