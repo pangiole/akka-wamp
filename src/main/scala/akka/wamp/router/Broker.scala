@@ -31,6 +31,7 @@ trait Broker extends Role { this: Router =>
     case Publish(requestId, topic, payload, options) =>
       ifSessionOpen { session =>
         val publisher = session.client
+        val ack = options.get("acknowledge") == Some(true)
         if (session.roles.contains("publisher")) {
           /**
             * By default, publications are unacknowledged, and the Broker will
@@ -39,7 +40,6 @@ trait Broker extends Role { this: Router =>
             *
             * "PUBLISH.Options.acknowledge|bool"
             */
-          val ack = options.get("acknowledge") == Some(true)
           subscriptions.values.toList.filter(_.topic == topic) match {
             case Nil =>
               /**
@@ -70,7 +70,7 @@ trait Broker extends Role { this: Router =>
           }
         }
         else {
-          publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
+          if (ack) publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
         }
       }
   }

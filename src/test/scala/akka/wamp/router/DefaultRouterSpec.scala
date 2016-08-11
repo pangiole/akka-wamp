@@ -73,12 +73,21 @@ class DefaultRouterSpec extends RouterSpec(ActorSystem()) {
   }
 
   
-  it should "reply ERROR if client has no publisher role" in { f =>
+  it should "reply ERROR if client says PUBLISH(ack) but has no publisher role" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
     client.send(f.router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
     client.expectMsg(Error(PUBLISH, 1, Dict(), "akka.wamp.error.no_publisher_role"))
+    client.expectNoMsg()
+    f.router.underlyingActor.publications mustBe empty
+  }
+
+  it should "stay silent if client says PUBLISH(noack) but has no publisher role" in { f =>
+    val client = TestProbe("client")
+    client.send(f.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
+    client.receiveOne(0.seconds)
+    client.send(f.router, Publish(1, "topic1"/*, options = Dict("acknowledge" -> false)*/))
     client.expectNoMsg()
     f.router.underlyingActor.publications mustBe empty
   }
@@ -113,6 +122,8 @@ class DefaultRouterSpec extends RouterSpec(ActorSystem()) {
     client2.expectMsg(Event(1, 4, Dict(), Some(Payload(List(44.23,"paolo",null,true)))))
     client3.expectMsg(Published(1, 4))
     client3.expectNoMsg()
+
+    f.router.underlyingActor.publications must have size(1)
   }
 
   
