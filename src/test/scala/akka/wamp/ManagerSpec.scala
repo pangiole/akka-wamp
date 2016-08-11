@@ -2,26 +2,28 @@ package akka.wamp
 
 import java.net.InetSocketAddress
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.actor._
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.ws._
-import akka.http.scaladsl.model.ws.TextMessage.Strict
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.http.scaladsl.{ConnectionContext, Http, HttpExt}
+import akka.http.scaladsl.{ConnectionContext, HttpExt}
 import akka.io._
+import akka.stream.Supervision
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.testkit.{TestActorRef, TestProbe}
 import akka.wamp.Wamp._
-import akka.wamp.messages.{Subscribe, Subscribed}
+import akka.wamp.messages.Event
 import akka.wamp.router.Router
+import akka.wamp.serialization.SerializationException
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.ParallelTestExecution
 import org.scalatest.mock.MockitoSugar
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import org.mockito.Mockito._
-import org.mockito.Matchers._
+import scala.language.postfixOps
 
 
 // reference.conf is overriding akka.wamp.router.port to enable dynamic port bindings
@@ -56,7 +58,46 @@ class ManagerSpec
     pending
   }
 
-  it should "Fail on wrong message format" in { f =>
+  it should "Receive text messages and emit Events" in { f =>
+    val manager = mockHttpSetup(
+      TextMessage("""[36,1,2,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""),
+      TextMessage("""[36,3,4,{}]""")
+    )
+
+    // connect the router
+    manager ! Connect(client = testActor, url = s"ws://test/ws")
+    expectMsg(Event(1, 2, Dict.apply(), Some(Payload(
+      Map("arg0"->"paolo", "age" -> 40, "arg2" -> true).toList
+    ))))
+    expectMsg(Event(3, 4, Dict.apply(), None))
+  }
+
+  it should "fail on wrong message format" in { f =>
+    val manager = mockHttpSetup(TextMessage("hello world!"))
+
+    // connect the router
+    manager ! Connect(client = testActor, url = s"ws://test/ws")
+    val failure = expectMsgType[Status.Failure](8 seconds)
+    failure.cause.getMessage must include("hello world")
+  }
+
+  it should "use the passed decider" in { f =>
+    val manager = mockHttpSetup(
+      TextMessage("""[36,1,2,{},[],(*&(&({"arg0":"paolo","age":40,"arg2":true}]"""),
+      TextMessage("""[36,3,4,{}]""")
+    )
+
+    val decider: Supervision.Decider = {
+      case t: SerializationException => Supervision.Resume
+      case _ => Supervision.Restart
+    }
+
+    // connect the router
+    manager ! Connect(client = testActor, url = s"ws://test/ws", messageFlowDecider = decider)
+    expectMsg(Event(3, 4, Dict.apply(), None))
+  }
+
+  it should "On receiving " in { f =>
     val manager = mockHttpSetup(TextMessage("hello world!"))
 
     // connect the router
