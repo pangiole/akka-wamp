@@ -63,8 +63,10 @@ final class Router(val scopes: Map[Symbol, Scope], val probe: Option[ActorRef])(
       log.info("[{}] - Successfully bound on {}", self.path.name, localAddress)
       for (p <- probe) p ! msg
       
-    case Wamp.Disconnect => 
-      switchOn(sender())(
+    case Wamp.Disconnect =>
+      val client = sender()
+      log.info("[{}] - Client disconnected {}", self.path, client.path.name)
+      switchOn(client)(
         whenSessionOpen = { session =>
           closeSession(session)
         },
@@ -190,8 +192,7 @@ object Router {
     IO(Wamp) ! Bind(router)
     
     def receive = {
-      case Wamp.CommandFailed(cmd, cause) =>
-        log.error(cause, "Command failed {}", cmd)
+      case Wamp.BindFailed(cause) =>
         context.system.terminate().map[Unit](_ => System.exit(-1))
     }
   }

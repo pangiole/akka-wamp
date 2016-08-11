@@ -89,6 +89,8 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     */
   final case class Bound(localAddress: InetSocketAddress) extends Signal
 
+  final case class BindFailed(cause: Throwable) extends Signal
+  
   /**
     * The connection actor sends this message either to the sender of a [[Connect]]
     * command (for outbound) or to the handler for incoming connections designated
@@ -96,12 +98,9 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     */
   final case class Connected(peer: ActorRef) extends Signal
 
-  /**
-    * Whenever a command cannot be completed, the queried actor will reply with
-    * this message, wrapping the original command which failed.
-    */
-  final case class CommandFailed(cmd: Command, cause: Throwable) extends Signal
-
+  final case class ConnectionFailed(cause: Throwable) extends Signal
+  
+  
   final case object Disconnected extends Signal
 
   final case object Disconnect extends Command

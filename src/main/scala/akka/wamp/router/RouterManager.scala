@@ -1,7 +1,7 @@
 package akka.wamp.router
 
 import akka.Done
-import akka.actor.{Actor, ActorLogging, ActorSystem}
+import akka.actor.{Actor, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 
-private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor with ActorLogging  {
+private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor  {
   implicit val ec = system.dispatcher
 
   val iface = system.settings.config.getString("akka.wamp.router.iface")
@@ -31,12 +31,12 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
       val reactToTopLevelFailures: Flow[Http.IncomingConnection, Http.IncomingConnection, _] =
         Flow[Http.IncomingConnection].
           watchTermination()((_, termination) => termination.onFailure {
-            case cause => binder ! Wamp.CommandFailed(cmd, cause)
+            case cause => 
+              binder ! Wamp.ConnectionFailed(cause)
           })
 
       val handleConnection: Sink[Http.IncomingConnection, Future[Done]] =
         Sink.foreach { conn =>
-          log.debug("[{}] - Http.Incoming accepted on {}", self.path.name, conn.localAddress)
           val transport = context.actorOf(Transport.props(router))
           transport ! conn
         }
@@ -53,8 +53,7 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
         case Success(b) =>
           router ! Wamp.Bound(b.localAddress)
         case Failure(cause) =>
-          // cannot bind
-          router ! Wamp.CommandFailed(cmd, cause)
+          router ! Wamp.BindFailed(cause)
       }
     }
   }
