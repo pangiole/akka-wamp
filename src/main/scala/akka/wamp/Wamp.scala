@@ -3,8 +3,9 @@ package akka.wamp
 import java.net.InetSocketAddress
 
 import akka.actor.{ActorRef, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, Props}
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.io.IO
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Supervision}
 
 
 /**
@@ -19,8 +20,8 @@ import akka.stream.ActorMaterializer
   * In order to start listening for inbound connections send a [[Wamp.Bind]]
   * message to the [[WampExtension#manager]].
   */
-object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
-  
+trait WampLike extends ExtensionId[WampExtension] with ExtensionIdProvider {
+
   /**
     * Returns the canonical ExtensionId for this Extension
     */
@@ -30,8 +31,16 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     * Is used by Akka to instantiate the Extension identified by this ExtensionId,
     * internal use only.
     */
-  override def createExtension(system: ExtendedActorSystem): WampExtension = new WampExtension(system)
+  override def createExtension(system: ExtendedActorSystem): WampExtension =
+    new WampExtension(system, Http()(system))
+}
 
+object Wamp extends WampLike {
+
+  def apply(http: HttpExt) = new WampLike {
+    override def createExtension(system: ExtendedActorSystem): WampExtension =
+      new WampExtension(system, http)
+  }
   /**
     * The common interface for [[Command]] and [[Signal]].
     */
@@ -52,7 +61,12 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     * @param url is the URI to connect to (e.g. "ws://somehost.com:9999/path/to/ws")
     * @param subprotocol is the WebSocket subprotocol to negotiate (e.g. "wamp.2.msgpack" or  "wamp.2.json")
     */
-  final case class Connect(client: ActorRef, url: String = "ws://localhost:8080/ws", subprotocol: String = "wamp.2.json") extends Command
+  final case class Connect(client: ActorRef,
+                           url: String = "ws://localhost:8080/ws",
+                           subprotocol: String = "wamp.2.json",
+                           messageFlowDecider: Supervision.Decider = {
+                             case _ => Supervision.Stop
+                           }) extends Command
   // TODO final case class Connect(client: ActorRef, url: String = "ws://localhost:8080/ws", subprotocols: List[String] = List("wamp.2.json")) extends Command
 
   /**
@@ -81,7 +95,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     */
   trait Signal extends AbstractMessage
 
-  
+
   /**
     * The sender of a [[Bind]] command will — in case of success — receive confirmation
     * in this form. If the bind address indicated a 0 port number, then the contained
@@ -92,7 +106,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
   /**
     * The connection actor sends this message either to the sender of a [[Connect]]
     * command (for outbound) or to the handler for incoming connections designated
-    * in the [[Bind]] message. 
+    * in the [[Bind]] message.
     */
   final case class Connected(peer: ActorRef) extends Signal
 
@@ -107,13 +121,11 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
   final case object Disconnect extends Command
 
   final case class Failure(message: String) extends Signal
-
 }
 
 
-
-class WampExtension(system: ExtendedActorSystem) extends IO.Extension {
+class WampExtension(system: ExtendedActorSystem, http: HttpExt) extends IO.Extension {
   implicit val s = system
   implicit val m = ActorMaterializer()
-  val manager = system.actorOf(Manager.props(), name = "IO-Wamp")
+  val manager = system.actorOf(Manager.props(http), name = "IO-Wamp")
 }

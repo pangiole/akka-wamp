@@ -1,11 +1,11 @@
 package akka.wamp
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model.StatusCodes.SwitchingProtocols
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage, _}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, OverflowStrategies}
+import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategies, Supervision}
 import akka.wamp.messages.{Message => WampMessage}
 import akka.wamp.serialization.Serializers
 import akka.{Done, NotUsed}
@@ -13,7 +13,8 @@ import akka.{Done, NotUsed}
 import scala.concurrent.Future
 
 
-private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor with ActorLogging {
+private[wamp] class Manager(http: HttpExt)
+                           (implicit system: ActorSystem, mat: ActorMaterializer) extends Actor with ActorLogging {
   import system.dispatcher
 
   val iface = system.settings.config.getString("akka.wamp.router.iface")
@@ -48,7 +49,7 @@ private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializ
 
 
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-        Http()
+        http
           .bind(iface, port)
           //TODO .throttle()
       
@@ -67,22 +68,20 @@ private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializ
           router ! Wamp.CommandFailed(cmd)
       }
     }
-      
-      
+
     case Wamp.Unbind => {
       val router = sender()
       for { binding <- bindings(router) } yield (binding.unbind())
     }
-      
-      
-    case cmd @ Wamp.Connect(client, uri, subprotocol) => {
+
+    case cmd @ Wamp.Connect(client, uri, subprotocol, messageFlowDecider) => {
       log.debug("Connecting to {} with {}", uri, subprotocol)
 
       val outgoingSource: Source[WampMessage, ActorRef] =
         Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
 
       val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
-        Http().webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
+        http.webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
       // TODO file an issue on Akka HTTP to request multiple subprotocol negotiation
 
 
@@ -92,14 +91,15 @@ private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializ
 
 
       val serializer = Serializers.streams(subprotocol)
-      
+
+      val serialiserStrategy = ActorAttributes.supervisionStrategy(messageFlowDecider)
       // upgradeResponse is a Future[WebSocketUpgradeResponse] that 
       // completes or fails when the connection succeeds or fails
       val (outgoingActor, upgradeResponse) =
         outgoingSource
-          .via(serializer.serialize)
+          .via(serializer.serialize.withAttributes(serialiserStrategy))
           .viaMat(webSocketFlow)(Keep.both)
-          .viaMat(serializer.deserialize)(Keep.left)
+          .viaMat(serializer.deserialize.withAttributes(serialiserStrategy))(Keep.left)
           .toMat(incomingSink)(Keep.left)
           .run()
 
@@ -127,5 +127,6 @@ private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializ
 
 
 object Manager {
-  def props()(implicit system: ActorSystem, mat: ActorMaterializer) = Props(new Manager())
+  def props(http: HttpExt)(implicit system: ActorSystem, mat: ActorMaterializer) =
+    Props(new Manager(http))
 }

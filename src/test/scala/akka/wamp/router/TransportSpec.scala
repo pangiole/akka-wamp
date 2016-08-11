@@ -66,8 +66,6 @@ class TransportSpec
     }
   }
 
-  
-  
   def scenario(route: Route)(testCode: (WSProbe) => Unit) = {
     val client = WSProbe()
     WS(url, client.flow, List("wamp.2.json")) ~> route ~> check {
