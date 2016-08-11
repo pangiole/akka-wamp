@@ -11,5 +11,6 @@ object Dependencies {
   val jackson = "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2"
   val scalactic = "org.scalactic" %% "scalactic" % scalatestVersion
   val scalatest = "org.scalatest" %% "scalatest" % scalatestVersion
+  val mockito = "org.mockito" % "mockito-all" % "1.9.5"
   val pegdown = "org.pegdown" % "pegdown" % "1.6.0"
 }
