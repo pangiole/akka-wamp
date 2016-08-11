@@ -189,9 +189,9 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid PUBLISH without payload" in {
-        s.deserialize("""[16,1,{"acknowledge":true},"myapp.topic1"]"""") match {
+        s.deserialize("""[16,9007199254740991,{"acknowledge":true},"myapp.topic1"]"""") match {
           case m: Publish =>
-            m.requestId mustBe 1
+            m.requestId mustBe 9007199254740991L
             m.options mustBe Map("acknowledge"->true)
             m.topic mustBe "myapp.topic1"
             m.payload mustBe None
@@ -200,9 +200,9 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid PUBLISH with payload as list" in {
-        s.deserialize(s"""[16,1,{},"myapp.topic1",["paolo",40,true]]""") match {
+        s.deserialize(s"""[16,9007199254740991,{},"myapp.topic1",["paolo",40,true]]""") match {
           case m: Publish =>
-            m.requestId mustBe 1
+            m.requestId mustBe 9007199254740991L
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
             m.payload.value.arguments mustBe List("paolo", 40, true)
@@ -210,9 +210,9 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       "succeed for valid PUBLISH with payload as map" in {
-        s.deserialize(s"""[16,1,{},"myapp.topic1",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
+        s.deserialize(s"""[16,9007199254740991,{},"myapp.topic1",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: Publish =>
-            m.requestId mustBe 1
+            m.requestId mustBe 9007199254740991L
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
             m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
@@ -237,6 +237,7 @@ class JsonSerializationSpec extends WordSpec
           a[SerializationException] mustBe thrownBy(s.deserialize(text))
         }
       }
+
       "succeed for valid PUBLISHED" in {
         s.deserialize("""[17,1,2]""") match {
           case m: Published =>
@@ -246,6 +247,23 @@ class JsonSerializationSpec extends WordSpec
         }
       }
 
+      "succeed PUBLISHED for Long requestId" in {
+        s.deserialize("""[17,9007199254740991,2]""") match {
+          case m: Published =>
+            m.requestId mustBe 9007199254740991L
+            m.publicationId mustBe 2
+          case _ => fail
+        }
+      }
+
+      "succeed PUBLISHED for Long publicationId" in {
+        s.deserialize("""[17,1, 9007199254740991]""") match {
+          case m: Published =>
+            m.requestId mustBe 1
+            m.publicationId mustBe 9007199254740991L
+          case _ => fail
+        }
+      }
 
       //[SUBSCRIBE, Request|id, Options|dict, Topic|uri]
       "fail for invalid SUBSCRIBE" in {

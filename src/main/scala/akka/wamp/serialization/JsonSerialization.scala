@@ -73,9 +73,9 @@ class JsonSerialization extends Serialization {
         }
         case PUBLISH => {
           arr.length match {
-            case 4 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, options = arr(2).asDict)
-            case 5 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
-            case 6 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
+            case 4 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, options = arr(2).asDict)
+            case 5 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
+            case 6 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
           }
         }
         case PUBLISHED => {
