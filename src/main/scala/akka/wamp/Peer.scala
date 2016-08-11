@@ -6,7 +6,7 @@ import akka.wamp.router._
 
 /**
   * A Peer communicates with another Peer by exchanging [[Message]]s 
-  * during a transient [[Session]] established over a [[Transport]].
+  * during a transient [[SessionLike]] established over a [[TransportLike]].
   * 
   * A Peer could be either a [[Client]] or a [[Router]] 
   *  - it must implement one [[Role]], and

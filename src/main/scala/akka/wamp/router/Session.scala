@@ -18,7 +18,7 @@ import scala.annotation.tailrec
   * @param realm is the realm this session attaches to
   */
 class Session(val id: Id, val client: ActorRef, val roles: Set[String], val realm: Uri) 
-extends akka.wamp.Session
+extends akka.wamp.SessionLike
 
 
 object Session {

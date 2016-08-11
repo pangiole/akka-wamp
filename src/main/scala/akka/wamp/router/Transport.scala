@@ -31,7 +31,7 @@ import akka.wamp.{messages => wamp, _}
   * @param router is the first peer that will be connected by this transport
   */
 class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
-extends akka.wamp.Transport 
+extends akka.wamp.TransportLike 
 with Actor with ActorLogging 
 {
   val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
@@ -116,7 +116,7 @@ with Actor with ActorLogging
   var client: ActorRef = _
   
   override def preStart(): Unit = {
-    log.info("[{}]   Starting", self.path.name)
+    log.info("[{}]    Starting", self.path.name)
   }
 
   override def postStop(): Unit = {
@@ -126,12 +126,12 @@ with Actor with ActorLogging
   def receive: Receive = {
 
     case conn: Http.IncomingConnection =>
-      log.debug("[{}] -   Http.Incoming accepted on {}", self.path.name, conn.localAddress)
+      log.debug("[{}]     Http.Incoming accepted on {}", self.path.name, conn.localAddress)
       conn.handleWith(httpFlow)
       
     case Wamp.Connected(peer) =>
       client = peer
-      log.debug("[{}] -   Wamp.Connected to client [{}]", self.path.name, client.path.name)
+      log.debug("[{}]     Wamp.Connected to client [{}]", self.path.name, client.path.name)
 
     case msg: wamp.Message if (sender() == router) =>
       log.debug("[{}] --> {}", self.path.name, msg)
