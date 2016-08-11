@@ -73,9 +73,9 @@ class JsonSerialization extends Serialization {
         }
         case PUBLISH => {
           arr.length match {
-            case 4 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, options = arr(2).asDict)
-            case 5 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
-            case 6 => Publish(requestId = arr(1).asInt, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
+            case 4 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, options = arr(2).asDict)
+            case 5 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
+            case 6 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
           }
         }
         case PUBLISHED => {
@@ -106,9 +106,9 @@ class JsonSerialization extends Serialization {
         }
         case EVENT => {
           arr.length match {
-            case 4 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict)
-            case 5 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(4).asSomePayload)
-            case 6 => Event(subscriptionId = arr(1).asInt, publicationId = arr(2).asInt, details = arr(3).asDict, arr(5).asSomePayload)
+            case 4 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict)
+            case 5 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(4).asSomePayload)
+            case 6 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(5).asSomePayload)
           }
         }
       }
