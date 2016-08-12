@@ -15,7 +15,7 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-final class Router(val scopes: Map[Symbol, Scope], val probe: Option[ActorRef])(implicit mat: ActorMaterializer) 
+final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef])(implicit mat: ActorMaterializer) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
@@ -59,9 +59,9 @@ final class Router(val scopes: Map[Symbol, Scope], val probe: Option[ActorRef])(
     */
   private def handleTransports: Receive = {
     
-    case msg @ Wamp.Bound(localAddress) =>
-      log.info("[{}] - Successfully bound on {}", self.path.name, localAddress)
-      for (p <- probe) p ! msg
+    case msg @ Wamp.Bound(url) =>
+      log.info("[{}] - Successfully bound on {}", self.path.name, url)
+      for (p <- listener) p ! msg
       
     case Wamp.Disconnect =>
       val client = sender()
@@ -167,11 +167,11 @@ object Router {
     * Create a Props for an actor of this type
     *
     * @param scopes is the [[Scope]] map used for [[Id]] generation
-    * @param probe is the actor to notify Bind to
+    * @param listener is the actor to notify Bind to
     * @return the props
     */
-  def props(scopes: Map[Symbol, Scope] = Scope.defaults, probe: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
-    Props(new Router(scopes, probe)(mat))
+  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
+    Props(new Router(scopes, listener)(mat))
   
   /**
     * Starts the router as standalone application

@@ -11,7 +11,7 @@ import akka.wamp.messages._
 import scala.concurrent.duration._
 
 // it tests the default router configuration
-class DefaultRouterSpec extends RouterSpec(ActorSystem()) {
+class DefaultRouterSpec extends RouterFixtureSpec {
 
   "The router" should "auto-create realm if client says HELLO for unknown realm" in { f =>
     f.router ! Hello("myapp.realm", Dict().withRoles("publisher"))

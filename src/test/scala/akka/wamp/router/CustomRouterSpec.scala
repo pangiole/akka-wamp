@@ -6,7 +6,7 @@ import akka.wamp.messages.{Abort, Hello}
 import com.typesafe.config.ConfigFactory
 
 // it tests a custom router configuration
-class CustomRouterSpec extends RouterSpec(ActorSystem("test",
+class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
   ConfigFactory.parseString(
     """
       | akka {

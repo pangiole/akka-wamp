@@ -33,7 +33,7 @@ object JsonSerializerStreams extends SerializerStreams {
     */
   val serialize: Flow[WampMessage, WebSocketMessage, NotUsed] =
     Flow[WampMessage]
-      //.log(">>>")
+      //.log("-->")
       .map {
       case msg: WampMessage =>
         TextMessage.Strict(json.serialize(msg))
@@ -49,14 +49,12 @@ object JsonSerializerStreams extends SerializerStreams {
         case TextMessage.Strict(text) =>
           json.deserialize(text) match {
             case Good(message) => message
-            case Bad(issue) =>
-              log.error(issue.message, issue.throwable)
-              throw issue.throwable
+            case Bad(issue) => throw issue.throwable
           }
         // TODO what to do for Streamed(_), Strict(_) ???
         case m => ???  
       }
-    //.log("<<<")
+    //.log("<--")
 }
 
 

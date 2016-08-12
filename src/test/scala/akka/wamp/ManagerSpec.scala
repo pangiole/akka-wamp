@@ -17,20 +17,19 @@ class ManagerSpec
 
   "The IO(Wamp) manager" should "bind router" in { f =>
     val manager = IO(Wamp)
-    manager ! Bind(f.probe.ref)
-    f.probe.expectMsgType[Bound](8 seconds)
+    manager ! Bind(f.listener.ref)
+    val bound = f.listener.expectMsgType[Bound](8 seconds)
+    bound.url must startWith("ws://127.0.0.1:")
+    bound.url must endWith("/ws")
   }
   
   
   it should "connect client" in { f =>
     val manager = IO(Wamp)
     manager ! Bind(f.router)
+    val bound = f.listener.expectMsgType[Bound](8 seconds)
     
-    val bound = f.probe.expectMsgType[Bound](8 seconds)
-    val address = s"${bound.localAddress.getHostString}:${bound.localAddress.getPort}"
-
-    // connect the router
-    manager ! Connect(client = testActor, url = s"ws://$address/ws")
+    manager ! Connect(client = testActor, bound.url)
     val connected = expectMsgType[Wamp.Connected](8 seconds)
     connected.peer must not be (null)
   }
@@ -47,16 +46,17 @@ class ManagerSpec
 
   
   // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
-  case class FixtureParam(router: TestActorRef[Router], probe: TestProbe)
+  case class FixtureParam(router: TestActorRef[Router], listener: TestProbe)
+  
   def withFixture(test: OneArgTest) = {
-    val probe = TestProbe()
-    val router = TestActorRef[Router](Router.props(probe = Some(probe.ref)))
-    val theFixture = FixtureParam(router, probe)
+    val listener = TestProbe()
+    val router = TestActorRef[Router](Router.props(listener = Some(listener.ref)))
+    val theFixture = FixtureParam(router, listener)
     try {
       withFixture(test.toNoArgTest(theFixture)) 
     }
     finally {
-      system.stop(probe.ref)
+      system.stop(listener.ref)
       system.stop(router)
     }
   }

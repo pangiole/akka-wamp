@@ -87,7 +87,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     * in this form. If the bind address indicated a 0 port number, then the contained
     * `localAddress` can be used to find out which port was automatically assigned.
     */
-  final case class Bound(localAddress: InetSocketAddress) extends Signal
+  final case class Bound(url: String) extends Signal
 
   final case class BindFailed(cause: Throwable) extends Signal
   

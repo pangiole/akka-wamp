@@ -51,7 +51,11 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
 
       binding.onComplete {
         case Success(b) =>
-          router ! Wamp.Bound(b.localAddress)
+          val host = b.localAddress.getHostString
+          val port = b.localAddress.getPort
+          val path = context.system.settings.config.getString("akka.wamp.router.path")
+          val url = s"ws://$host:$port/$path"
+          router ! Wamp.Bound(url)
         case Failure(cause) =>
           router ! Wamp.BindFailed(cause)
       }
