@@ -1,8 +1,8 @@
 package akka.wamp.router
 
 import akka.actor.ActorSystem
-import akka.wamp.Dict
-import akka.wamp.messages.{Abort, Hello}
+import akka.wamp._
+import akka.wamp.messages._
 import com.typesafe.config.ConfigFactory
 
 // it tests a custom router configuration
@@ -12,18 +12,19 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
       | akka {
       |   wamp {
       |     router {
-      |       auto-create-realms = false
+      |       auto-create-realms = true
       |     }
       |   }
       | }
     """.stripMargin)
 )) {
 
-  it should "reply ABORT if client says HELLO for unknown realm" in { f =>
-    f.router ! Hello("unknown.realm")
-    expectMsg(Abort("wamp.error.no_such_realm", Dict("message" -> "The realm unknown.realm does not exist.")))
-    f.router.underlyingActor.realms must have size(1)
-    f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
-    f.router.underlyingActor.sessions mustBe empty
+  "The router" should "auto-create realm if client says HELLO for unknown realm" in { f =>
+    f.router ! Hello("myapp.realm", Dict().withRoles("publisher"))
+    expectMsgType[Welcome]
+    f.router.underlyingActor.realms must have size(2)
+    f.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "myapp.realm")
   }
+
+  
 }

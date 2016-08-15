@@ -10,7 +10,7 @@ import akka.wamp.messages._
   * A Broker routes events incoming from Publishers to Subscribers 
   * that are subscribed to respective Topics
   */
-trait Broker extends Role { this: Router =>
+trait Broker { this: Router =>
 
   /**
     * Map of subscriptions. Each entry is for one topic only 

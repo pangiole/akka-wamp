@@ -16,7 +16,8 @@ abstract class ActorSpec(_system: ActorSystem)
     with ParallelTestExecution
 {
   
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext = system.dispatcher
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

@@ -39,11 +39,10 @@ sealed trait Message extends AbstractMessage {
   */
 final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.DefaultDetails) extends Message {
   protected val tpe = Tpe.HELLO
-  require(Uri.isValid(realm), "invalid_uri")
-  require(details != null, "invalid_dict")
-  require(details.isDefinedAt("roles"), "invalid_roles")
-  require(!details.roles.isEmpty, "invalid_roles")
-  require(details.roles.forall(isValid), "invalid_roles")
+  require(Uri.isValid(realm), s"invalid uri $realm")
+  require(details != null, s"invalid dict $details")
+  require(details.isDefinedAt("roles") && !details.roles.isEmpty, s"missing roles in dict ${details}")
+  require(details.roles.forall(isValid), s"invalid roles in dict $details")
 
   private def isValid(role: String) = Seq("publisher", "subscriber", "caller", "callee").contains(role)
 }

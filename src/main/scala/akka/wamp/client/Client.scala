@@ -5,7 +5,9 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.io.IO
 import akka.stream.ActorMaterializer
 import akka.wamp.Wamp._
+import akka.wamp.messages._
 import akka.wamp._
+import akka.wamp.Roles._
 import akka.wamp.messages.{Hello, Message => WampMessage}
 import org.slf4j.LoggerFactory
 
@@ -45,18 +47,18 @@ private[client] class Client()(implicit system: ActorSystem, materializer: Actor
     * @param url
     * @param subprotocol
     * @param realm
-    * @param details
+    * @param roles
     * @return
     */
-  def connectAndHello(
+  def connectAndOpen(
     url: String = "ws://localhost:8080/ws", 
     subprotocol: String = "wamp.2.json", 
-    realm: Uri = "akka.wamp.realm", 
-    details: Dict = Hello.DefaultDetails): Future[Session] = 
+    realm: Uri = "akka.wamp.realm",
+    roles: Set[Role] = Set(Publisher, Subscriber)): Future[Session] = 
   {
     for {
       transport <- connect(url, subprotocol)
-      session <- transport.hello(realm, details)
+      session <- transport.open(realm, roles)
     } yield session
   }
 }
@@ -74,32 +76,30 @@ private[client] class ClientActor(promise: Promise[Transport])
   def receive = {
 
     case Connected(router) =>
-      // NOTE: transport is NOT an actor
+      // NOTE: transport is NOT an actor even though it defines a "looking-like receive()" method
       val transport = new Transport(router)
-      val handleMessages: Receive = {
-        case msg: WampMessage => transport.receive(msg)
+      context.become {
+        case message =>  
+          transport.receive(message)
       }
-      context.become(handleMessages orElse handleUnknown)
       promise.success(transport)
 
     case message: ConnectionFailed =>
-      promise.failure(new ThrownMessage(message))
+      promise.failure(new ConnectionException(message.toString))
       context.stop(self)
       
-    /*TODO case Wamp.Disconnected =>
+    /*
+    case Wamp.Disconnected =>
+      // TODO in which cases this message could be sent?
       log.debug("[{}] Disconnected from router [{}]", self.path.name, client.path.name)
       // router ! Wamp.Disconnect
       // client ! PoisonPill
-      context.stop(self)*/
+      context.stop(self)
+    */
 
     case StreamFailure(cause) =>
-      log.warning("[{}] Stream failure {}: {}", self.path.name, cause.getClass.getName, cause.getMessage)
+      // TODO in which cases this message could be sent?
       promise.failure(cause)
       context.stop(self)  
-  }
-  
-  def handleUnknown: Receive = {
-    case msg => 
-      log.warning("!!! {}", msg)
   }
 }

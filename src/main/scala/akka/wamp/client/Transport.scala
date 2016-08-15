@@ -2,6 +2,7 @@ package akka.wamp.client
 
 import akka.actor.Actor.Receive
 import akka.actor._
+import akka.wamp.Roles._
 import akka.wamp._
 import akka.wamp.messages._
 import org.slf4j.LoggerFactory
@@ -20,29 +21,34 @@ class Transport private[client] (router: ActorRef) extends akka.wamp.TransportLi
     * and with the given details, then return a future of session.
     * 
     * @param realm
-    * @param details
+    * @param roles
     * @return a future of session               
     */
-  def hello(
-    realm: Uri = "akka.wamp.realm", 
-    details: Dict = Hello.DefaultDetails): Future[Session] = 
+  def open(
+    realm: Uri = "akka.wamp.realm",
+    roles: Set[Role] = Set(Publisher, Subscriber)): Future[Session] = 
   {
     val promise = Promise[Session]
-    val handleMessages: Receive = {
-      case welcome: Welcome =>
-        log.debug("<-- {}", welcome)
-        promise.success(new Session(this, welcome))
-      case abort: Abort =>
-        log.debug("<-- {}", abort)
-        promise.failure(new ThrownMessage(abort))
-      case message =>
-        log.debug("<!! {}", message)
-        promise.failure(new Exception(s"Unexpected $message"))
+    try {
+      val hello = Hello(realm, Dict().withRoles(roles.toList: _*))
+      val handleMessages: Receive = {
+        case welcome: Welcome =>
+          log.debug("<-- {}", welcome)
+          promise.success(new Session(this, welcome))
+        case abort: Abort =>
+          log.debug("<-- {}", abort)
+          promise.failure(new AbortException(abort))
+        case message =>
+          log.debug("<!! {}", message)
+          promise.failure(new UnexpectedException(s"Unexpected $message"))
+      }
+      become(handleGoodbye orElse handleMessages orElse handleUnknown)
+      router ! hello
+    } catch {
+      case ex: Throwable =>
+        promise.failure(new OpenException(ex.getMessage))
     }
-    become(handleGoodbye orElse handleMessages orElse handleUnknown)
-    router ! Hello(realm, details)
     promise.future
-     
   }
 
   private[client] var receive: Receive =  _

@@ -8,6 +8,18 @@ package akka
 package object wamp {
 
   /**
+    * A Peer could be either a [[Client]] or a [[Router]]
+    *  - it must implement one [[Role]], and
+    *  - may implement more [[Role]]s.
+    */
+  type Role = String
+
+  object Roles {
+    val Subscriber = "subscriber"
+    val Publisher = "publisher"
+  }
+  
+  /**
     * Specified message type
     */
   type Tpe = Int
@@ -68,6 +80,7 @@ package object wamp {
   final object Dict {
     def apply(): Dict = Map.empty[String, Any]
     def apply(entries: (String, Any)*): Dict = entries.toMap
+    // TODO Dict#isValid?
   }
 
 
@@ -82,12 +95,16 @@ package object wamp {
     */
 
   implicit class RichDict(dict: Dict) {
-    def withRoles(roles: String*): Dict = {
+    def withRoles(roles: Role*): Dict = {
       dict ++ Map("roles" -> roles.map(role => (role -> Map())).toMap)
     }
 
     def withAgent(agent: String): Dict = {
       dict + ("agent" -> agent)
+    }
+    
+    def withAcknowledge(bool: Boolean = true): Dict = {
+      dict + ("acknowledge" -> bool)
     }
 
     def roles: Set[String] = {
@@ -106,13 +123,15 @@ package object wamp {
   case class Payload(val arguments: List[Any]) {
     private[wamp] def elems = {
       if (arguments.exists(_.isInstanceOf[Tuple2[_, _]])) {
-        List(Nil, toMap)
+        List(Nil, asDict)
       } else {
         List(arguments)
       }
     }
+    
+    def asList: List[Any] = arguments
 
-    def toMap: Map[String, Any] = {
+    def asDict: Map[String, Any] = {
       arguments.zipWithIndex.map {
         case (arg: Tuple2[_, _], _) => (arg._1.toString, arg._2)
         // TODO check that keys are of String type OR force them to become String

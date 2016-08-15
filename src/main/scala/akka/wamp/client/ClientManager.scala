@@ -21,49 +21,51 @@ private[wamp] class ClientManager(implicit system: ActorSystem, mat: ActorMateri
   var outlets = Map.empty[ActorRef, ActorRef]
 
   override def receive: Receive = {
-    case cmd @ Wamp.Connect(client, uri, subprotocol) => {
+    case cmd@Wamp.Connect(client, uri, subprotocol) => {
+      try {
+        val outgoingSource: Source[WampMessage, ActorRef] =
+          Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
 
-      val outgoingSource: Source[WampMessage, ActorRef] =
-        Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
+        val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
+          Http().webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
+        // TODO file an issue on Akka HTTP to request multiple subprotocol negotiation
 
-      val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
-        Http().webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
-      // TODO file an issue on Akka HTTP to request multiple subprotocol negotiation
+        // TODO file an issue on Akka Stream as disconnection is not signalled
+        val incomingSink: Sink[WampMessage, NotUsed] =
+          Sink.actorRef[WampMessage](client, onCompleteMessage = Wamp.Disconnected)
 
+        val serializer = Serializers.streams(subprotocol)
 
-      // TODO file an issue on Akka Stream as disconnection is not signalled
-      val incomingActor = client
-      val incomingSink: Sink[WampMessage, NotUsed] =
-        Sink.actorRef[WampMessage](incomingActor, onCompleteMessage = Wamp.Disconnected)
-      
-      val serializer = Serializers.streams(subprotocol)
+        // upgradeResponse is a Future[WebSocketUpgradeResponse] that 
+        // completes or fails when the connection succeeds or fails
+        val (outgoingActor, upgradeResponse) =
+          outgoingSource
+            .via(serializer.serialize)
+            .viaMat(webSocketFlow)(Keep.both)
+            .viaMat(serializer.deserialize)(Keep.left)
+            .toMat(incomingSink)(Keep.left)
+            .run()
 
-      // upgradeResponse is a Future[WebSocketUpgradeResponse] that 
-      // completes or fails when the connection succeeds or fails
-      val (outgoingActor, upgradeResponse) =
-        outgoingSource
-          .via(serializer.serialize)
-          .viaMat(webSocketFlow)(Keep.both)
-          .viaMat(serializer.deserialize)(Keep.left)
-          .toMat(incomingSink)(Keep.left)
-          .run()
+        // hold the outlet reference for later usage
+        outlets += (client -> outgoingActor)
 
-      // hold the outlet reference for later usage
-      outlets += (incomingActor -> outgoingActor)
-
-      // just like a regular http request we can get 404 NotFound etc.
-      // that will be available from upgrade.response
-      upgradeResponse.onSuccess { case upgrade =>
-        if (upgrade.response.status == SwitchingProtocols) {
-          incomingActor ! Wamp.Connected(outgoingActor)
-        } else {
-          incomingActor ! Wamp.ConnectionFailed(new Exception(upgrade.response.toString))
+        // just like a regular http request we can get 404 NotFound etc.
+        // that will be available from upgrade.response
+        upgradeResponse.onSuccess { case upgrade =>
+          if (upgrade.response.status == SwitchingProtocols) {
+            client ! Wamp.Connected(outgoingActor)
+          } else {
+            client ! Wamp.ConnectionFailed(new Exception(upgrade.response.toString))
+          }
         }
-      }
 
-      upgradeResponse.onFailure {
+        upgradeResponse.onFailure {
+          case ex: Throwable =>
+            client ! Wamp.ConnectionFailed(ex)
+        }
+      } catch {
         case ex: Throwable =>
-          incomingActor ! Wamp.ConnectionFailed(ex)
+          client ! Wamp.ConnectionFailed(ex)
       }
     }
 
