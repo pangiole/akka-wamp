@@ -19,6 +19,8 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
+  import Router._
+  
   val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.router.auto-create-realms")
   
   val roles = Set("broker")
@@ -42,28 +44,37 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     * Map of open Sessions
     */
   val sessions = mutable.Map.empty[Id, Session]
-  
-  
+
+
+  @scala.throws[Exception](classOf[Exception])
+  override def preStart(): Unit = {
+    listener.map(_ ! Starting)
+  }
+
   /**
     * Handle either transports, sessions, subscriptions, publications, 
     * registrations or invocations
     */
-  def receive =
+  override def receive =
     handleTransports orElse
       handleSessions orElse 
         handleSubscriptions orElse
           handlePublications
 
+
+  @scala.throws[Exception](classOf[Exception])
+  override def postStop(): Unit = {
+    listener.map(_ ! Stopped)
+  }
+
   /**
     * Handle transports connection and disconnection
     */
   private def handleTransports: Receive = {
-    
-    case msg @ Wamp.Bound(url) =>
+    case bound @ Bound(url) =>
       log.info("[{}] - Successfully bound on {}", self.path.name, url)
-      for (p <- listener) p ! msg
-      
-    case Wamp.Disconnect =>
+      listener.map(_ ! bound)
+    case Disconnect =>
       val client = sender()
       log.info("[{}] - Client disconnected {}", self.path, client.path.name)
       switchOn(client)(
@@ -128,6 +139,11 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         }
       )
     }
+
+    /* TODO case Shutdown =>
+      sessions.foreach { case (id, session) =>
+        session.client ! Goodbye("wamp.error.system_shutdown")
+      }*/
   }
 
 
@@ -152,17 +168,27 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     sessions -= session.id
   }
   
-  
   private def createRealm(realm: Uri) = {
     realms += realm
     realm
   }
-
 }
 
 
 
 object Router {
+
+  /**
+    * Sent by router when starting
+    */
+  final case object Starting extends Signal
+  
+  /**
+    * Sent by router when stopped
+    */
+  final case object Stopped extends Signal
+  
+  
   /**
     * Create a Props for an actor of this type
     *
