@@ -18,7 +18,7 @@ class ManagerSpec
   "The IO(Wamp) manager" should "bind router" in { f =>
     val manager = IO(Wamp)
     manager ! Bind(f.listener.ref)
-    val bound = f.listener.expectMsgType[Bound](8 seconds)
+    val bound = f.listener.expectMsgType[Bound](16 seconds)
     bound.url must startWith("ws://127.0.0.1:")
     bound.url must endWith("/ws")
   }
@@ -27,10 +27,10 @@ class ManagerSpec
   it should "connect client" in { f =>
     val manager = IO(Wamp)
     manager ! Bind(f.router)
-    val bound = f.listener.expectMsgType[Bound](8 seconds)
+    val bound = f.listener.expectMsgType[Bound](16 seconds)
     
     manager ! Connect(client = testActor, bound.url)
-    val connected = expectMsgType[Wamp.Connected](8 seconds)
+    val connected = expectMsgType[Wamp.Connected](16 seconds)
     connected.peer must not be (null)
   }
   
