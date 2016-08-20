@@ -15,8 +15,8 @@ class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   
   // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
   case class FixtureParam(router: TestActorRef[Router], url: String)
-  
-  def withFixture(test: OneArgTest) = {
+
+  override def withFixture(test: OneArgTest) = {
     val scopes = Map(
       'global -> new Scope.Session {},
       'router -> new Scope.Session {},

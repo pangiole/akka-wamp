@@ -91,17 +91,6 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     f.router.underlyingActor.publications mustBe empty
   }
 
-  
-  it should  "reply ERROR if client says PUBLISH to a topic with no subscribers" in { f =>
-    val client = TestProbe("client")
-    client.send(f.router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
-    client.receiveOne(0.seconds)
-    client.send(f.router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
-    client.expectMsg(Error(PUBLISH, 1, Dict(), "wamp.error.no_such_topic"))
-    client.expectNoMsg()
-    f.router.underlyingActor.publications mustBe empty
-  }
-  
 
   it should "dispatch EVENT if client says PUBLISH to a topic with subscribers" in { f =>
     val client1 = TestProbe("client1")
@@ -275,7 +264,4 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client.send(f.router, Unsubscribe(1, 9999))
     client.expectMsg(Error(UNSUBSCRIBE, 1, Dict(), "wamp.error.no_such_subscription"))
   }
-
-
-  
 }

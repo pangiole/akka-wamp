@@ -33,6 +33,7 @@ trait Broker { this: Router =>
         val publisher = session.client
         val ack = options.get("acknowledge") == Some(true)
         if (session.roles.contains("publisher")) {
+          val publicationId = scopes('global).nextId(excludes = publications)
           /**
             * By default, publications are unacknowledged, and the Broker will
             * not respond, whether the publication was successful indeed or not.
@@ -44,14 +45,11 @@ trait Broker { this: Router =>
             case Nil =>
               /**
                 * Actually, no subscribers has subscribed to the given topic.
-                * When the request for publication cannot be fulfilled by the Broker,
-                * and "PUBLISH.Options.acknowledge == true", the Broker sends back an
-                * "ERROR" message to the Publisher
                 */
-              if (ack) publisher ! Error(PUBLISH, requestId, Dict(), "wamp.error.no_such_topic")
-              ()
+              if (ack) {
+                publisher ! Published(requestId, publicationId)
+              }
             case subscription :: Nil =>
-
               /**
                 * When a publication is successful and a Broker dispatches the event,
                 * it determines a list of receivers for the event based on subscribers
@@ -60,17 +58,22 @@ trait Broker { this: Router =>
                 * Note that the publisher of an event will never receive the published 
                 * event even if the publisher is also a subscriber of the topic published to.
                 */
-              val publicationId = scopes('global).nextId(excludes = publications)
               subscription.subscribers.filter(_ != publisher).foreach { subscriber =>
                 publications += publicationId
                 subscriber ! Event(subscription.id, publicationId, Dict(), payload)
               }
-              if (ack) publisher ! Published(requestId, publicationId)
-            case _ => throw new IllegalStateException()
+              if (ack) {
+                publisher ! Published(requestId, publicationId)
+              }
+              
+            case _ => 
+              throw new IllegalStateException()
           }
         }
         else {
-          if (ack) publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
+          if (ack) {
+            publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
+          }
         }
       }
   }
