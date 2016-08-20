@@ -18,3 +18,9 @@ project/plugins/project/
 
 # Node
 node_modules/
+
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
