@@ -1,55 +1,52 @@
 package akka.wamp.client
 
+import akka.actor.PoisonPill
 import akka.wamp.Dict
-import akka.wamp.messages._
 
 class TransportSpec extends ClientFixtureSpec {
-  
-  "A client transport" should "open a session" in { f =>
+
+  "A client transport" should "fail open session when invalid realm is given" in { f =>
     val session = for {
       transport <- Client().connect(f.url)
-      session <- transport.open()
+      session <- transport.open("invalid!realm")
     } yield session
-    
-    whenReady(session) { session =>
-      session.id mustBe 1
-      session.details mustBe Map(
-        "agent" -> "akka-wamp-0.5.0", 
-        "roles" -> Map("broker" -> Map())
-      )
+
+    whenReady(session.failed) { e =>
+      e mustBe a[TransportException]
+      e.getMessage mustBe "requirement failed: invalid uri invalid!realm"
     }
   }
   
-  it should "reject opening when illegal realm" in { f =>
+  it should "fail open session when invalid roles are given" in { f =>
     val session = for {
       transport <- Client().connect(f.url)
-      session <- transport.open("illegal!realm")
+      session <- transport.open("akka.wamp.realm", roles = Set("invalid"))
     } yield session
 
-    session.failed.futureValue match {
-      case OpenException(message) =>
-        message mustBe "requirement failed: invalid uri illegal!realm"
-      case other =>
-        fail(s"unexpected $other")
-    } 
-  }
-
-  it should "reject opening when illegal roles" in { f =>
-    val session = for {
-      transport <- Client().connect(f.url)
-      session <- transport.open("akka.wamp.realm", roles = Set("wrong"))
-    } yield session
-
-    session.failed.futureValue match {
-      case OpenException(message) =>
-        message must startWith("requirement failed: invalid roles ")
-      case other =>
-        fail(s"unexpected $other")
+    whenReady(session.failed) { e =>
+      e mustBe a[TransportException]
+      e.getMessage must startWith("requirement failed: invalid roles ")
     }
   }
-
   
-  it should "fail opening when unknown realm" in { f =>
+  it should "fail open session when it turns to be disconnected" in { f =>
+    pending
+    val transport = Client().connect(f.url)
+    whenReady(transport) { t =>
+      // TODO cannot find a good way to simulate transport disconnection :-(
+      f.router ! PoisonPill
+      // TODO f.listener.expectMsg(Stopped)
+      val session = t.open()
+      whenReady(session.failed) { e =>
+        e mustBe TransportException
+        e.getMessage mustBe "disconnected"
+      }
+    }
+  }
+  
+  it should "fail open session when router aborts" in { f =>
+    // if unknown.realm is given and router cannot create it
+    // then router will reply Abort message
     val session = for {
       transport <- Client().connect(f.url)
       session <- transport.open("unknown.realm")
@@ -63,4 +60,28 @@ class TransportSpec extends ClientFixtureSpec {
         fail(s"unexpected $other")
     }
   }
+
+  it should "succeed open one or more sessions in optimal scenarios" in { f =>
+    val session1 = for {
+      transport <- Client().connect(f.url)
+      session <- transport.open()
+    } yield session
+
+    whenReady(session1) { s =>
+      s.id mustBe 1
+      s.details mustBe Map(
+        "agent" -> "akka-wamp-0.5.0",
+        "roles" -> Map("broker" -> Map())
+      )
+    }
+
+    val session2 = for {
+      transport <- Client().connect(f.url)
+      session <- transport.open()
+    } yield session
+    
+    whenReady(session2)(_.id mustBe 2)
+  }
+  
+  
 }

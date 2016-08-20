@@ -1,11 +1,12 @@
-package akka.wamp.messages
+package akka.wamp.client
 
-
-final case class UnexpectedException(message: String) extends Throwable(message)
+import akka.wamp.messages._
 
 final case class ConnectionException(message: String) extends Throwable(message)
 
-final case class OpenException(message: String) extends Throwable(message)
+final case class TransportException(message: String) extends Throwable(message)
+
+final case class SessionException(message: String) extends Throwable(message)
 
 final case class AbortException(abort: Abort) extends Throwable(abort.toString)
 

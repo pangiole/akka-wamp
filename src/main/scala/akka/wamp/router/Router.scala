@@ -45,12 +45,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     */
   val sessions = mutable.Map.empty[Id, Session]
 
-
-  @scala.throws[Exception](classOf[Exception])
-  override def preStart(): Unit = {
-    listener.map(_ ! Starting)
-  }
-
   /**
     * Handle either transports, sessions, subscriptions, publications, 
     * registrations or invocations
@@ -61,11 +55,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         handleSubscriptions orElse
           handlePublications
 
-
-  @scala.throws[Exception](classOf[Exception])
-  override def postStop(): Unit = {
-    listener.map(_ ! Stopped)
-  }
 
   /**
     * Handle transports connection and disconnection
@@ -177,18 +166,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
 
 
 object Router {
-
-  /**
-    * Sent by router when starting
-    */
-  final case object Starting extends Signal
-  
-  /**
-    * Sent by router when stopped
-    */
-  final case object Stopped extends Signal
-  
-  
   /**
     * Create a Props for an actor of this type
     *

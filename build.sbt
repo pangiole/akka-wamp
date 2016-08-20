@@ -21,7 +21,8 @@ libraryDependencies ++= Seq (
   scalactic
 ) ++ Seq(
   akkaHttpTestkit, 
-  scalatest, 
+  scalatest,
+  scalamock,
   pegdown
 ).map(_ % Test)
 

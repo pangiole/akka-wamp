@@ -1,14 +1,46 @@
 package akka.wamp.client
 
-import akka.wamp.router.RouterFixtureSpec
+import akka.actor.ActorSystem
+import akka.io.IO
+import akka.testkit.{TestActorRef, TestProbe}
+import akka.wamp.Wamp.{Bind, Bound}
+import akka.wamp.router.Router
+import akka.wamp.{ActorSpec, Scope, Wamp}
 import org.scalatest.ParallelTestExecution
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.SpanSugar
 
-class ClientFixtureSpec extends RouterFixtureSpec
-  with ScalaFutures with SpanSugar with ParallelTestExecution {
+import scala.concurrent.duration._
+
+class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
+  extends ActorSpec(_system)
+    with ParallelTestExecution
+    with ScalaFutures {
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 6 seconds, interval = 100 millis)
+    PatienceConfig(timeout = 5 seconds, interval = 100 millis)
 
+  // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
+  case class FixtureParam(router: TestActorRef[Router], listener: TestProbe, url: String)
+
+  
+  override def withFixture(test: OneArgTest) = {
+    
+    val scopes = Map(
+      'global -> new Scope.Session {},
+      'router -> new Scope.Session {},
+      'session -> new Scope.Session {}
+    )
+    val listener = TestProbe()
+    val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
+    try {
+      IO(Wamp) ! Bind(router)
+      val bound = listener.expectMsgType[Bound](5 seconds)
+      val theFixture = FixtureParam(router, listener, bound.url)
+      withFixture(test.toNoArgTest(theFixture))
+    }
+    finally {
+      system.stop(listener.ref)
+      system.stop(router)
+    }
+  }
 }

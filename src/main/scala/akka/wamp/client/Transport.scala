@@ -13,44 +13,56 @@ import scala.concurrent.{Future, Promise}
   * A Transport connects two [[Peer]]s and provides a channel over which 
   * [[Message]]s for a [[Session]] can flow in both directions.
   */
-class Transport private[client] (router: ActorRef) extends akka.wamp.TransportLike {
-  private val log = LoggerFactory.getLogger(classOf[Transport])    
+class Transport private[client] (client: ActorRef, router: ActorRef) extends akka.wamp.TransportLike {
+  private val log = LoggerFactory.getLogger(classOf[Transport])
+
+  private val DefaultRoles = Set(Publisher, Subscriber)
+
+  private[client] val clientRef: ActorRef = client
+  
+  private[client] val routerRef: ActorRef = router
   
   /**
-    * Send an HELLO message to the remote router for the given realm 
-    * and with the given details, then return a future of session.
+    * Open a new session sending an HELLO message to the remote router 
+    * for the given realm and roles, then return a future of session.
     * 
-    * @param realm
-    * @param roles
+    * @param realm is the realm to attach the session to
+    * @param roles is the roles set
     * @return a future of session               
     */
-  def open(
-    realm: Uri = "akka.wamp.realm",
-    roles: Set[Role] = Set(Publisher, Subscriber)): Future[Session] = 
-  {
+  def open(realm: Uri = "akka.wamp.realm", roles: Set[Role] = DefaultRoles): Future[Session] = {
     val promise = Promise[Session]
     try {
       val hello = Hello(realm, Dict().withRoles(roles.toList: _*))
-      val handleMessages: Receive = {
-        case welcome: Welcome =>
-          log.debug("<-- {}", welcome)
-          promise.success(new Session(this, welcome))
-        case abort: Abort =>
-          log.debug("<-- {}", abort)
-          promise.failure(new AbortException(abort))
-        case message =>
-          log.debug("<!! {}", message)
-          promise.failure(new UnexpectedException(s"Unexpected $message"))
+      become {
+        welcomeHandler(promise) orElse
+          abortReceive(promise) orElse
+            unexpectedReceive(promiseToBreak = Some(promise))
       }
-      become(handleGoodbye orElse handleMessages orElse handleUnknown)
-      router ! hello
+      log.debug("--> {}", hello)
+      routerRef ! hello
     } catch {
       case ex: Throwable =>
-        promise.failure(new OpenException(ex.getMessage))
+        log.debug(ex.getMessage)
+        promise.failure(new TransportException(ex.getMessage))
     }
     promise.future
   }
 
+
+  
+  private def welcomeHandler(promise: Promise[Session]): Receive = {
+    case welcome: Welcome =>
+      log.debug("<-- {}", welcome)
+      val session = new Session(this, welcome)
+      become {
+        goodbyeReceive(session) orElse
+          unexpectedReceive(None)
+      }
+      promise.success(session)
+  }
+  
+  
   private[client] var receive: Receive =  _
 
   private[client] def become(receive: Receive) = {
@@ -59,11 +71,18 @@ class Transport private[client] (router: ActorRef) extends akka.wamp.TransportLi
   
   private[client] def !(msg: Message) = {
     log.debug("--> {}", msg)
-    router ! msg
+    routerRef ! msg
+  }
+  
+  
+  private[client] def abortReceive(promise: Promise[Session]): Receive = {
+    case abort: Abort =>
+      log.debug("<-- {}", abort)
+      promise.failure(new AbortException(abort))
   }
 
-
-  private[client] def handleGoodbye: Receive = {
+  
+  private[client] def goodbyeReceive(session: Session): Receive = {
     case msg: Goodbye =>
       log.debug("<-- {}", msg)
       /*
@@ -72,12 +91,13 @@ class Transport private[client] (router: ActorRef) extends akka.wamp.TransportLi
        * one _Peer_ and a "GOODBYE" message sent from the other _Peer_ 
        * in response.
        */
-      router ! Goodbye("wamp.error.goodbye_and_out")
-      // TODO shall we close the session?
+      routerRef ! Goodbye("wamp.error.goodbye_and_out")
+      session.doClose()
   }
-
-  private[client] def handleUnknown: Receive = {
+  
+  private[client] def unexpectedReceive[T](promiseToBreak: Option[Promise[T]]): Receive = {
     case msg =>
       log.warn("!!! {}", msg)
+      promiseToBreak.map(_.failure(new Exception(s"Unexpected message $msg")))
   }
 }

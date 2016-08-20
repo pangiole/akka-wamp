@@ -26,7 +26,7 @@ class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
     try {
       IO(Wamp) ! Bind(router)
-      val bound = listener.expectMsgType[Bound](6 seconds)
+      val bound = listener.expectMsgType[Bound](5 seconds)
       val theFixture = FixtureParam(router, bound.url)
       withFixture(test.toNoArgTest(theFixture))
     }

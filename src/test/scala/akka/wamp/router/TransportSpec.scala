@@ -18,7 +18,7 @@ class TransportSpec
     with ParallelTestExecution
 {
   
-  "The router transport" should "reject websocket requests if no subprotocol matches" in { f =>
+  "A router transport" should "reject websocket requests if no subprotocol matches" in { f =>
     WS(url, Flow[WebSocketMessage]) ~> f.route ~> check {
       rejections.collect {
         case UnsupportedWebSocketSubprotocolRejection(p) => p
