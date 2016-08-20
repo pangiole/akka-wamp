@@ -17,7 +17,7 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     with ScalaFutures {
 
   implicit val defaultPatience =
-    PatienceConfig(timeout = 5 seconds, interval = 100 millis)
+    PatienceConfig(timeout = 8 seconds, interval = 100 millis)
 
   // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
   case class FixtureParam(router: TestActorRef[Router], listener: TestProbe, url: String)
@@ -34,7 +34,7 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
     try {
       IO(Wamp) ! Bind(router)
-      val bound = listener.expectMsgType[Bound](5 seconds)
+      val bound = listener.expectMsgType[Bound](8 seconds)
       val theFixture = FixtureParam(router, listener, bound.url)
       withFixture(test.toNoArgTest(theFixture))
     }
