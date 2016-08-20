@@ -1,0 +1,10 @@
+site_name: akka-wamp-0.5.0
+site_author: Paolo Angioletti
+repo_name: https://github.com/angiolep/akka-wamp
+theme: flatly
+pages:
+  - Home: 'index.md'
+  - Router: 'router.md'
+  - Client:
+    - 'Future based': 'client/future.md'
+  - Messages: 'messages.md'  
