@@ -1,6 +1,5 @@
 package akka.wamp.client
 
-import akka.actor.Status.{Failure => StreamFailure}
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.io.IO
 import akka.stream.ActorMaterializer
@@ -23,7 +22,7 @@ private[client] class Client()(implicit system: ActorSystem, materializer: Actor
   private implicit val ec = system.dispatcher
 
   /**
-    * It connects to a [[Router]] at the given URL negotiating the given subprotocol
+    * It connects to a router at the given URL negotiating the given subprotocol
     * 
     * @param url is the URL to connect to (default is "ws://localhost:8080/ws")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
@@ -33,7 +32,6 @@ private[client] class Client()(implicit system: ActorSystem, materializer: Actor
     url: String = "ws://127.0.0.1:8080/ws", 
     subprotocol: String = "wamp.2.json"): Future[Transport] = 
   {
-    // TODO retries: Int = 0
     val promise = Promise[Transport]
     val client = system.actorOf(Props(new ClientActor(promise)))
     IO(Wamp) ! Connect(client, url, subprotocol)
@@ -42,7 +40,7 @@ private[client] class Client()(implicit system: ActorSystem, materializer: Actor
 
   
   /**
-    * It connects to a [[Router]] and says [[Hello]] to open a [[Session]]
+    * It connects to a router and says [[Hello]] to open a [[Session]]
     * 
     * @param url
     * @param subprotocol
@@ -85,19 +83,5 @@ private[client] class ClientActor(promise: Promise[Transport]) extends Actor wit
       log.debug(message.toString)
       promise.failure(new ConnectionException(message.toString))
       context.stop(self)
-      
-    /* case Wamp.Disconnected =>
-      // TODO in which cases this message could be sent?
-      log.debug("[{}] Disconnected from router [{}]", self.path.name, client.path.name)
-      // router ! Wamp.Disconnect
-      // client ! PoisonPill
-      context.stop(self)
-    */
-
-    /*case StreamFailure(cause) =>
-      // TODO in which cases this message could be sent?
-      log.debug(cause.toString)
-      promise.failure(cause)
-      context.stop(self)*/  
   }
 }

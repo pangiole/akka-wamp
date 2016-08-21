@@ -25,7 +25,6 @@ class JsonSerialization extends Serialization {
 
     def asUri = any.asInstanceOf[Uri]
 
-    // TODO consider the mixed case [] ++ {} arguments
     def asSomePayload = any match {
       case map: Map[_, _] => Some(Payload(map.toList))
       case list: List[_] => Some(Payload(list))  
@@ -41,15 +40,6 @@ class JsonSerialization extends Serialization {
   def deserialize(text: String): Message Or DeserializationError = {
     log.trace("Deserializing {}", text)
     try {
-      /*
-         The _application_ payload (that is call arguments, call results,
-         event payload etc) is always at the end of the message element list.
-         The rationale is: TODO Brokers and Dealers have no need to inspect (parse)
-         the application payload.  Their business is call/event routing.
-         Having the application payload at the end of the list allows Brokers
-         and Dealers to skip parsing it altogether.  This can improve
-         efficiency and performance.
-       */
       val arr = mapper.readValue(text, classOf[Array[Any]])
       arr(0) match {
         case HELLO => {

@@ -44,9 +44,6 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     f.router.underlyingActor.sessions  mustBe empty
   }
 
-  
-  // TODO WAMP spec doesn't clarify if client can open a second connection attached to a different realm?
-
 
   it should "fail if client says GOODBYE before HELLO" in { f =>
     f.router ! Goodbye()

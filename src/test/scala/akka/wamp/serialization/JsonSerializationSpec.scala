@@ -489,12 +489,6 @@ class JsonSerializationSpec extends WordSpec
         val json3 = s.serialize(msg3)
         json3 mustBe s"""[36,713845233,5512315,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""
       }
-
     }
   }
-  
-//  val PayloadListJson = """["paolo",42.5,true,null,["nested"],{"key":"value"}]"""
-//  val Payload("paolo", 40, true) = Payload(List("paolo", 42.5, true, null, List("nested"), Map("key" -> "value")))
-//  val PayloadMapJson = """{"name":"paolo","age":42.5,"object":{"nested":"value"},"array":["value"],"male":true,"notes":null}"""
-//  val Payload("paolo", "age"->40, true) = Payload(Map("name"->"paolo", "age"->42.5, "male"->true, "notes"->null, "array"->List("value"), "object"->Map("nested"->"value")))
 }

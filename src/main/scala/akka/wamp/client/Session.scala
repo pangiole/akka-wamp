@@ -20,7 +20,6 @@ class Session private[client](transport: Transport, welcome: Welcome)
 
   val details = welcome.details
   
-  // TODO could there be any concurrency issue?
   private var subscriptions = mutable.Map.empty[Id, Promise[Subscribed]]
   
   private var publications = mutable.Map.empty[Id, Promise[Either[Done, Published]]]

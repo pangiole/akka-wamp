@@ -91,7 +91,6 @@ with Actor with ActorLogging
     dsl.get {
       dsl.path(path) {
         dsl.handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
-        // TODO ~ handleWebSocketMessagesForProtocol(flow, "wamp.2.msgpack")
       }
     }
   }

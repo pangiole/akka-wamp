@@ -80,19 +80,7 @@ package object wamp {
   final object Dict {
     def apply(): Dict = Map.empty[String, Any]
     def apply(entries: (String, Any)*): Dict = entries.toMap
-    // TODO Dict#isValid?
   }
-
-
-  /* Some WAMP messages contain "Options|dict" or "Details|dict" elements.
-    * This allows for future extensibility and implementations that only
-    * provide subsets of functionality by ignoring unimplemented
-    * attributes.  
-    * TODO Keys in "Options" and "Details" MUST be of type "string" and MUST match the regular expression "[a-z][a-z0-9_]{2,}" 
-    * for WAMP _predefined_ keys.  Implementations MAY use implementation-specific
-    * keys that MUST match the regular expression "_[a-z0-9_]{3,}".
-    * Attributes unknown to an implementation MUST be ignored.
-    */
 
   implicit class RichDict(dict: Dict) {
     def withRoles(roles: Role*): Dict = {
@@ -134,7 +122,6 @@ package object wamp {
     def asDict: Map[String, Any] = {
       arguments.zipWithIndex.map {
         case (arg: Tuple2[_, _], _) => (arg._1.toString, arg._2)
-        // TODO check that keys are of String type OR force them to become String
         case (arg, idx) => (s"arg$idx" -> arg)
       }.toMap
     }

@@ -98,6 +98,9 @@ class Transport private[client] (client: ActorRef, router: ActorRef) extends akk
   private[client] def unexpectedReceive[T](promiseToBreak: Option[Promise[T]]): Receive = {
     case msg =>
       log.warn("!!! {}", msg)
-      promiseToBreak.map(_.failure(new Exception(s"Unexpected message $msg")))
+      promiseToBreak.map { p =>
+        if (!p.isCompleted)
+          p.failure(new Exception(s"Unexpected message $msg"))
+      }
   }
 }

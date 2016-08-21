@@ -128,11 +128,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         }
       )
     }
-
-    /* TODO case Shutdown =>
-      sessions.foreach { case (id, session) =>
-        session.client ! Goodbye("wamp.error.system_shutdown")
-      }*/
   }
 
 
@@ -153,7 +148,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   
   private def closeSession(session: Session) = {
     subscriptions.foreach { case (_, subscription) => unsubscribe(session.client, subscription) }
-    // TODO remove transport from registrations
     sessions -= session.id
   }
   

@@ -28,9 +28,7 @@ private[wamp] class ClientManager(implicit system: ActorSystem, mat: ActorMateri
 
         val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
           Http().webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
-        // TODO file an issue on Akka HTTP to request multiple subprotocol negotiation
 
-        // TODO file an issue on Akka Stream as disconnection is not signalled
         val incomingSink: Sink[WampMessage, NotUsed] =
           Sink.actorRef[WampMessage](client, onCompleteMessage = Wamp.Disconnected)
 

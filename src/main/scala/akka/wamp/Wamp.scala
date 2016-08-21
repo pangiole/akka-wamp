@@ -53,7 +53,6 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     * @param subprotocol is the WebSocket subprotocol to negotiate (e.g. "wamp.2.msgpack" or  "wamp.2.json")
     */
   final case class Connect(client: ActorRef, url: String = "ws://localhost:8080/ws", subprotocol: String = "wamp.2.json") extends Command
-  // TODO final case class Connect(client: ActorRef, url: String = "ws://localhost:8080/ws", subprotocols: List[String] = List("wamp.2.json")) extends Command
 
   /**
     * The Bind message is send to the WAMP manager actor, which is obtained via

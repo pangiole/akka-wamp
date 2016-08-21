@@ -45,13 +45,12 @@ object JsonSerializerStreams extends SerializerStreams {
   val deserialize: Flow[WebSocketMessage, WampMessage, NotUsed] =
     Flow[WebSocketMessage]
       .map {
-        //TODO what happens when deserialize throws Exception?
         case TextMessage.Strict(text) =>
           json.deserialize(text) match {
             case Good(message) => message
-            case Bad(issue) => throw issue.throwable
+            case Bad(issue) => throw issue.throwable // TODO configure a proper Akka Stream Supervisor
           }
-        // TODO what to do for Streamed(_), Strict(_) ???
+        // TODO what to do for Streamed(_)
         case m => ???  
       }
     //.log("<--")
@@ -61,6 +60,5 @@ object JsonSerializerStreams extends SerializerStreams {
 object Serializers {
   val streams = Map(
     "wamp.2.json" -> JsonSerializerStreams
-    // TODO "wamp.2.msgpack" -> MsgPackSerializerStreams 
   )
 }

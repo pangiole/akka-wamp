@@ -24,7 +24,6 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
         Http().
           bind(iface, port)
-          //TODO throttle()
 
       // when serverSource fails because of very dramatic situations 
       // such as running out of file descriptors or memory available to the system
@@ -46,8 +45,6 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
           via(reactToTopLevelFailures).
           to(handleConnection).
           run()
-
-      // TODO bindings += (router -> binding)
 
       binding.onComplete {
         case Success(b) =>

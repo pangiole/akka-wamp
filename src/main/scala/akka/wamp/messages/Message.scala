@@ -9,7 +9,6 @@ import akka.wamp.router.Session
   */
 sealed trait Message extends AbstractMessage {
   protected val tpe: Tpe
-  // TODO def toJson = ???
 }
 
 
