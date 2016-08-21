@@ -1,4 +1,4 @@
-[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url][![Documentation Status][docs-image]][docs-url]
+[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] [![Documentation Status][docs-image]][docs-url]
      
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
