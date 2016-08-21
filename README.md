@@ -2,7 +2,8 @@
 
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
-Detailed documentation is published [here](http://angiolep.github.io/projects/akka-wamp/index.html)
+## Read the Docs
+Detailed documentation is published [here](http://akka-wamp.readthedocs.io/)
 
 ## Client APIs
 Akka Wamp provides you with three alternative APIs in writing clients:
