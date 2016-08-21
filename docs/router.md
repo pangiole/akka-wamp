@@ -6,7 +6,7 @@ Make your SBT build depend on akka-wamp:
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.github.angiolep" %% "akka-wamp" % "0.5.0"
+  "com.github.angiolep" %% "akka-wamp" % "0.5.1"
   // ...
 )
 ```
@@ -53,9 +53,9 @@ It automatically binds on a server socket by reading the following Akka configur
 Download and launch the router as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.5.0.tgz
-tar xvfz akka-wamp-0.5.0.tar.gz
-cd akka-wamp-0.5.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.5.1.tgz
+tar xvfz akka-wamp-0.5.1.tar.gz
+cd akka-wamp-0.5.1
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
 

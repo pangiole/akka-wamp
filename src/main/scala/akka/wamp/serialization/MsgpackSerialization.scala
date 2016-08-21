@@ -7,7 +7,8 @@ class MsgpackSerialization extends Serialization {
   
   type T = Array[Byte]
 
-  def serialize(msg: Message): Array[Byte] = ???
+  override def serialize(msg: Message): Array[Byte] = ???
 
-  def deserialize(t: Array[Byte]): Message Or DeserializationError = ???
+  @throws(classOf[DeserializeException])
+  override def deserialize(t: Array[Byte]): Message = ???
 }

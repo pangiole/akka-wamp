@@ -70,7 +70,7 @@ class TransportSpec extends ClientFixtureSpec {
     whenReady(session1) { s =>
       s.id mustBe 1
       s.details mustBe Map(
-        "agent" -> "akka-wamp-0.5.0",
+        "agent" -> "akka-wamp-0.5.1",
         "roles" -> Map("broker" -> Map())
       )
     }

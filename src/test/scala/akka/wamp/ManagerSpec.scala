@@ -15,19 +15,19 @@ class ManagerSpec
   with ParallelTestExecution
 {
 
-  "The IO(Wamp) manager" should "bind router" in { f =>
+  "The IO(Wamp) manager" should "bind router" in { fixture =>
     val manager = IO(Wamp)
-    manager ! Bind(f.listener.ref)
-    val bound = f.listener.expectMsgType[Bound](16 seconds)
+    manager ! Bind(fixture.listener.ref)
+    val bound = fixture.listener.expectMsgType[Bound](16 seconds)
     bound.url must startWith("ws://127.0.0.1:")
     bound.url must endWith("/ws")
   }
   
   
-  it should "connect client" in { f =>
+  it should "connect client" in { fixture =>
     val manager = IO(Wamp)
-    manager ! Bind(f.router)
-    val bound = f.listener.expectMsgType[Bound](16 seconds)
+    manager ! Bind(fixture.router)
+    val bound = fixture.listener.expectMsgType[Bound](16 seconds)
     
     manager ! Connect(client = testActor, bound.url)
     val connected = expectMsgType[Wamp.Connected](16 seconds)
@@ -35,12 +35,12 @@ class ManagerSpec
   }
   
   
-  it should "unbind router" in { f =>
+  it should "unbind router" in { fixture =>
     pending
   }
 
   
-  it should "disconnect client" in { f =>
+  it should "disconnect client" in { fixture =>
     pending
   }
 

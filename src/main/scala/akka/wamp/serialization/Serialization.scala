@@ -9,8 +9,9 @@ trait Serialization {
   
   def serialize(msg: Message): T
   
-  def deserialize(t: T): Message Or DeserializationError
+  @throws(classOf[DeserializeException])
+  def deserialize(t: T): Message
 }
 
 
-class DeserializationError(val message: String, val throwable: Throwable)
+class DeserializeException(message: String, cause: Throwable) extends Exception(message, cause)

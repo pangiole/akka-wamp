@@ -19,11 +19,11 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
     """.stripMargin)
 )) {
 
-  "The router" should "auto-create realm if client says HELLO for unknown realm" in { f =>
-    f.router ! Hello("myapp.realm", Dict().withRoles("publisher"))
+  "A custom router actor" should "auto-create realm if client says HELLO for unknown realm" in { fixture =>
+    fixture.router ! Hello("myapp.realm", Dict().withRoles("publisher"))
     expectMsgType[Welcome]
-    f.router.underlyingActor.realms must have size(2)
-    f.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "myapp.realm")
+    fixture.router.underlyingActor.realms must have size(2)
+    fixture.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "myapp.realm")
   }
 
   

@@ -11,6 +11,9 @@ import akka.wamp.Wamp._
 import akka.wamp.{Scope, Wamp}
 import org.scalatest._
 
+/**
+  * This tests suite is meant to put the router.Transport under test
+  */
 class TransportSpec 
   extends fixture.FlatSpec 
     with MustMatchers with BeforeAndAfterAll
@@ -19,12 +22,12 @@ class TransportSpec
 {
   
   "A router transport" should "reject websocket requests if no subprotocol matches" in { f =>
-    WS(url, Flow[WebSocketMessage]) ~> f.route ~> check {
+    WS(url, Flow[WebSocketMessage]) ~> f.httpRoute ~> check {
       rejections.collect {
         case UnsupportedWebSocketSubprotocolRejection(p) => p
       }.toSet mustBe Set("wamp.2.json")
     }
-    WS(url, Flow[WebSocketMessage], List("other")) ~> Route.seal(f.route) ~> check {
+    WS(url, Flow[WebSocketMessage], List("other")) ~> Route.seal(f.httpRoute) ~> check {
       status mustBe StatusCodes.BadRequest
       responseAs[String] mustBe "None of the websocket subprotocols offered in the request are supported. Supported are 'wamp.2.json'."
       header("Sec-WebSocket-Protocol").get.value() mustBe "wamp.2.json"
@@ -32,25 +35,43 @@ class TransportSpec
   }
    
   
-  it should "reject any non-websocket requests" in { f =>
-    Get(url) ~> f.route ~> check {
+  it should "reject any non-websocket requests" in { fixture =>
+    Get(url) ~> fixture.httpRoute ~> check {
       rejection mustBe ExpectedWebSocketRequestRejection
     }
-    Get(url) ~> Route.seal(f.route) ~> check {
+    Get(url) ~> Route.seal(fixture.httpRoute) ~> check {
       status mustBe StatusCodes.BadRequest
       responseAs[String] mustBe "Expected WebSocket Upgrade request"
     }
   }
+
+
+  it should "drop unparsable messages but keep client connected" in { fixture =>
+    withHandler(fixture.httpRoute) { client =>
+      
+      // --> !$@**^$@£
+      client.sendMessage("""!$@**^$@£""")
+      
+      // we expect the above unparsable message to have been dropped
+      // and the client still connected to the router for the next message
+
+      // --> HELLO
+      client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
+
+      // <-- WELCOME
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.5.1","roles":{"broker":{}}}]""")
+    }
+  }
   
   
-  it should "handle subscription scenario" in { f =>
-    scenario(f.route) { client =>
+  it should "handle messages exchanged in subscription scenario" in { fixture =>
+    withHandler(fixture.httpRoute) { client =>
       
       // --> HELLO
       client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
       
       // <-- WELCOME
-      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.5.0","roles":{"broker":{}}}]""")
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.5.1","roles":{"broker":{}}}]""")
       
       // --> SUBSCRIBE
       client.sendMessage("""[32,1,{},"com.myapp.mytopic1"]""")
@@ -68,32 +89,32 @@ class TransportSpec
 
   
   
-  def scenario(route: Route)(testCode: (WSProbe) => Unit) = {
+  def withHandler(route: Route)(testCode: (WSProbe) => Unit) = {
     val client = WSProbe()
     WS(url, client.flow, List("wamp.2.json")) ~> route ~> check {
       testCode(client)
     }
   }
 
-  // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
-  case class FixtureParam(route: Route)
+  case class FixtureParam(httpRoute: Route)
+  
   override def withFixture(test: OneArgTest) = {
     val scopes = Map(
       'global -> new Scope.Session {},
       'router -> new Scope.Session {},
       'session -> new Scope.Session {}
     )
-    val router = TestActorRef[Router](Router.props(scopes))
-    val transport = TestActorRef[Transport](Transport.props(router))
-    val route: Route = transport.underlyingActor.httpRoute
+    val wampRouter = TestActorRef[Router](Router.props(scopes))
+    val transport = TestActorRef[Transport](Transport.props(wampRouter))
+    val httpRoute: Route = transport.underlyingActor.httpRoute
     
-    val theFixture = FixtureParam(route)
+    val theFixture = FixtureParam(httpRoute)
     try {
-      IO(Wamp) ! Bind(router)
-      withFixture(test.toNoArgTest(theFixture)) // "loan" the fixture to the test
+      IO(Wamp) ! Bind(wampRouter)
+      withFixture(test.toNoArgTest(theFixture))
     }
     finally {
-      system.stop(router)
+      system.stop(wampRouter)
     }
   }
 
