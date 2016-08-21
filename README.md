@@ -1,5 +1,5 @@
-[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url]
-
+[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url][![Documentation Status][docs-image]][docs-url]
+     
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
 ## Read the Docs
@@ -41,3 +41,5 @@ Akka Wamp provides you with a router that can be either embedded into your appli
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
 
+[docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=latest
+[docs-url]: http://akka-wamp.readthedocs.io/en/latest/?badge=latest
