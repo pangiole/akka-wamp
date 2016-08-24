@@ -1,12 +1,13 @@
+# Router
 
-# Embedded
+## Embedded
 Make your SBT build depend on akka-wamp:
 
 ```scala
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.github.angiolep" %% "akka-wamp" % "0.5.1"
+  "com.github.angiolep" %% "akka-wamp" % "0.6.0"
   // ...
 )
 ```
@@ -56,14 +57,17 @@ It automatically binds on a server socket by reading the following Akka configur
 
 
 
-# Standalone
+## Standalone [![Download][download-image]][download-url]
 Download and launch the router as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.5.1.tgz
-tar xvfz akka-wamp-0.5.1.tar.gz
-cd akka-wamp-0.5.1
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.6.0.tgz
+tar xvfz akka-wamp-0.6.0.tar.gz
+cd akka-wamp-0.6.0
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
 
-You can ovveride the default setting by passing Java system properties on the command line.
+You can override the above default setting by passing Java system properties on the command line.
+
+[download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
+[download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion

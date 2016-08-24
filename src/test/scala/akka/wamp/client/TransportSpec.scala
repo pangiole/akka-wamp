@@ -80,7 +80,7 @@ class TransportSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.
     whenReady(session1) { s =>
       s.id mustBe 1
       s.details mustBe Map(
-        "agent" -> "akka-wamp-0.5.1",
+        "agent" -> "akka-wamp-0.6.0",
         "roles" -> Map("broker" -> Map())
       )
     }

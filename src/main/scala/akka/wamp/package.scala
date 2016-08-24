@@ -1,7 +1,7 @@
 package akka
 
 /**
-  * == akka-wamp 0.5.1 ==
+  * == akka-wamp 0.6.0 ==
   *
   * [[http://wamp-proto.org WAMP - Web Application Messaging Protocol]] implementation written in Scala with Akka
   */
