@@ -56,7 +56,6 @@ package object wamp {
     val Min = 1L
     val Max = 9007199254740992L
     def draw(): Long = Min + (rnd() * (Max - Min + 1)).toLong
-    def isValid(id: Id): Boolean = id >= Min && id <= Max
   }
 
   
@@ -64,13 +63,7 @@ package object wamp {
     * Uniform Resource Identifier
     */
   type Uri = String
-
-  final object Uri {
-    // strict URI check disallowing empty URI components
-    val regex = "^([0-9a-z_]+\\.)*([0-9a-z_]+)$".r
-    def isValid(uri: Uri) = regex.pattern.matcher(uri).matches
-  }
-
+  
 
   /**
     * Dictionary for options and details elements

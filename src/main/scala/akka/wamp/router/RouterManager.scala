@@ -6,23 +6,31 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.wamp.Wamp
+import akka.wamp.messages.Validator
+import akka.wamp.serialization.JsonSerializationFlows
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 
-private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor  {
-  implicit val ec = system.dispatcher
-
-  val iface = system.settings.config.getString("akka.wamp.router.iface")
+private[wamp] class RouterManager extends Actor  {
   
-  val port = system.settings.config.getInt("akka.wamp.router.port")
+  implicit val ec = context.system.dispatcher
+  implicit val mat = ActorMaterializer()
+  
+  val iface = context.system.settings.config.getString("akka.wamp.router.iface")
+  
+  val port = context.system.settings.config.getInt("akka.wamp.router.port")
+
+  val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  
+  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris))
   
   override def receive: Receive = {
     case cmd @ Wamp.Bind(router) => {
       val binder = sender()
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-        Http().
+        Http(context.system).
           bind(iface, port)
 
       // when serverSource fails because of very dramatic situations 
@@ -36,7 +44,7 @@ private[wamp] class RouterManager(implicit system: ActorSystem, mat: ActorMateri
 
       val handleConnection: Sink[Http.IncomingConnection, Future[Done]] =
         Sink.foreach { conn =>
-          val transport = context.actorOf(Transport.props(router))
+          val transport = context.actorOf(Transport.props(router, serializationFlows))
           transport ! conn
         }
 

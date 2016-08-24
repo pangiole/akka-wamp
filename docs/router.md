@@ -19,7 +19,6 @@ import akka.stream._
 import akka.wamp.router._
 
 implicit val system = ActorSystem("wamp")
-implicit val mat = ActorMaterializer()
 
 val router = system.actorOf(Router.props(), "router")
 IO(Wamp) ! Bind(router)
@@ -27,6 +26,11 @@ IO(Wamp) ! Bind(router)
 
 It automatically binds on a server socket by reading the following Akka configuration
 
+ - ``akka.wamp.serialization``  
+   
+    - ``validate-strict-uris``  
+      The boolean switch (default is false) to validate against strict URIs rather than loose URIs 
+ 
  - ``akka.wamp.router``  
    
     - ``protocol``  
@@ -43,6 +47,9 @@ It automatically binds on a server socket by reading the following Akka configur
 
     - ``path``  
       The path the router expects WebSocket connection requests (default is ``/ws``)
+      
+    - ``abort-unknown-realms``  
+      The boolean switch (default is false) to NOT automatically create realms if they don't exist yet
 
 
 > NOTE: the Akka Wamp Router, by default, expects HTTP Upgrade to WebSocket requests addressed to ``http://127.0.0.1:8080/ws``

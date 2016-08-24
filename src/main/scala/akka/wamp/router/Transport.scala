@@ -1,41 +1,34 @@
 package akka.wamp.router
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem}
+import akka.NotUsed
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status => stream}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.{Route, Directives => dsl}
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
+import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
+import akka.wamp.messages.{Message, Validator}
 import akka.wamp.Wamp
-import akka.wamp.messages.{Message => WampMessage}
-import akka.wamp.serialization.Serializers
-import akka.{Done, NotUsed}
-
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import akka.NotUsed
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status => stream}
-import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
-import akka.wamp.messages.Message
-import akka.wamp.serialization.Serializers
 import akka.wamp.{messages => wamp, _}
+import akka.wamp.messages.{Message => WampMessage}
+import akka.wamp.serialization.SerializationFlows
 
 
 /**
-  * A Transport connects two [[Peer]]s and provides a channel over which 
-  * [[Message]]s for a [[Session]] can flow in both directions.
+  * This router.Transport connects two [[Peer]]s and provides a WebSocket channel
+  * over which JSON [[Message]]s for a [[Session]] can flow in both directions.
   *
   * @param router is the first peer that will be connected by this transport
   */
-class Transport(router: ActorRef)(implicit mat: ActorMaterializer)
-extends akka.wamp.TransportLike 
-with Actor with ActorLogging 
+// TODO class JsonOverWebSocketTransport
+class Transport(router: ActorRef, serializationFlows: SerializationFlows) 
+  extends akka.wamp.TransportLike 
+    with Actor with ActorLogging 
 {
+  implicit val mat = ActorMaterializer()
+  
   val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
-    val serializer = Serializers.streams("wamp.2.json")
 
     // A stream source that will be materialized as an actor and
     // that will emit WAMP messages being serialized out to the websocket
@@ -61,7 +54,7 @@ with Actor with ActorLogging
         // The fromWebSocket flow
         //   - receives incoming WebSocketMessages from the connected client, and
         //   - deserialize them to WampMessages going downstream to the transportSink
-        val fromWebSocket = builder.add(serializer.deserialize)
+        val fromWebSocket = builder.add(serializationFlows.deserialize)
 
         // The merge junction forwards all messages fromWebSocket downstream to the transportSink
         val merge = builder.add(Merge[Wamp.AbstractMessage](2))
@@ -69,7 +62,7 @@ with Actor with ActorLogging
         // The toWebSocket flow
         //   - receives outgoing WampMessages from the transportSource
         //   - serialize them to WebSocketMessges to the connected client
-        val toWebSocket = builder.add(serializer.serialize)
+        val toWebSocket = builder.add(serializationFlows.serialize)
 
         // Define stream topology
         /*|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|*/
@@ -161,7 +154,10 @@ object Transport {
   /**
     * Create a Props for an actor of this type
     * 
+    * @param router ???
+    * @param serializationFlows ???
     * @return the props
     */
-  def props(router: ActorRef)(implicit mat: ActorMaterializer) = Props(new Transport(router)(mat))
+  def props(router: ActorRef, serializationFlows: SerializationFlows) = 
+    Props(new Transport(router, serializationFlows))
 }

@@ -2,7 +2,6 @@ package akka.wamp.client
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.io.IO
-import akka.stream.ActorMaterializer
 import akka.wamp.Roles._
 import akka.wamp.Wamp._
 import akka.wamp._
@@ -15,9 +14,8 @@ import scala.concurrent.{Future, Promise}
   * It is the entry point of the Akka Wamp future-based API
   * 
   * @param system
-  * @param materializer
   */
-private[client] class Client()(implicit system: ActorSystem, materializer: ActorMaterializer) /*extends Peer*/ {
+private[client] class Client()(implicit system: ActorSystem) /*extends Peer*/ {
   private val log = LoggerFactory.getLogger(classOf[Client])
   private implicit val ec = system.dispatcher
 
@@ -63,13 +61,17 @@ private[client] class Client()(implicit system: ActorSystem, materializer: Actor
 
 
 object Client {
-  def apply()(implicit system: ActorSystem, materializer: ActorMaterializer) = new Client()
+  def apply()(implicit system: ActorSystem) = new Client()
 }
 
 
 // the actor which will keep (or break) the given promise
 private[client] class ClientActor(promise: Promise[Transport]) extends Actor with ActorLogging {
   var transport: Transport = _
+
+  val config = context.system.settings.config
+  val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  implicit val validator = new Validator(strictUris)
   
   def receive = {
     case Connected(router) =>

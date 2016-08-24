@@ -2,12 +2,15 @@ package akka.wamp.serialization
 
 import akka.wamp.Tpe._
 import akka.wamp._
+import akka.wamp.messages.Validator
 import akka.wamp.{messages => wamp}
+import com.typesafe.config.ConfigFactory
 import org.scalatest._
 
 class JsonSerializationSpec extends WordSpec 
   with MustMatchers with TryValues with OptionValues with EitherValues with ParallelTestExecution {
-  
+
+  implicit val validator = new Validator(strictUris = false)
   val s = new JsonSerialization
   
   "The wamp.2.json serialization" when {
@@ -34,8 +37,8 @@ class JsonSerializationSpec extends WordSpec
           """[1,"myapp.realm",{}]"""",
           """[1,"myapp.realm",{"roles":null}]"""",
           """[1,"myapp.realm",{"roles":{}}]"""",
-          """[1,"myapp.realm",{"roles":{"unknown":{}}}]"""",
-          """[1,"invalid!realm",{"roles":{"publisher":{}}}]""""
+          """[1,"myapp.realm",{"roles":{"invalid":{}}}]"""",
+          """[1,"invalid..realm",{"roles":{"publisher":{}}}]""""
         ).foreach { text =>
           a[DeserializeException] mustBe thrownBy(s.deserialize(text))
         }
@@ -100,16 +103,16 @@ class JsonSerializationSpec extends WordSpec
           """[6,null]""",
           """[6,{}]""",
           """[6,{},null]""",
-          """[6,{},"invalid!uri"]"""
+          """[6,{},"invalid..reason"]"""
         ).foreach { text =>
           a[DeserializeException] mustBe thrownBy(s.deserialize(text))
         }
       }
       "succeed for valid GOODBYE" in {
-        s.deserialize("""[6,{"message": "The host is shutting down now."},"system_shutdown"]""") match {
+        s.deserialize("""[6,{"message": "The host is shutting down now."},"akka.wamp.system_shutdown"]""") match {
           case m: wamp.Goodbye =>
             m.details mustBe Map("message" -> "The host is shutting down now.")
-            m.reason mustBe "system_shutdown"
+            m.reason mustBe "akka.wamp.system_shutdown"
           case _ => fail
         }
       }
@@ -125,7 +128,7 @@ class JsonSerializationSpec extends WordSpec
           """[8,34,null]""",
           """[8,34,1,null]""",
           """[8,34,1,{},null]""",
-          """[8,34,1,{},"invalid!error"]""",
+          """[8,34,1,{},"invalid..error"]""",
           """[8,34,1,{},"wamp.error.no_such_subscription",null]""",
           """[8,34,1,{},"wamp.error.no_such_subscription",[],null]""",
           """[8,99,1,{},"wamp.error.no_such_subscription"]""",
@@ -179,7 +182,7 @@ class JsonSerializationSpec extends WordSpec
           """[16,null]""",
           """[16,1,null]""",
           """[16,1,{},null]""",
-          """[16,1,{},"invalid!topic"]""",
+          """[16,1,{},"invalid..topic"]""",
           """[16,1,{},"myapp.topic1",null]""",
           """[16,1,{},"myapp.topic1",[],null]""",
           """[16,9007199254740993,{},"myapp.topic1",[],null]""",
@@ -254,7 +257,7 @@ class JsonSerializationSpec extends WordSpec
           """[32,null]""",
           """[32,1,null]""",
           """[32,1,{},null]""",
-          """[32,1,{},"invalid!uri"]""",
+          """[32,1,{},"invalid..uri"]""",
           """[32,0,{},"myapp.topic1"]""",
           """[32,9007199254740993,{},"myapp.topic1"]"""
         ).foreach { text =>

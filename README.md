@@ -1,29 +1,42 @@
-[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url][![Documentation Status][docs-image]][docs-url]
+# Akka Wamp [![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] 
      
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
-## Read the Docs
+Easy to download as [SBT](http://www.scala-sbt.org/) library dependency.
+
+```scala
+libraryDependencies ++= Seq(
+  "com.github.angiolep" % "akka-wamp_2.11" % "0.5.1"
+)  
+```
+
+## Read the Docs [![Documentation Status][docs-image]][docs-url] 
 Detailed documentation is published [here](http://akka-wamp.readthedocs.io/)
 
-## Client APIs
-Akka Wamp provides you with three alternative APIs in writing clients:
+## Client
 
- * Future based
- * Actor based
- * Stream based
+Connect a transport, open a session, subscribe a topic and receive events in few lines of Scala!
 
-Here it is a code snippet with what you could do with Akka Wamp:
- 
 ```scala
-for (session <- Client().connectAndHello("ws://host:8080/ws"))
-  yield session.subscribe("myapp.topic") { event =>
-    event.payload.map { p =>
-      system.log.info(payload.arguments.toString)
+import akka.actor._
+import akka.wamp.client._
+
+object SubscriberApp extends App {
+  implicit val system = ActorSystem()
+  implicit val ec = system.dispatcher
+
+  for {
+    session <- Client().connectAndOpen()
+    subscription <- session.subscribe("myapp.topic") { event =>
+      event.payload.map(p => println(p.arguments))
     }
-  }
+  } yield ()
+}
 ```
+Please, [read the docs](http://akka-wamp.readthedocs.io/) for a deeper explanation and further details.
+
  
-## Router
+## Router [![Download][download-image]][download-url]
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
 
 ## Limitations
@@ -35,6 +48,10 @@ Akka Wamp provides you with a router that can be either embedded into your appli
  * Provide WAMP Basic Profile (no Advanced Profile yet)
  * Provide JSON serialization (no MsgPack yet)
 
+## Licence 
+This software comes with [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+
 [travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
 [travis-url]: https://travis-ci.org/angiolep/akka-wamp
 
@@ -43,3 +60,7 @@ Akka Wamp provides you with a router that can be either embedded into your appli
 
 [docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=latest
 [docs-url]: http://akka-wamp.readthedocs.io/en/latest/?badge=latest
+
+[download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
+[download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion
+ 

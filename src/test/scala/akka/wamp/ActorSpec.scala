@@ -1,7 +1,6 @@
 package akka.wamp
 
 import akka.actor._
-import akka.stream.ActorMaterializer
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, ParallelTestExecution, fixture}
 
@@ -16,8 +15,7 @@ abstract class ActorSpec(_system: ActorSystem)
     with ParallelTestExecution
 {
   
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  implicit val ec = system.dispatcher
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

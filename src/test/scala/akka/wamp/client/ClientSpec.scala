@@ -18,7 +18,7 @@ class ClientSpec extends ClientFixtureSpec  with ScalaFutures {
     val transport = client.connect(f.url, subprotocol = "wamp.2.invalid")
     whenReady(transport.failed) { e =>
       e mustBe a[ConnectionException]
-      e.getMessage mustBe "ConnectionFailed(java.util.NoSuchElementException: key not found: wamp.2.invalid)"
+      e.getMessage mustBe "ConnectionFailed(java.lang.IllegalArgumentException: wamp.2.invalid is not supported)"
     }
   }
   

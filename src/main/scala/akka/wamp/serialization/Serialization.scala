@@ -1,7 +1,6 @@
 package akka.wamp.serialization
 
 import akka.wamp.messages._
-import org.scalactic.Or
 
 trait Serialization {
   
@@ -10,7 +9,7 @@ trait Serialization {
   def serialize(msg: Message): T
   
   @throws(classOf[DeserializeException])
-  def deserialize(t: T): Message
+  def deserialize(text: String)(implicit validator: Validator): Message
 }
 
 

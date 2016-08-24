@@ -2,7 +2,6 @@ package akka.wamp.router
 
 import akka.actor._
 import akka.wamp.Tpe._
-import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.messages._
 
@@ -28,8 +27,8 @@ trait Broker { this: Router =>
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case Publish(requestId, topic, payload, options) =>
-      ifSessionOpen { session =>
+    case message @ Publish(requestId, topic, payload, options) =>
+      ifSessionOpen(message) { session =>
         val publisher = session.client
         val ack = options.get("acknowledge") == Some(true)
         if (session.roles.contains("publisher")) {
@@ -83,8 +82,8 @@ trait Broker { this: Router =>
     */
   def handleSubscriptions: Receive = {
 
-    case Subscribe(requestId, topic, options) =>
-      ifSessionOpen { session =>
+    case message @ Subscribe(requestId, topic, options) =>
+      ifSessionOpen(message) { session =>
         val subscriber = session.client
         if (session.roles.contains("subscriber")) {
           subscriptions.values.toList.filter(_.topic == topic) match {
@@ -124,8 +123,8 @@ trait Broker { this: Router =>
 
       }
 
-    case Unsubscribe(requestId, subscriptionId) =>
-      ifSessionOpen { session =>
+    case message @ Unsubscribe(requestId, subscriptionId) =>
+      ifSessionOpen(message) { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
             unsubscribe(session.client, subscription)
@@ -137,13 +136,14 @@ trait Broker { this: Router =>
   }
 
 
-  def ifSessionOpen(fn: (Session) => Unit): Unit = {
+  def ifSessionOpen(message: Message)(fn: (Session) => Unit): Unit = {
     switchOn(sender())(
       whenSessionOpen = { session =>
         fn(session)
       },
       otherwise = { _ =>
-        sender() ! Failure("Session was not open yet.")
+        // TODO Unspecified scenario. Ask for better WAMP protocol specification.
+        log.warning("SessionException: received {} when no session open yet.", message)
       }
     )
   }

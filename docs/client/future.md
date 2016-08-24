@@ -1,4 +1,3 @@
-# Future based API
 If you wish your client to be written with a high-level API, and you need to implement no more than practical scenarios, then Akka Wamp provides you with an [Akka Future](http://doc.akka.io/docs/akka/current/scala/futures.html) based API.
 
 It requires you to know what futures are and how to compose them in _monadic_ expressions. You'll be rewarded with succinct and elegant Scala code by just composing asynchronous functions that return transports, sessions, subscriptions, registrations, _"et cetera"_. 
@@ -7,12 +6,20 @@ It requires you to know what futures are and how to compose them in _monadic_ ex
 Let's connect a transport, open a session, subscribe a topic and receive events in few lines of Scala!
 
 ```scala
-for (session <- Client().connectAndHello("ws://host:8080/ws"))
-  yield session.subscribe("myapp.topic") { event =>
-    event.payload.map { p =>
-      system.log.info(payload.arguments.toString)
+import akka.actor._
+import akka.wamp.client._
+
+object SubscriberApp extends App {
+  implicit val system = ActorSystem()
+  implicit val ec = system.dispatcher
+
+  for {
+    session <- Client().connectAndOpen()
+    subscription <- session.subscribe("myapp.topic") { event =>
+      event.payload.map(p => println(p.arguments))
     }
-  }
+  } yield ()
+}
 ```
 
 ``Client()`` is the entry point object. Invoke its ``connectAndOpen()`` method to get a (future of) session and then yield a (future of) subscription  by invoking the ``subscribe()()`` method. That's a curried method which accepts the topic URI in its first parameters list and an ``EventHandler`` handler in its second parameters list. The event handler maps the (option of) payload to get the ``arguments`` sent by the remote publisher ... and it __will never ever block__, of course ;-)
@@ -21,20 +28,17 @@ Please, read on for a deeper explanation and further details.
 
 ### Prepare Akka scope
 ```scala
+import akka.actor._
 import akka.wamp._
 import akka.wamp.client._
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import scala.concurrent._
 
 implicit val system = ActorSystem()
-implicit val materializer = ActorMaterializer()
-implicit val executionContext = system.dispatcher
+implicit val ec = system.dispatcher
 ```
 Since Akka Wamp is built on Akka, as any other applications built on Akka, it needs the following implicit values in scope:
 
 * the Akka ActorSystem
-* the Akka ActorMaterializer
 * a ``scala.concurrent.ExecutionContext``
 
 The execution context could be the actor system dispatcher (as in the above example) or a completely different one you might desire to create and configure on purpose.

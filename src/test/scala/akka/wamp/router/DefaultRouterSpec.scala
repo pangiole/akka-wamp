@@ -8,17 +8,18 @@ import akka.wamp.messages._
 
 import scala.concurrent.duration._
 
-// it tests the default router configuration
+/**
+  * It tests the Router running with its default settings 
+  * (when NO custom configuration is applied)
+  */
 class DefaultRouterSpec extends RouterFixtureSpec {
 
-  "The default router actor"  should "reply ABORT if client says HELLO for unknown realm" in { fixture =>
-    fixture.router ! Hello("unknown.realm")
-    expectMsg(Abort("wamp.error.no_such_realm", Dict("message" -> "The realm unknown.realm does not exist.")))
-    fixture.router.underlyingActor.realms must have size(1)
-    fixture.router.underlyingActor.realms must contain only ("akka.wamp.realm")
-    fixture.router.underlyingActor.sessions mustBe empty
+  "The default router actor"  should "auto-create realm if client says HELLO for unknown realm" in { fixture =>
+    fixture.router ! Hello("myapp.realm", Dict().withRoles("publisher"))
+    expectMsgType[Welcome]
+    fixture.router.underlyingActor.realms must have size(2)
+    fixture.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "myapp.realm")
   }
-  
   
   it should "reply WELCOME if client says HELLO for existing realm" in { fixture =>
     fixture.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
@@ -37,17 +38,19 @@ class DefaultRouterSpec extends RouterFixtureSpec {
 
 
   it should "fail if client says HELLO twice (regardless the realm)" in { fixture =>
+    pending
     fixture.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
     receiveOne(0.seconds)
     fixture.router ! Hello("whatever.realm", Dict().withRoles("publisher"))
-    expectMsg(Failure("Session was already open."))
+    expectMsg(???)
     fixture.router.underlyingActor.sessions  mustBe empty
   }
 
 
   it should "fail if client says GOODBYE before HELLO" in { fixture =>
+    pending
     fixture.router ! Goodbye()
-    expectMsg(Failure("Session was not open yet."))
+    expectMsg(???)
   }
 
 
@@ -61,9 +64,9 @@ class DefaultRouterSpec extends RouterFixtureSpec {
   
 
   it should "fail if client says PUBLISH before session has opened" in { fixture =>
+    pending
     fixture.router ! Publish(1, "topic1", options = Dict())
-    expectMsg(Failure("Session was not open yet."))
-    expectNoMsg()
+    expectMsg(???)
     fixture.router.underlyingActor.publications mustBe empty
     
   }
@@ -113,9 +116,9 @@ class DefaultRouterSpec extends RouterFixtureSpec {
 
   
   it should  "fail if client says SUBSCRIBE before session has opened" in { fixture =>
+    pending
     fixture.router ! Subscribe(1, "topic1", Dict())
-    expectMsg(Failure("Session was not open yet."))
-    expectNoMsg()
+    expectMsg(???)
   }
   
 

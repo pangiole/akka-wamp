@@ -1,22 +1,27 @@
 package akka.wamp.client
 
 import akka.NotUsed
-import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.actor.{Actor, ActorRef}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes.SwitchingProtocols
 import akka.http.scaladsl.model.ws.{WebSocketRequest, WebSocketUpgradeResponse, Message => WebSocketMessage}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategies}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.wamp.Wamp
-import akka.wamp.messages.{Message => WampMessage}
-import akka.wamp.serialization.Serializers
+import akka.wamp.messages.{Validator, Message => WampMessage}
+import akka.wamp.serialization.JsonSerializationFlows
 
 import scala.concurrent.Future
 
 
-private[wamp] class ClientManager(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor {
-  implicit val ec = system.dispatcher
+private[wamp] class ClientManager extends Actor {
+  
+  implicit val ec = context.system.dispatcher
+  implicit val mat = ActorMaterializer()
 
+  val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris))
+  
   // inlet -> outlet
   var outlets = Map.empty[ActorRef, ActorRef]
 
@@ -27,20 +32,20 @@ private[wamp] class ClientManager(implicit system: ActorSystem, mat: ActorMateri
           Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
 
         val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
-          Http().webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
+          Http(context.system)
+            .webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
 
         val incomingSink: Sink[WampMessage, NotUsed] =
           Sink.actorRef[WampMessage](client, onCompleteMessage = Wamp.Disconnected)
 
-        val serializer = Serializers.streams(subprotocol)
-
-        // upgradeResponse is a Future[WebSocketUpgradeResponse] that 
-        // completes or fails when the connection succeeds or fails
+        if (subprotocol != "wamp.2.json") 
+          throw new IllegalArgumentException(s"$subprotocol is not supported") 
+        
         val (outgoingActor, upgradeResponse) =
           outgoingSource
-            .via(serializer.serialize)
+            .via(serializationFlows.serialize)
             .viaMat(webSocketFlow)(Keep.both)
-            .viaMat(serializer.deserialize)(Keep.left)
+            .viaMat(serializationFlows.deserialize)(Keep.left)
             .toMat(incomingSink)(Keep.left)
             .run()
 

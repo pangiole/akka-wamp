@@ -1,10 +1,8 @@
 package akka.wamp
 
-import java.net.InetSocketAddress
 
 import akka.actor.{ActorRef, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, Props}
 import akka.io.IO
-import akka.stream.ActorMaterializer
 
 
 /**
@@ -103,15 +101,10 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
   final case object Disconnected extends Signal
 
   final case object Disconnect extends Command
-
-  final case class Failure(message: String) extends Signal
-
 }
 
 
 
 class WampExtension(system: ExtendedActorSystem) extends IO.Extension {
-  implicit val s = system
-  implicit val m = ActorMaterializer()
   val manager = system.actorOf(Manager.props(), name = "IO-Wamp")
 }

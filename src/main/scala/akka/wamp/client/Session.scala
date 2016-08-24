@@ -9,8 +9,9 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
-class Session private[client](transport: Transport, welcome: Welcome) 
-  extends SessionLike with Scope.Session 
+class Session private[client](transport: Transport, welcome: Welcome)(implicit val validator: Validator) 
+  extends SessionLike 
+    with Scope.Session 
 {
   import transport.{unexpectedReceive, goodbyeReceive}
   

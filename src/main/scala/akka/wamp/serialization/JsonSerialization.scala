@@ -8,7 +8,7 @@ import com.fasterxml.jackson.module.scala._
 import org.slf4j.LoggerFactory
 
 class JsonSerialization extends Serialization {
-
+  
   type T = String
 
   private val log = LoggerFactory.getLogger(classOf[JsonSerialization])
@@ -37,7 +37,7 @@ class JsonSerialization extends Serialization {
   }
 
   @throws(classOf[DeserializeException])
-  override def deserialize(text: String): Message = {
+  override def deserialize(text: String)(implicit validator: Validator): Message = {
     log.trace("Deserializing {}", text)
     try {
       val arr = mapper.readValue(text, classOf[Array[Any]])
@@ -89,7 +89,7 @@ class JsonSerialization extends Serialization {
         case SUBSCRIBE => {
           Subscribe(
             requestId = arr(1).asId, 
-            topic = arr(3).asString, 
+            topic = arr(3).asUri, 
             options = arr(2).asDict
           )
         }

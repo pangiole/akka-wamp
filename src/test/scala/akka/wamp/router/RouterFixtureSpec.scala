@@ -4,24 +4,23 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.testkit.{TestActorRef, TestProbe}
 import akka.wamp.Wamp.{Bind, Bound}
-import akka.wamp.{ActorSpec, Scope, Wamp}
+import akka.wamp.messages.Validator
+import akka.wamp.{ActorSpec, Wamp}
 import org.scalatest.ParallelTestExecution
+
 import scala.concurrent.duration._
 
 class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test")) 
   extends ActorSpec(_system) 
     with ParallelTestExecution 
+    with SequentialIdGenerators
 {
+  val strictUris = system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  implicit val validator = new Validator(strictUris)
   
-  // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
   case class FixtureParam(router: TestActorRef[Router], url: String)
 
   override def withFixture(test: OneArgTest) = {
-    val scopes = Map(
-      'global -> new Scope.Session {},
-      'router -> new Scope.Session {},
-      'session -> new Scope.Session {}
-    )
     val listener = TestProbe()
     val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
     try {

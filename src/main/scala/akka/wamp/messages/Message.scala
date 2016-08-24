@@ -3,6 +3,7 @@ package akka.wamp.messages
 import akka.wamp._
 import akka.wamp.Wamp._
 import akka.wamp.router.Session
+import com.typesafe.config.Config
 
 /**
   * Common interface of WAMP messages exchanged by two [[Peer]]s during a [[Session]]
@@ -36,9 +37,9 @@ sealed trait Message extends AbstractMessage {
   * @param realm
   * @param details
   */
-final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.DefaultDetails) extends Message {
+final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.DefaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.HELLO
-  require(Uri.isValid(realm), s"invalid uri $realm")
+  validator.validate(realm)
   require(details != null, s"invalid dict $details")
   require(details.isDefinedAt("roles") && !details.roles.isEmpty, s"missing roles in dict ${details}")
   require(details.roles.forall(isValid), s"invalid roles in dict $details")
@@ -60,10 +61,10 @@ final object Hello {
   * @param sessionId is the session identifier
   * @param details   is the session details
   */
-final case class Welcome(sessionId: Id, details: Dict = Welcome.DefaultDetails) extends Message {
+final case class Welcome(sessionId: Id, details: Dict = Welcome.DefaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.WELCOME
-  require(Id.isValid(sessionId), "invalid_id")
-  require(details != null, "invalid_dict")
+  validator.validate(sessionId)
+  require(details != null, "invalid Dict")
 }
 final object Welcome {
   val DefaultDetails = Dict()
@@ -77,10 +78,10 @@ final object Welcome {
   * [ABORT, Details|dict, Reason|uri]
   * ```
   */
-final case class Abort(reason: Uri, details: Dict = Abort.DefaultDetails) extends Message {
+final case class Abort(reason: Uri, details: Dict = Abort.DefaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.ABORT
-  require(details != null, "invalid_dict")
-  require(Uri.isValid(reason), "invalid_uri")
+  validator.validate(reason)
+  require(details != null, "invalid Dict")
 }
 final object Abort {
   val DefaultDetails = Dict()
@@ -98,10 +99,10 @@ final object Abort {
   * @param details
   * @param reason
   */
-final case class Goodbye(reason: Uri = Goodbye.DefaultReason, details: Dict = Goodbye.DefaultDetails) extends Message {
+final case class Goodbye(reason: Uri = Goodbye.DefaultReason, details: Dict = Goodbye.DefaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.GOODBYE
-  require(details != null, "invalid_dict")
-  require(Uri.isValid(reason), "invalid_uri")
+  validator.validate(reason)
+  require(details != null, "invalid Dict")
 }
 final object Goodbye {
   val DefaultReason = "wamp.error.close_realm"
@@ -124,12 +125,12 @@ final object Goodbye {
   * @param error
   * @param payload is either a list of any arguments or a key-value-pairs set
   */
-final case class Error(requestType: Int, requestId: Id, details: Dict, error: Uri, payload: Option[Payload] = None) extends Message {
+final case class Error(requestType: Int, requestId: Id, details: Dict, error: Uri, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.ERROR
   require(Tpe.isValid(requestType), "invalid_type")
-  require(Id.isValid(requestId), "invalid_id")
-  require(details != null, "invalid_dict")
-  require(Uri.isValid(error), "invalid_uri")
+  validator.validate(requestId)
+  require(details != null, "invalid Dict")
+  validator.validate(error)
 }
 
 
@@ -147,11 +148,11 @@ final case class Error(requestType: Int, requestId: Id, details: Dict, error: Ur
   * @param payload   is either a list of any arguments or a key-value-pairs set 
   * @param options   is a dictionary that allows to provide additional publication request details in an extensible way.
   */
-final case class Publish(requestId: Id, topic: Uri, payload: Option[Payload] = None, options: Dict = Dict()) extends Message {
+final case class Publish(requestId: Id, topic: Uri, payload: Option[Payload] = None, options: Dict = Dict())(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.PUBLISH
-  require(Id.isValid(requestId), "invalid_id")
-  require(options != null, "invalid_dict")
-  require(Uri.isValid(topic), "invalid_uri")
+  validator.validate(requestId)
+  validator.validate(topic)
+  require(options != null, "invalid Dict")
 }
 
 
@@ -162,10 +163,10 @@ final case class Publish(requestId: Id, topic: Uri, payload: Option[Payload] = N
   * [PUBLISHED, PUBLISH.Request|id, Publication|id]
   * ```
   */
-final case class Published(requestId: Id, publicationId: Id) extends Message {
+final case class Published(requestId: Id, publicationId: Id)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.PUBLISHED
-  require(Id.isValid(requestId), "invalid_id")
-  require(Id.isValid(publicationId), "invalid_id")
+  validator.validate(requestId)
+  validator.validate(publicationId)
 }
 
 
@@ -180,11 +181,11 @@ final case class Published(requestId: Id, publicationId: Id) extends Message {
   * @param options   is a dictionary that allows to provide additional subscription request details in a extensible way
   * @param topic     is the topic the Subscribe  wants to subscribe to 
   */
-final case class Subscribe(requestId: Id, topic: Uri, options: Dict = Subscribe.DefaultOptions) extends Message {
+final case class Subscribe(requestId: Id, topic: Uri, options: Dict = Subscribe.DefaultOptions)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.SUBSCRIBE
-  require(Id.isValid(requestId), "invalid_id")
-  require(options != null, "invalid_dict")
-  require(Uri.isValid(topic), "invalid_uri")
+  validator.validate(requestId)
+  validator.validate(topic)
+  require(options != null, "invalid Dict")
 }
 final object Subscribe {
   val DefaultOptions = Dict()
@@ -201,10 +202,10 @@ final object Subscribe {
   * @param requestId      is the ID from the original Subscribe request
   * @param subscriptionId is an ID chosen by the Broker for the subscription
   */
-final case class Subscribed(requestId: Id, subscriptionId: Id) extends Message {
+final case class Subscribed(requestId: Id, subscriptionId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Tpe.SUBSCRIBED
-  require(Id.isValid(requestId), "invalid_id")
-  require(Id.isValid(subscriptionId), "invalid_id")
+  validator.validate(requestId)
+  validator.validate(subscriptionId)
 }
 
 
@@ -217,10 +218,10 @@ final case class Subscribed(requestId: Id, subscriptionId: Id) extends Message {
   * @param requestId      is a random, ephemeral ID chosen by the Unsubscribe and used to correlate the Broker's response with the request
   * @param subscriptionId is the ID for the subscription to unsubscribe from, originally handed out by the Broker to the Subscriber
   */
-final case class Unsubscribe(requestId: Id, subscriptionId: Id) extends Message {
+final case class Unsubscribe(requestId: Id, subscriptionId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Tpe.UNSUBSCRIBE
-  require(Id.isValid(requestId), "invalid_id")
-  require(Id.isValid(subscriptionId), "invalid_id")
+  validator.validate(requestId)
+  validator.validate(subscriptionId)
 }
 
 
@@ -234,9 +235,9 @@ final case class Unsubscribe(requestId: Id, subscriptionId: Id) extends Message 
   *
   * @param requestId is the ID from the original Subscribed request
   */
-final case class Unsubscribed(requestId: Id) extends Message {
+final case class Unsubscribed(requestId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Tpe.UNSUBSCRIBED
-  require(Id.isValid(requestId), "invalid_id")
+  validator.validate(requestId)
 }
 
 
@@ -254,9 +255,9 @@ final case class Unsubscribed(requestId: Id) extends Message {
   * @param details        is a dictionary that allows to provide additional event details in an extensible way.
   * @param payload        is either a list of any arguments or a key-value-pairs set
   */
-final case class Event(subscriptionId: Id, publicationId: Id, details: Dict, payload: Option[Payload] = None) extends Message {
+final case class Event(subscriptionId: Id, publicationId: Id, details: Dict, payload: Option[Payload] = None) (implicit validator: Validator) extends Message {
   protected val tpe = Tpe.EVENT
-  require(Id.isValid(subscriptionId), "invalid_id")
-  require(Id.isValid(publicationId), "invalid_id")
-  require(details != null, "invalid_dict")
+  validator.validate(subscriptionId)
+  validator.validate(publicationId)
+  require(details != null, "invalid Dict")
 }

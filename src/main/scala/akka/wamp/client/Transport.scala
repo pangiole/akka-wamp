@@ -13,7 +13,10 @@ import scala.concurrent.{Future, Promise}
   * A Transport connects two [[Peer]]s and provides a channel over which 
   * [[Message]]s for a [[Session]] can flow in both directions.
   */
-class Transport private[client] (client: ActorRef, router: ActorRef) extends akka.wamp.TransportLike {
+class Transport private[client] (client: ActorRef, router: ActorRef)(implicit val validator: Validator) 
+  extends akka.wamp.TransportLike 
+{
+  
   private val log = LoggerFactory.getLogger(classOf[Transport])
 
   private val DefaultRoles = Set(Publisher, Subscriber)

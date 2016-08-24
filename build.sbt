@@ -11,14 +11,13 @@ scalaVersion := "2.11.8"
 
 description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka"
 
-mainClass in Compile := Some("akka.wamp.WebSocketRouter")
+mainClass in Compile := Some("akka.wamp.router.Router")
 
 libraryDependencies ++= Seq (
   akkaHttp, 
   akkaSlf4j, 
   logback, 
-  jackson,
-  scalactic
+  jackson
 ) ++ Seq(
   akkaHttpTestkit, 
   scalatest,

@@ -1,12 +1,11 @@
 package akka.wamp
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
-import akka.stream.ActorMaterializer
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.wamp.client.ClientManager
 import akka.wamp.router.RouterManager
 
 
-private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializer) extends Actor with ActorLogging {
+private[wamp] class Manager extends Actor with ActorLogging {
 
   // router -> binding
   //var bindings = Map.empty[ActorRef, Future[Http.ServerBinding]]
@@ -29,5 +28,5 @@ private[wamp] class Manager()(implicit system: ActorSystem, mat: ActorMaterializ
 
 
 object Manager {
-  def props()(implicit system: ActorSystem, mat: ActorMaterializer) = Props(new Manager())
+  def props() = Props(new Manager())
 }

@@ -1,7 +1,6 @@
 package akka.wamp.serialization
 
 import akka.wamp.messages._
-import org.scalactic.Or
 
 class MsgpackSerialization extends Serialization {
   
@@ -10,5 +9,5 @@ class MsgpackSerialization extends Serialization {
   override def serialize(msg: Message): Array[Byte] = ???
 
   @throws(classOf[DeserializeException])
-  override def deserialize(t: Array[Byte]): Message = ???
+  override def deserialize(text: String)(implicit validator: Validator): Message = ???
 }

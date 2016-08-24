@@ -3,7 +3,6 @@ package akka.wamp.router
 
 import akka.actor.{Scope => _, _}
 import akka.io.IO
-import akka.stream.ActorMaterializer
 import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.messages._
@@ -15,18 +14,23 @@ import scala.collection.mutable
   * for generic call and event routing and do not run any application code.
   * 
   */
-final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef])(implicit mat: ActorMaterializer) 
+final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef]) 
   extends Peer with Broker 
   with Actor with ActorLogging  
 {
-  import Router._
   
-  val autoCreateRealms = context.system.settings.config.getBoolean("akka.wamp.router.auto-create-realms")
+  val config = context.system.settings.config
+  
+  val abortUnknownRealms = config.getBoolean(s"akka.wamp.router.abort-unknown-realms") 
+  
+  val strictUris = config.getBoolean(s"akka.wamp.serialization.validate-strict-uris")
+  
+  implicit val validator = new Validator(strictUris)
   
   val roles = Set("broker")
   
   val welcomeDetails = Dict()
-    .withAgent(context.system.settings.config.getString("akka.wamp.router.agent"))
+    .withAgent("akka-wamp-0.5.1")
     .withRoles("broker")
   
   /**
@@ -86,8 +90,9 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
            * during the lifetime of the session and the peer must fail 
            * the session if that happens.
            */
+          // TODO Unspecified scenario. Ask for better WAMP protocol specification.
+          log.warning("SessionException: received HELLO when session already open.")
           closeSession(session)
-          session.client ! Failure("Session was already open.")
         },
         otherwise = { client =>
           if (realms.contains(realm)) {
@@ -100,12 +105,12 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
               * is router-specific. A router may automatically create the realm, 
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
-            if (autoCreateRealms) {
-              val session = addNewSession(client, details, createRealm(realm))
-              client ! Welcome(session.id, welcomeDetails)
+            if (abortUnknownRealms) {
+              client ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
             }
             else {
-              client ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
+              val session = addNewSession(client, details, createRealm(realm))
+              client ! Welcome(session.id, welcomeDetails) 
             } 
           }
         }
@@ -123,8 +128,8 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
           // DO NOT disconnectTransport
         },
         otherwise = { transport =>
-          transport ! Failure("Session was not open yet.")
-          // DO NOT disconnectTransport
+          // TODO Unspecified scenario. Ask for better WAMP protocol specification.
+          log.warning("SessionException: received GOODBYE when no session")
         }
       )
     }
@@ -167,8 +172,8 @@ object Router {
     * @param listener is the actor to notify Bind to
     * @return the props
     */
-  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None)(implicit mat: ActorMaterializer) = 
-    Props(new Router(scopes, listener)(mat))
+  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None) = 
+    Props(new Router(scopes, listener))
   
   /**
     * Starts the router as standalone application
@@ -181,8 +186,7 @@ object Router {
   }
   
   class Binder extends Actor with ActorLogging {
-    implicit val s = context.system
-    implicit val mat = ActorMaterializer()
+    implicit val system = context.system
     implicit val ec = context.system.dispatcher
     
     val router = context.system.actorOf(Router.props(), "router")

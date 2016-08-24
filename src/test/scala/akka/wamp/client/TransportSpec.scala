@@ -1,19 +1,29 @@
 package akka.wamp.client
 
-import akka.actor.PoisonPill
+import akka.actor.{ActorSystem, PoisonPill}
 import akka.wamp.Dict
+import com.typesafe.config.ConfigFactory
 
-class TransportSpec extends ClientFixtureSpec {
+class TransportSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.parseString(
+  """
+    | akka {
+    |   wamp {
+    |     router {
+    |       abort-unknown-realms = true
+    |     }
+    |   }
+    | }
+  """.stripMargin))) {
 
   "A client transport" should "fail open session when invalid realm is given" in { f =>
     val session = for {
       transport <- Client().connect(f.url)
-      session <- transport.open("invalid!realm")
+      session <- transport.open("invalid..realm")
     } yield session
 
     whenReady(session.failed) { e =>
       e mustBe a[TransportException]
-      e.getMessage mustBe "requirement failed: invalid uri invalid!realm"
+      e.getMessage mustBe "invalid URI invalid..realm"
     }
   }
   
