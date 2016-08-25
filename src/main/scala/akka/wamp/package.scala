@@ -101,13 +101,17 @@ package object wamp {
   }
 
 
-  case class Payload(val arguments: List[Any]) {
+  case class Payload(arguments: List[Any]) {
     private[wamp] def elems = {
       if (arguments.exists(_.isInstanceOf[Tuple2[_, _]])) {
         List(Nil, asDict)
       } else {
         List(arguments)
       }
+    }
+    
+    def +(payload: Payload) = {
+      Payload(this.arguments ++ payload.arguments)  
     }
     
     def asList: List[Any] = arguments

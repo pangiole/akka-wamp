@@ -71,7 +71,7 @@ trait Broker { this: Router =>
         }
         else {
           if (ack) {
-            publisher ! Error(PUBLISH, requestId, Dict(), "akka.wamp.error.no_publisher_role")
+            publisher ! Error(PUBLISH, requestId, "akka.wamp.error.no_publisher_role")
           }
         }
       }
@@ -118,7 +118,7 @@ trait Broker { this: Router =>
           }
         }
         else {
-          subscriber ! Error(SUBSCRIBE, requestId, Dict(), "akka.wamp.error.no_subscriber_role")
+          subscriber ! Error(SUBSCRIBE, requestId, "akka.wamp.error.no_subscriber_role")
         }
 
       }
@@ -130,7 +130,7 @@ trait Broker { this: Router =>
             unsubscribe(session.client, subscription)
             session.client ! Unsubscribed(requestId)
           case None =>
-            session.client ! Error(UNSUBSCRIBE, requestId, Dict(), "wamp.error.no_such_subscription")
+            session.client ! Error(UNSUBSCRIBE, requestId, "wamp.error.no_such_subscription")
         }
       }
   }

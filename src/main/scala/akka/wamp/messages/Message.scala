@@ -121,11 +121,11 @@ final object Goodbye {
   *
   * @param requestType
   * @param requestId
-  * @param details
   * @param error
+  * @param details
   * @param payload is either a list of any arguments or a key-value-pairs set
   */
-final case class Error(requestType: Int, requestId: Id, details: Dict, error: Uri, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
+final case class Error(requestType: Int, requestId: Id, error: Uri, details: Dict = Dict(), payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Tpe.ERROR
   require(Tpe.isValid(requestType), "invalid_type")
   validator.validate(requestId)

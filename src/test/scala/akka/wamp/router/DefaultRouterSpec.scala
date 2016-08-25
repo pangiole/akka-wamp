@@ -77,7 +77,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
     client.send(fixture.router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
-    client.expectMsg(Error(PUBLISH, 1, Dict(), "akka.wamp.error.no_publisher_role"))
+    client.expectMsg(Error(PUBLISH, 1, "akka.wamp.error.no_publisher_role"))
     client.expectNoMsg()
     fixture.router.underlyingActor.publications mustBe empty
   }
@@ -127,7 +127,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
     client.receiveOne(0.seconds)
     client.send(fixture.router, Subscribe(1, "topic1", Dict()))
-    client.expectMsg(Error(SUBSCRIBE, 1, Dict(), "akka.wamp.error.no_subscriber_role"))
+    client.expectMsg(Error(SUBSCRIBE, 1, "akka.wamp.error.no_subscriber_role"))
     fixture.router.underlyingActor.subscriptions mustBe empty
     client.expectNoMsg()
   }
@@ -262,6 +262,6 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
     client.send(fixture.router, Unsubscribe(1, 9999))
-    client.expectMsg(Error(UNSUBSCRIBE, 1, Dict(), "wamp.error.no_such_subscription"))
+    client.expectMsg(Error(UNSUBSCRIBE, 1, "wamp.error.no_such_subscription"))
   }
 }

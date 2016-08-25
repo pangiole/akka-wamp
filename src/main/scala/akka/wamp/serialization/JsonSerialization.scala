@@ -24,9 +24,9 @@ class JsonSerialization extends Serialization {
 
     def asUri = any.asInstanceOf[Uri]
 
-    def asSomePayload = any match {
-      case map: Map[_, _] => Some(Payload(map.toList))
-      case list: List[_] => Some(Payload(list))
+    def asPayload = any match {
+      case map: Map[_, _] => Payload(map.toList)
+      case list: List[_] => Payload(list)
     }
     
     def asId = any match {
@@ -68,16 +68,16 @@ class JsonSerialization extends Serialization {
         }
         case ERROR => {
           arr.length match {
-            case 5 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri)
-            case 6 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(5).asSomePayload)
-            case 7 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, details = arr(3).asDict, error = arr(4).asUri, arr(6).asSomePayload)
+            case 5 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, error = arr(4).asUri, details = arr(3).asDict, payload = None)
+            case 6 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, error = arr(4).asUri, details = arr(3).asDict, Some(arr(5).asPayload))
+            case 7 => Error(requestType = arr(1).asInt, requestId = arr(2).asId, error = arr(4).asUri, details = arr(3).asDict, Some(arr(5).asPayload + arr(6).asPayload))
           }
         }
         case PUBLISH => {
           arr.length match {
-            case 4 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, options = arr(2).asDict)
-            case 5 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(4).asSomePayload, options = arr(2).asDict)
-            case 6 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, arr(5).asSomePayload, options = arr(2).asDict)
+            case 4 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, payload = None, options = arr(2).asDict)
+            case 5 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, Some(arr(4).asPayload), options = arr(2).asDict)
+            case 6 => Publish(requestId = arr(1).asId, topic = arr(3).asUri, Some(arr(4).asPayload + arr(5).asPayload), options = arr(2).asDict)
           }
         }
         case PUBLISHED => {
@@ -112,9 +112,9 @@ class JsonSerialization extends Serialization {
         }
         case EVENT => {
           arr.length match {
-            case 4 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict)
-            case 5 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(4).asSomePayload)
-            case 6 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, arr(5).asSomePayload)
+            case 4 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, payload = None)
+            case 5 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, Some(arr(4).asPayload))
+            case 6 => Event(subscriptionId = arr(1).asId, publicationId = arr(2).asId, details = arr(3).asDict, Some(arr(4).asPayload + arr(5).asPayload))
           }
         }
       }
@@ -152,10 +152,10 @@ class JsonSerialization extends Serialization {
       case Abort(reason, details) =>
         List(ABORT, details, reason)
 
-      case Error(requestType, requestId, details, error, None) =>
+      case Error(requestType, requestId, error, details, None) =>
         List(ERROR, requestType, requestId, details, error)
 
-      case Error(requestType, requestId, details, error, Some(payload)) =>
+      case Error(requestType, requestId, error, details, Some(payload)) =>
         List(ERROR, requestType, requestId, details, error) ++ payload.elems
 
       case Publish(requestId, topic, None, options) =>

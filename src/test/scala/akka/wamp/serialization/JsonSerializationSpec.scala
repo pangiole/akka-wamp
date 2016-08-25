@@ -138,7 +138,7 @@ class JsonSerializationSpec extends WordSpec
           a[DeserializeException] mustBe thrownBy(s.deserialize(text))
         }
       }
-      "succeed for valid ERROR without payload" in {
+      "succeed for valid ERROR bearing NO payload at all" in {
         s.deserialize("""[8,34,9007199254740992,{},"wamp.error.no_such_subscription"]""") match {
           case m: wamp.Error =>
             m.requestType mustBe 34
@@ -149,25 +149,36 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
-      "succeed for valid ERROR with payload as list" in {
+      "succeed for valid ERROR bearing Arguments|list" in {
         s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",["paolo",40,true]]""") match {
           case m: wamp.Error =>
             m.requestType mustBe 34
             m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
-            m.payload.value.arguments mustBe List("paolo", 40, true)
+            m.payload.value.asList mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
-      "succeed for valid ERROR with payload as map" in {
+      "succeed for valid ERROR bearing ArgumentsKw|dict" in {
         s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: wamp.Error =>
             m.requestType mustBe 34
             m.requestId mustBe 1
             m.details mustBe empty
             m.error mustBe "wamp.error.no_such_subscription"
-            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
+            m.payload.value.asDict mustBe Map("arg0"->"paolo", "age"->40, "arg2"->true)
+          case _ => fail
+        }
+      }
+      "succeed for valid ERROR bearing both Arguments|list and ArgumentsKw|dict" in {
+        s.deserialize(s"""[8,34,1,{},"wamp.error.no_such_subscription",["paolo",40,true],{"arg0":"paolo","age":40,"arg2":true}]""") match {
+          case m: wamp.Error =>
+            m.requestType mustBe 34
+            m.requestId mustBe 1
+            m.details mustBe empty
+            m.error mustBe "wamp.error.no_such_subscription"
+            m.payload.value.asDict mustBe Map("arg0"->"paolo", "arg1"->40, "age"->40, "arg2"->true)
           case _ => fail
         }
       }
@@ -191,7 +202,7 @@ class JsonSerializationSpec extends WordSpec
           a[DeserializeException] mustBe thrownBy(s.deserialize(text))
         }
       }
-      "succeed for valid PUBLISH without payload" in {
+      "succeed for valid PUBLISH bearing NO payload at all" in {
         s.deserialize("""[16,9007199254740992,{"acknowledge":true},"myapp.topic1"]"""") match {
           case m: wamp.Publish =>
             m.requestId mustBe 9007199254740992L
@@ -202,23 +213,33 @@ class JsonSerializationSpec extends WordSpec
             fail("type mismatch")
         }
       }
-      "succeed for valid PUBLISH with payload as list" in {
+      "succeed for valid PUBLISH bearing Arguments|list" in {
         s.deserialize(s"""[16,1,{},"myapp.topic1",["paolo",40,true]]""") match {
           case m: wamp.Publish =>
             m.requestId mustBe 1
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
-            m.payload.value.arguments mustBe List("paolo", 40, true)
+            m.payload.value.asList mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
-      "succeed for valid PUBLISH with payload as map" in {
+      "succeed for valid PUBLISH bearing ArgumentsKw|dict" in {
         s.deserialize(s"""[16,1,{},"myapp.topic1",[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: wamp.Publish =>
             m.requestId mustBe 1
             m.options mustBe empty
             m.topic mustBe "myapp.topic1"
-            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
+            m.payload.value.asDict mustBe Map("arg0"->"paolo", "age"->40, "arg2"->true)
+          case _ => fail
+        }
+      }
+      "succeed for valid PUBLISH bearing both Arguments|list and ArgumentsKw|dict" in {
+        s.deserialize(s"""[16,1,{},"myapp.topic1",["paolo",40,true],{"arg0":"paolo","age":40,"arg2":true}]""") match {
+          case m: wamp.Publish =>
+            m.requestId mustBe 1
+            m.options mustBe empty
+            m.topic mustBe "myapp.topic1"
+            m.payload.value.asDict mustBe Map("arg0"->"paolo", "arg1"->40, "age"->40, "arg2"->true)
           case _ => fail
         }
       }
@@ -348,7 +369,7 @@ class JsonSerializationSpec extends WordSpec
       //[EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict]
       //[EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list]
       //[EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
-      "fail for invalid EVENT" in {
+      "fail for invalid EVENTs" in {
         List(
           """[36]""",
           """[36,null]""",
@@ -365,7 +386,7 @@ class JsonSerializationSpec extends WordSpec
         }
       }
       
-      "succeed for valid EVENT without payload" in {
+      "succeed for valid EVENT bearing NO payload at all" in {
         s.deserialize("""[36,9007199254740933,9007199254740992,{}]""") match {
           case m: wamp.Event =>
             m.subscriptionId mustBe 9007199254740933L
@@ -375,25 +396,35 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
-      
-      "succeed for valid EVENT with payload as list" in {
+
+      "succeed for valid EVENT bearing Arguments|list" in {
         s.deserialize(s"""[36,1,2,{},["paolo",40,true]]""") match {
           case m: wamp.Event =>
             m.subscriptionId mustBe 1
             m.publicationId mustBe 2
             m.details mustBe empty
-            m.payload.value.arguments mustBe List("paolo", 40, true)
+            m.payload.value.asList mustBe List("paolo", 40, true)
           case _ => fail
         }
       }
       
-      "succeed for valid EVENT with payload as map" in {
+      "succeed for valid EVENT bearing ArgumentsKw|dict" in {
         s.deserialize(s"""[36,1,2,{},[],{"arg0":"paolo","age":40,"arg2":true}]""") match {
           case m: wamp.Event =>
             m.subscriptionId mustBe 1
             m.publicationId mustBe 2
             m.details mustBe empty
-            m.payload.value.arguments mustBe List("arg0"->"paolo", "age"->40, "arg2"->true)
+            m.payload.value.asDict mustBe Map("arg0"->"paolo", "age"->40, "arg2"->true)
+          case _ => fail
+        }
+      }
+      "succeed for valid EVENT bearing both Arguments|list and ArgumentsKw|dict" in {
+        s.deserialize(s"""[36,1,2,{},["paolo",40,true],{"arg0":"pietro","age":40,"arg2":true}]""") match {
+          case m: wamp.Event =>
+            m.subscriptionId mustBe 1
+            m.publicationId mustBe 2
+            m.details mustBe empty
+            m.payload.value.asDict mustBe Map("arg0"->"pietro", "arg1"->40, "age"->40, "arg2"->true)
           case _ => fail
         }
       }
@@ -426,15 +457,15 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "serialize ERROR" in {
-        val msg1 = wamp.Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription")
+        val msg1 = wamp.Error(SUBSCRIBE, 341284, "wamp.error.no_such_subscription")
         val json1 = s.serialize(msg1)
         json1 mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
 
-        val msg2 = wamp.Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(Payload("paolo", 40, true)))
+        val msg2 = wamp.Error(SUBSCRIBE, 341284, "wamp.error.no_such_subscription", payload = Some(Payload("paolo", 40, true)))
         val json2 = s.serialize(msg2)
         json2 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",["paolo",40,true]]"""
 
-        val msg3 = wamp.Error(SUBSCRIBE, 341284, Dict(), "wamp.error.no_such_subscription", Some(Payload("paolo", "age"->40, true)))
+        val msg3 = wamp.Error(SUBSCRIBE, 341284, "wamp.error.no_such_subscription", payload = Some(Payload("paolo", "age"->40, true)))
         val json3 = s.serialize(msg3)
         json3 mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]"""
       }
