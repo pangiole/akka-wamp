@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.{Route, Directives => dsl}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
-import akka.wamp.messages.{Message, Validator}
+import akka.wamp.messages.Message
 import akka.wamp.Wamp
 import akka.wamp.{messages => wamp, _}
 import akka.wamp.messages.{Message => WampMessage}
@@ -27,6 +27,7 @@ class Transport(router: ActorRef, serializationFlows: SerializationFlows)
     with Actor with ActorLogging 
 {
   implicit val mat = ActorMaterializer()
+  // TODO close the materializer at some point
   
   val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
 

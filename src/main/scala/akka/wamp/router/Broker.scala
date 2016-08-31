@@ -1,7 +1,7 @@
 package akka.wamp.router
 
 import akka.actor._
-import akka.wamp.Tpe._
+import akka.wamp.TypeCode._
 import akka.wamp._
 import akka.wamp.messages._
 
@@ -27,7 +27,7 @@ trait Broker { this: Router =>
     * Handle PUBLISH and EVENT messages
     */
   def handlePublications: Receive = {
-    case message @ Publish(requestId, topic, payload, options) =>
+    case message @ Publish(requestId, options, topic, payload) =>
       ifSessionOpen(message) { session =>
         val publisher = session.client
         val ack = options.get("acknowledge") == Some(true)
@@ -71,7 +71,7 @@ trait Broker { this: Router =>
         }
         else {
           if (ack) {
-            publisher ! Error(PUBLISH, requestId, "akka.wamp.error.no_publisher_role")
+            publisher ! Error(Publish.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_publisher_role")
           }
         }
       }
@@ -82,7 +82,7 @@ trait Broker { this: Router =>
     */
   def handleSubscriptions: Receive = {
 
-    case message @ Subscribe(requestId, topic, options) =>
+    case message @ Subscribe(requestId, options, topic) =>
       ifSessionOpen(message) { session =>
         val subscriber = session.client
         if (session.roles.contains("subscriber")) {
@@ -118,7 +118,7 @@ trait Broker { this: Router =>
           }
         }
         else {
-          subscriber ! Error(SUBSCRIBE, requestId, "akka.wamp.error.no_subscriber_role")
+          subscriber ! Error(Subscribe.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_subscriber_role")
         }
 
       }
@@ -130,7 +130,7 @@ trait Broker { this: Router =>
             unsubscribe(session.client, subscription)
             session.client ! Unsubscribed(requestId)
           case None =>
-            session.client ! Error(UNSUBSCRIBE, requestId, "wamp.error.no_such_subscription")
+            session.client ! Error(Unsubscribe.tpe, requestId, details = Error.defaultDetails, "wamp.error.no_such_subscription")
         }
       }
   }

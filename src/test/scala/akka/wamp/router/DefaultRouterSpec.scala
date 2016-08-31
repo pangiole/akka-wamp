@@ -1,10 +1,11 @@
 package akka.wamp.router
 
 import akka.testkit._
-import akka.wamp.Tpe._
+import akka.wamp.TypeCode._
 import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.messages._
+import akka.wamp.serialization.{Payload, TextPayload}
 
 import scala.concurrent.duration._
 
@@ -57,15 +58,15 @@ class DefaultRouterSpec extends RouterFixtureSpec {
   it should "reply GOODBYE if client says GOODBYE after HELLO" in { fixture =>
     fixture.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
     expectMsgType[Welcome]
-    fixture.router ! Goodbye("wamp.error.system_shutdown", Dict("message" -> "The host is shutting down now."))
-    expectMsg(Goodbye("wamp.error.goodbye_and_out", Dict()))
+    fixture.router ! Goodbye(Dict("message" -> "The host is shutting down now."), "wamp.error.system_shutdown")
+    expectMsg(Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out"))
     fixture.router.underlyingActor.sessions  mustBe empty
   }
   
 
   it should "fail if client says PUBLISH before session has opened" in { fixture =>
     pending
-    fixture.router ! Publish(1, "topic1", options = Dict())
+    fixture.router ! Publish(1, options = Dict(), "topic1")
     expectMsg(???)
     fixture.router.underlyingActor.publications mustBe empty
     
@@ -76,8 +77,8 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Publish(1, "topic1", options = Dict("acknowledge" -> true)))
-    client.expectMsg(Error(PUBLISH, 1, "akka.wamp.error.no_publisher_role"))
+    client.send(fixture.router, Publish(1, options = Dict("acknowledge" -> true), "topic1"))
+    client.expectMsg(Error(Publish.tpe, 1, Error.defaultDetails, "akka.wamp.error.no_publisher_role"))
     client.expectNoMsg()
     fixture.router.underlyingActor.publications mustBe empty
   }
@@ -86,7 +87,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Publish(1, "topic1"/*, options = Dict("acknowledge" -> false)*/))
+    client.send(fixture.router, Publish(1, options = Dict(), "topic1"))
     client.expectNoMsg()
     fixture.router.underlyingActor.publications mustBe empty
   }
@@ -103,11 +104,14 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client3.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
     client3.receiveOne(0.seconds)
     
-    client1.send(fixture.router, Subscribe(1, "topic1", Dict())); client1.receiveOne(1.second)
-    client2.send(fixture.router, Subscribe(1, "topic1", Dict()));client2.receiveOne(0.seconds)
-    client3.send(fixture.router, Publish(1, "topic1", Some(Payload(List(44.23,"paolo",null,true))), Dict("acknowledge" -> true)))
-    client1.expectMsg(Event(1, 4, Dict(), Some(Payload(List(44.23,"paolo",null,true)))))
-    client2.expectMsg(Event(1, 4, Dict(), Some(Payload(List(44.23,"paolo",null,true)))))
+    client1.send(fixture.router, Subscribe(1, Dict(), "topic1")); client1.receiveOne(1.second)
+    client2.send(fixture.router, Subscribe(1, Dict(), "topic1"));client2.receiveOne(0.seconds)
+    
+    val payload = TextPayload("""[44.23,"paolo",null,true]""")
+    client3.send(fixture.router, Publish(1, Dict("acknowledge" -> true), "topic1", Some(payload)))
+    
+    client1.expectMsg(Event(1, 4, Dict(), Some(payload)))
+    client2.expectMsg(Event(1, 4, Dict(), Some(payload)))
     client3.expectMsg(Published(1, 4))
     client3.expectNoMsg()
 
@@ -117,7 +121,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
   
   it should  "fail if client says SUBSCRIBE before session has opened" in { fixture =>
     pending
-    fixture.router ! Subscribe(1, "topic1", Dict())
+    fixture.router ! Subscribe(1, Dict(), "topic1")
     expectMsg(???)
   }
   
@@ -126,8 +130,8 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("publisher")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(1, "topic1", Dict()))
-    client.expectMsg(Error(SUBSCRIBE, 1, "akka.wamp.error.no_subscriber_role"))
+    client.send(fixture.router, Subscribe(1, Dict(), "topic1"))
+    client.expectMsg(Error(Subscribe.tpe, 1, Error.defaultDetails, "akka.wamp.error.no_subscriber_role"))
     fixture.router.underlyingActor.subscriptions mustBe empty
     client.expectNoMsg()
   }
@@ -137,7 +141,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(1, "topic1", Dict()))
+    client.send(fixture.router, Subscribe(1, Dict(), "topic1"))
     client.receiveOne(0.seconds) match {
       case Subscribed(requestId, subscriptionId) =>
         requestId mustBe 1
@@ -147,7 +151,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
           'subscribers (Set(client.ref)),
           'topic ("topic1")
         )
-      case _ => fail("Unexpected message")
+      case m => fail(s"unexpected $m")
     } 
   }
 
@@ -156,9 +160,9 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(1, "topic1", Dict()))
+    client.send(fixture.router, Subscribe(1, Dict(), "topic1"))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(2, "topic1", Dict()))
+    client.send(fixture.router, Subscribe(2, Dict(), "topic1"))
     client.receiveOne(0.seconds) match {
       case Subscribed(requestId, subscriptionId) =>
         requestId mustBe 2
@@ -168,7 +172,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
           'subscribers (Set(client.ref)),
           'topic ("topic1")
         )
-      case _ => fail("Unexpected message")
+      case m => fail(s"unexpected $m")
     }
   }
 
@@ -177,9 +181,9 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(1, "topic1", Dict()))
+    client.send(fixture.router, Subscribe(1, Dict(), "topic1"))
     val id1 = client.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
-    client.send(fixture.router, Subscribe(2, "topic2", Dict()))
+    client.send(fixture.router, Subscribe(2, Dict(), "topic2"))
     client.receiveOne(0.seconds) match {
       case Subscribed(_, id2) =>
         fixture.router.underlyingActor.subscriptions must have size(2)
@@ -193,7 +197,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
           'subscribers (Set(client.ref)),
           'topic ("topic2")
         )
-      case _ => fail("Unexpected message")
+      case m => fail(s"unexpected $m")
     }
   }
 
@@ -202,12 +206,12 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client1 = TestProbe("client1")
     client1.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client1.receiveOne(0.seconds)
-    client1.send(fixture.router, Subscribe(1, "topic1", Dict()))
+    client1.send(fixture.router, Subscribe(1, Dict(), "topic1"))
     client1.receiveOne(0.second)
     val client2 = TestProbe("client2")
     client2.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber","publisher")))
     client2.receiveOne(0.seconds)
-    client2.send(fixture.router, Subscribe(2, "topic1", Dict()))
+    client2.send(fixture.router, Subscribe(2, Dict(), "topic1"))
     client2.receiveOne(0.seconds) match {
       case Subscribed(requestId, subscriptionId) =>
         requestId mustBe 2
@@ -217,7 +221,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
           'subscribers (Set(client1.ref, client2.ref)),
           'topic ("topic1")
         )
-      case _ => fail("Unexpected message")
+      case m => fail(s"unexpected $m")
     }
   }
 
@@ -226,12 +230,12 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client1 = TestProbe("client1")
     client1.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client1.receiveOne(0.seconds)
-    client1.send(fixture.router, Subscribe(1, "topic1", Dict()))
+    client1.send(fixture.router, Subscribe(1, Dict(), "topic1"))
     val sid11 = client1.receiveOne(0.second).asInstanceOf[Subscribed].subscriptionId
     val client2 = TestProbe("client2")
     client2.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber","publisher")))
     client2.receiveOne(0.seconds)
-    client2.send(fixture.router, Subscribe(2, "topic1", Dict()))
+    client2.send(fixture.router, Subscribe(2, Dict(), "topic1"))
     val sid12 = client2.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
     sid11 must equal(sid12)
     client2.send(fixture.router, Unsubscribe(3, sid12))
@@ -249,7 +253,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     val client = TestProbe("client1")
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
-    client.send(fixture.router, Subscribe(1, "topic", Dict()))
+    client.send(fixture.router, Subscribe(1, Dict(), "topic"))
     val sid = client.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
     client.send(fixture.router, Unsubscribe(2, sid))
     client.expectMsg(Unsubscribed(2))
@@ -262,6 +266,6 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client.send(fixture.router , Hello("akka.wamp.realm", Dict().withRoles("subscriber")))
     client.receiveOne(0.seconds)
     client.send(fixture.router, Unsubscribe(1, 9999))
-    client.expectMsg(Error(UNSUBSCRIBE, 1, "wamp.error.no_such_subscription"))
+    client.expectMsg(Error(Unsubscribe.tpe, 1, Error.defaultDetails, "wamp.error.no_such_subscription"))
   }
 }

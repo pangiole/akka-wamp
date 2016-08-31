@@ -50,7 +50,7 @@ private[client] class Client()(implicit system: ActorSystem) /*extends Peer*/ {
     url: String = "ws://localhost:8080/ws", 
     subprotocol: String = "wamp.2.json", 
     realm: Uri = "akka.wamp.realm",
-    roles: Set[Role] = Set(Publisher, Subscriber)): Future[Session] = 
+    roles: Set[Role] = Set(publisher, subscriber)): Future[Session] = 
   {
     for {
       transport <- connect(url, subprotocol)

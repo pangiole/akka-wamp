@@ -11,7 +11,7 @@ class Validator(strictUris: Boolean) {
   
   def validate[T](value: T): Unit = value match {
     case id: Id =>
-      if (!(id >= Id.Min && id <= Id.Max))
+      if (!(id >= Id.min && id <= Id.max))
         throw new IllegalArgumentException(s"invalid ID $id")
       
     case uri: Uri => 

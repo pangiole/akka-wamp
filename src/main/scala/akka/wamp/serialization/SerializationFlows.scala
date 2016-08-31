@@ -3,8 +3,9 @@ package akka.wamp.serialization
 import akka.NotUsed
 import akka.http.scaladsl.model.ws.{TextMessage, Message => WebSocketMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision
-import akka.stream.scaladsl.Flow
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.{Materializer, Supervision}
+import akka.stream.scaladsl.{Flow, Source}
 import akka.wamp.messages.{Validator, Message => WampMessage}
 import org.slf4j.LoggerFactory
 
@@ -26,7 +27,7 @@ trait SerializationFlows {
 }
 
 
-class JsonSerializationFlows(val validator: Validator) extends SerializationFlows {
+class JsonSerializationFlows(validator: Validator, materializer: Materializer) extends SerializationFlows {
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
   val json = new JsonSerialization
 
@@ -34,10 +35,11 @@ class JsonSerializationFlows(val validator: Validator) extends SerializationFlow
     * Serialize from WampMessage object to textual WebSocketMessage
     */
   val serialize: Flow[WampMessage, WebSocketMessage, NotUsed] =
-    Flow[WampMessage]
-      .map {
-        case msg: WampMessage =>
-          TextMessage.Strict(json.serialize(msg))
+    Flow[WampMessage].
+      map {
+        case message: WampMessage =>
+          val source = json.serialize(message)
+          TextMessage(source)
       }
 
   
@@ -48,8 +50,12 @@ class JsonSerializationFlows(val validator: Validator) extends SerializationFlow
   val deserialize: Flow[WebSocketMessage, WampMessage, NotUsed] =
     Flow[WebSocketMessage]
       .map {
-        case TextMessage.Strict(text) => json.deserialize(text)(validator)
-        case m => ??? // TODO what to do for Streamed(_)
+        case TextMessage.Strict(text) =>
+          json.deserialize(text)(validator, materializer)
+          
+        case TextMessage.Streamed(source) =>
+          throw new DeserializeException("Streaming not supported yet.")
+          // TODO json.deserialize(source)(validator, materializer)
       }
       .withAttributes(supervisionStrategy {
         case ex: DeserializeException =>

@@ -4,6 +4,7 @@ import akka.Done
 import akka.actor.Actor.Receive
 import akka.wamp._
 import akka.wamp.messages._
+import akka.wamp.serialization._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -13,7 +14,7 @@ class Session private[client](transport: Transport, welcome: Welcome)(implicit v
   extends SessionLike 
     with Scope.Session 
 {
-  import transport.{unexpectedReceive, goodbyeReceive}
+  import transport.{goodbyeReceive, unexpectedReceive}
   
   private val log = LoggerFactory.getLogger(classOf[Transport])
 
@@ -27,16 +28,16 @@ class Session private[client](transport: Transport, welcome: Welcome)(implicit v
   
   private var eventHandlers = mutable.Map.empty[Id, EventHandler]
   
-  private var _closed = false 
+  private var closed = false 
   
   private[client] def doClose(): Unit = {
-    _closed = true
+    closed = true
   }
   
   
   private[client] def futureOf[T](fn: (Promise[T]) => Unit): Future[T] = {
     val promise = Promise[T]
-    if (_closed) {
+    if (closed) {
       promise.failure(SessionException("session closed"))
     }
     else {
@@ -46,7 +47,7 @@ class Session private[client](transport: Transport, welcome: Welcome)(implicit v
   }
   
   
-  def close(reason: Uri = Goodbye.DefaultReason, details: Dict = Goodbye.DefaultDetails): Future[Goodbye] = {
+  def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Goodbye] = {
     futureOf[Goodbye] { promise =>
       def goodbyeReceive: Receive = {
         case msg: Goodbye =>
@@ -57,15 +58,15 @@ class Session private[client](transport: Transport, welcome: Welcome)(implicit v
         goodbyeReceive orElse
           unexpectedReceive(promiseToBreak = Some(promise))
       )
-      transport ! Goodbye(reason, details)
+      transport ! Goodbye(details, reason)
     }
   }
   
   
   
-  def subscribe(topic: Uri, options: Dict = Subscribe.DefaultOptions)(handler: EventHandler): Future[Subscribed] = {
+  def subscribe(topic: Uri, options: Dict = Subscribe.defaultOptions)(handler: EventHandler): Future[Subscribed] = {
     futureOf[Subscribed] { promise =>
-      val msg = Subscribe(nextId(), topic, options)
+      val msg = Subscribe(nextId(), options, topic)
       subscriptions += (msg.requestId -> promise)
       transport.become(
         goodbyeReceive(session = this) orElse
@@ -89,7 +90,7 @@ class Session private[client](transport: Transport, welcome: Welcome)(implicit v
     */
   def publish(topic: Uri, acknowledge: Boolean = false, payload: Option[Payload] = None): Future[Either[Done, Published]] =  {
     futureOf[Either[Done, Published]] { promise =>
-      val message = Publish(nextId(), topic, payload, Dict().withAcknowledge(acknowledge))
+      val message = Publish(nextId(), Dict().withAcknowledge(acknowledge), topic, payload)
       publications += (message.requestId -> promise)
       if (!acknowledge) {
         transport ! message

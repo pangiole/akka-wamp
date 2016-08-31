@@ -17,10 +17,11 @@ import scala.concurrent.Future
 private[wamp] class ClientManager extends Actor {
   
   implicit val ec = context.system.dispatcher
-  implicit val mat = ActorMaterializer()
-
+  implicit val materializer = ActorMaterializer()
+  // TODO close the materializer at some point
+  
   val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris))
+  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
   
   // inlet -> outlet
   var outlets = Map.empty[ActorRef, ActorRef]

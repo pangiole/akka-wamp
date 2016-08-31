@@ -106,7 +106,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
               * or deny the establishment of the session with a "ABORT" reply message. 
               */
             if (abortUnknownRealms) {
-              client ! Abort("wamp.error.no_such_realm", Dict("message" -> s"The realm $realm does not exist."))
+              client ! Abort(Dict("message" -> s"The realm $realm does not exist."), "wamp.error.no_such_realm")
             }
             else {
               val session = addNewSession(client, details, createRealm(realm))
@@ -124,7 +124,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
       switchOn(sender())(
         whenSessionOpen = { session =>
           closeSession(session)
-          session.client ! Goodbye("wamp.error.goodbye_and_out", Dict())
+          session.client ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
           // DO NOT disconnectTransport
         },
         otherwise = { transport =>

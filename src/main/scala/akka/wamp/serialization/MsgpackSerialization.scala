@@ -1,13 +1,15 @@
 package akka.wamp.serialization
 
+import akka.stream.Materializer
+import akka.util.ByteString
 import akka.wamp.messages._
 
 class MsgpackSerialization extends Serialization {
   
-  type T = Array[Byte]
+  type T = ByteString
 
-  override def serialize(msg: Message): Array[Byte] = ???
+  def serialize(message: Message): ByteString = ???
 
   @throws(classOf[DeserializeException])
-  override def deserialize(text: String)(implicit validator: Validator): Message = ???
+  def deserialize(source: ByteString)(implicit validator: Validator, materializer: Materializer): Message = ???
 }

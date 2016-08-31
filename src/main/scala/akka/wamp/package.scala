@@ -1,5 +1,8 @@
 package akka
 
+import akka.wamp.messages._
+import scala.util.Random.{nextDouble => rnd}
+
 /**
   * == akka-wamp 0.6.0 ==
   *
@@ -15,33 +18,29 @@ package object wamp {
   type Role = String
 
   object Roles {
-    val Subscriber = "subscriber"
-    val Publisher = "publisher"
+    val subscriber = "subscriber"
+    val publisher = "publisher"
   }
   
+  // TODO remove Tpe codes
   /**
     * Specified message type
     */
-  type Tpe = Int
-
-  final object Tpe {
-    val HELLO = 1
-    val WELCOME = 2
-    val ABORT = 3
-    val GOODBYE = 6
-    val ERROR = 8
-    val PUBLISH = 16
-    val PUBLISHED = 17
-    val SUBSCRIBE = 32
-    val SUBSCRIBED = 33
-    val UNSUBSCRIBE = 34
-    val UNSUBSCRIBED = 35
-    val EVENT = 36
-    val ALL = List(
-      HELLO, WELCOME, ABORT, GOODBYE, ERROR,
-      PUBLISH, PUBLISHED, SUBSCRIBE, SUBSCRIBED, UNSUBSCRIBE, UNSUBSCRIBED, EVENT
+  type TypeCode = Int
+  
+  final object TypeCode {
+    val all = List(
+      Hello.tpe, 
+      Welcome.tpe, 
+      Abort.tpe, 
+      Goodbye.tpe,
+      Error.tpe,
+      Publish.tpe, Published.tpe,
+      Subscribe.tpe, Subscribed.tpe,
+      Unsubscribe.tpe, Unsubscribed.tpe,
+      Event.tpe
     )
-    def isValid(tpy: Tpe): Boolean = ALL.contains(tpy)
+    def isValid(typeCode: TypeCode): Boolean = all.contains(typeCode)
   }
 
   /**
@@ -52,10 +51,9 @@ package object wamp {
 
 
   final object Id {
-    import scala.util.Random.{nextDouble => rnd}
-    val Min = 1L
-    val Max = 9007199254740992L
-    def draw(): Long = Min + (rnd() * (Max - Min + 1)).toLong
+    val min = 1L
+    val max = 9007199254740992L
+    def draw(): Long = min + (rnd() * (max - min + 1)).toLong
   }
 
   
@@ -64,6 +62,7 @@ package object wamp {
     */
   type Uri = String
   
+  final object Uri
 
   /**
     * Dictionary for options and details elements
@@ -99,37 +98,5 @@ package object wamp {
       }
     }
   }
-
-
-  case class Payload(arguments: List[Any]) {
-    private[wamp] def elems = {
-      if (arguments.exists(_.isInstanceOf[Tuple2[_, _]])) {
-        List(Nil, asDict)
-      } else {
-        List(arguments)
-      }
-    }
-    
-    def +(payload: Payload) = {
-      Payload(this.arguments ++ payload.arguments)  
-    }
-    
-    def asList: List[Any] = arguments
-
-    def asDict: Map[String, Any] = {
-      arguments.zipWithIndex.map {
-        case (arg: Tuple2[_, _], _) => (arg._1.toString, arg._2)
-        case (arg, idx) => (s"arg$idx" -> arg)
-      }.toMap
-    }
-  }
-
-  object Payload {
-    def apply(arguments: Any*): Payload = new Payload(arguments.toList)
-  }
-
   
-  private def require(condition: Boolean, message: String) =
-    if (!condition) throw new IllegalArgumentException(message)
-
 }

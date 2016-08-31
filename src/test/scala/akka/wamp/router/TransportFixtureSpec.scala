@@ -42,7 +42,7 @@ class TransportFixtureSpec
     val wampRouter = TestActorRef[Router](Router.props(scopes))
     
     val strictUris = system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-    val serializationFlows = new JsonSerializationFlows(new Validator(strictUris))
+    val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
     
     val transport = TestActorRef[Transport](Transport.props(wampRouter, serializationFlows))
     

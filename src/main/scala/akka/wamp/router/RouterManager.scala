@@ -16,7 +16,8 @@ import scala.util.{Failure, Success}
 private[wamp] class RouterManager extends Actor  {
   
   implicit val ec = context.system.dispatcher
-  implicit val mat = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
+  // TODO close the materializer at some point
   
   val iface = context.system.settings.config.getString("akka.wamp.router.iface")
   
@@ -24,7 +25,7 @@ private[wamp] class RouterManager extends Actor  {
 
   val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
   
-  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris))
+  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
   
   override def receive: Receive = {
     case cmd @ Wamp.Bind(router) => {

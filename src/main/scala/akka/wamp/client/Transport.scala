@@ -19,7 +19,7 @@ class Transport private[client] (client: ActorRef, router: ActorRef)(implicit va
   
   private val log = LoggerFactory.getLogger(classOf[Transport])
 
-  private val DefaultRoles = Set(Publisher, Subscriber)
+  private val DefaultRoles = Set(publisher, subscriber)
 
   private[client] val clientRef: ActorRef = client
   
@@ -94,7 +94,7 @@ class Transport private[client] (client: ActorRef, router: ActorRef)(implicit va
        * one _Peer_ and a "GOODBYE" message sent from the other _Peer_ 
        * in response.
        */
-      routerRef ! Goodbye("wamp.error.goodbye_and_out")
+      routerRef ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
       session.doClose()
   }
   
@@ -103,7 +103,7 @@ class Transport private[client] (client: ActorRef, router: ActorRef)(implicit va
       log.warn("!!! {}", msg)
       promiseToBreak.map { p =>
         if (!p.isCompleted)
-          p.failure(new Exception(s"Unexpected message $msg"))
+          p.failure(new Exception(s"unexpected $msg"))
       }
   }
 }
