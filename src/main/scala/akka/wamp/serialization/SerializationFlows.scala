@@ -3,10 +3,12 @@ package akka.wamp.serialization
 import akka.NotUsed
 import akka.http.scaladsl.model.ws.{TextMessage, Message => WebSocketMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision
+import akka.stream.{ActorMaterializer, Supervision}
 import akka.stream.scaladsl.Flow
 import akka.wamp.messages.{Validator, Message => WampMessage}
 import org.slf4j.LoggerFactory
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
   * Defines Akka Stream flows meant to serialize/deserialize messages 
@@ -26,7 +28,7 @@ trait SerializationFlows {
 }
 
 
-class JsonSerializationFlows(val validator: Validator) extends SerializationFlows {
+class JsonSerializationFlows(val validator: Validator)(implicit materializer: ActorMaterializer) extends SerializationFlows {
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
   val json = new JsonSerialization
 
@@ -47,9 +49,11 @@ class JsonSerializationFlows(val validator: Validator) extends SerializationFlow
     */
   val deserialize: Flow[WebSocketMessage, WampMessage, NotUsed] =
     Flow[WebSocketMessage]
-      .map {
-        case TextMessage.Strict(text) => json.deserialize(text)(validator)
-        case m => ??? // TODO what to do for Streamed(_)
+      .mapAsync(1) {
+        case TextMessage.Strict(text) =>
+          Future.successful(json.deserialize(text)(validator))
+        case TextMessage.Streamed(stream) =>
+          stream.runFold("")(_ + _).map ( json.deserialize(_)(validator))
       }
       .withAttributes(supervisionStrategy {
         case ex: DeserializeException =>
