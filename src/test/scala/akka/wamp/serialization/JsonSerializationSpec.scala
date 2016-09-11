@@ -395,7 +395,7 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "succeed for valid EVENT bearing Arguments|list" in {
-        s.deserialize(source("""[36,1,2,{},["paolo",40],{"arg0":"pietro","age":40,"male":true}]""")) match {
+        s.deserialize(source("""[36,1,2,{},["paolo",40,{"inner":"map"}],{"arg0":"pietro","age":40,"male":true}]""")) match {
           case message: wamp.Event =>
             message.subscriptionId mustBe 1
             message.publicationId mustBe 2
@@ -403,13 +403,13 @@ class JsonSerializationSpec extends WordSpec
             message.payload match {
               case Some(p: TextPayload) =>
                 whenReduced(p.source) { text =>
-                  text mustBe """["paolo",40],{"arg0":"pietro","age":40,"male":true}]"""
+                  text mustBe """["paolo",40,{"human":true}],{"arg0":"pietro","age":40,"male":true}]"""
                 }
                 whenReady(p.arguments) { args =>
-                  args mustBe List("paolo", 40)
+                  args mustBe List("paolo", 40, Map("human"->true))
                 }
                 whenReady(p.argumentsKw) { args =>
-                  args mustBe Map("arg0"->"pietro", "arg1"->40, "age"->40, "male"->true)
+                  args mustBe Map("arg0"->"pietro", "arg1"->40, "arg2"->Map("human"->true), "age"->40, "male"->true)
                 }
               case _ => fail
             }
