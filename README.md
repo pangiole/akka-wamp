@@ -52,7 +52,7 @@ Akka Wamp provides you with a router that can be either embedded into your appli
 This software comes with [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 
-[travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
+[travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=v0.7.0
 [travis-url]: https://travis-ci.org/angiolep/akka-wamp
 
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
