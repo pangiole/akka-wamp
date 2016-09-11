@@ -27,10 +27,10 @@ object SubscriberApp extends App {
 
   for {
     session <- Client().connectAndOpen()
-    subscription <- session.subscribe("myapp.topic") { event =>
-      event.payload.map(p => println(p.arguments))
+    subscription <- session.subscribe("myapp.topic") { 
+      _.payload.map(_.arguments.map(println)) 
     }
-  } yield ()
+  } 
 }
 ```
 Please, [read the docs](http://akka-wamp.readthedocs.io/) for a deeper explanation and further details.

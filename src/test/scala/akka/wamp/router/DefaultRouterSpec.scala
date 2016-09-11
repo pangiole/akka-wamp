@@ -1,11 +1,9 @@
 package akka.wamp.router
 
 import akka.testkit._
-import akka.wamp.TypeCode._
-import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.messages._
-import akka.wamp.serialization.{Payload, TextPayload}
+import akka.wamp.serialization._
 
 import scala.concurrent.duration._
 
@@ -107,7 +105,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
     client1.send(fixture.router, Subscribe(1, Dict(), "topic1")); client1.receiveOne(1.second)
     client2.send(fixture.router, Subscribe(1, Dict(), "topic1"));client2.receiveOne(0.seconds)
     
-    val payload = TextPayload("""[44.23,"paolo",null,true]""")
+    val payload = Payload(List(44.23,"paolo",null,true))
     client3.send(fixture.router, Publish(1, Dict("acknowledge" -> true), "topic1", Some(payload)))
     
     client1.expectMsg(Event(1, 4, Dict(), Some(payload)))

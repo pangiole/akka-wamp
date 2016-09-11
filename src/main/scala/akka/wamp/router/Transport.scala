@@ -21,7 +21,6 @@ import akka.wamp.serialization.SerializationFlows
   *
   * @param router is the first peer that will be connected by this transport
   */
-// TODO class JsonOverWebSocketTransport
 class Transport(router: ActorRef, serializationFlows: SerializationFlows) 
   extends akka.wamp.TransportLike 
     with Actor with ActorLogging 
@@ -109,11 +108,11 @@ class Transport(router: ActorRef, serializationFlows: SerializationFlows)
   var client: ActorRef = _
   
   override def preStart(): Unit = {
-    log.info("[{}]    Starting", self.path.name)
+    log.debug("[{}]     Starting", self.path.name)
   }
 
   override def postStop(): Unit = {
-    log.debug("[{}]   Stopped", self.path.name)
+    log.debug("[{}]    Stopped", self.path.name)
   }
   
   def receive: Receive = {
@@ -135,11 +134,11 @@ class Transport(router: ActorRef, serializationFlows: SerializationFlows)
       router ! msg
       
     case Wamp.Disconnected =>
-      log.debug("[{}] Disconnected from client [{}]", self.path.name, client.path.name)
+      log.debug("[{}]     Disconnected from client [{}]", self.path.name, client.path.name)
       stop()
 
     case stream.Failure(ex) =>
-      log.warning("[{}] Stream failure {}: {}", self.path.name, ex.getClass.getName, ex.getMessage)
+      log.warning("[{}]   Stream failure {}: {}", self.path.name, ex.getClass.getName, ex.getMessage)
       stop()
   }
   

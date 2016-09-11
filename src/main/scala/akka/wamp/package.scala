@@ -22,7 +22,6 @@ package object wamp {
     val publisher = "publisher"
   }
   
-  // TODO remove Tpe codes
   /**
     * Specified message type
     */

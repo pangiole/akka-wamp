@@ -45,7 +45,6 @@ class TransportSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.
     whenReady(transport) { t =>
       // TODO cannot find a good way to simulate transport disconnection :-(
       f.router ! PoisonPill
-      // TODO f.listener.expectMsg(Stopped)
       val session = t.open()
       whenReady(session.failed) { e =>
         e mustBe TransportException

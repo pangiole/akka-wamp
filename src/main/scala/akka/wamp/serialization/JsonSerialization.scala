@@ -128,7 +128,7 @@ class JsonSerialization extends Serialization {
           else fail(s"$field|int")
 
         def |(p: Payload.type): Option[Payload] =
-          if (parser.nextToken() == START_ARRAY) Some(parser.getValueAsPayload(source))//Some(new JsonPayload(null))
+          if (parser.nextToken() == START_ARRAY) Some(parser.getValueAsPayload(source))
           else None
       }
       
@@ -136,19 +136,19 @@ class JsonSerialization extends Serialization {
         if (parser.nextToken() == VALUE_NUMBER_INT) {
           val tpe = parser.getIntValue
           tpe match {
-            case Hello.`tpe`        => make(Hello("Realm"|Uri, "Details"|Dict))
-            case Welcome.`tpe`      => make(Welcome("Session"|Id, "Details"|Dict))
-            case Abort.`tpe`        => make(Abort("Details"|Dict, "Reason"|Uri))
-            case Goodbye.`tpe`      => make(Goodbye("Details"|Dict, "Reason"|Uri))
-            case Error.`tpe`        => make(Error("REQUEST.Type"|Int, "REQUEST.Request"|Id, "Details"|Dict, "Error"|Uri, "Arguments"|Payload))
-            case Publish.`tpe`      => make(Publish("REQUEST.Request"|Id, "Details"|Dict, "Topic"|Uri, "Arguments"|Payload))
-            case Published.`tpe`    => make(Published("PUBLISH.Request"|Id, "Publication"|Id))
-            case Subscribe.`tpe`    => make(Subscribe("Request"|Id, "Options"|Dict, "Topic"|Uri))
-            case Subscribed.`tpe`   => make(Subscribed("SUBSCRIBE.Request"|Id, "Subscription"|Id))
-            case Unsubscribe.`tpe`  => make(Unsubscribe("Request"|Id, "SUBSCRIBE.Subscription"|Id))
-            case Unsubscribed.`tpe` => make(Unsubscribed("UNSUBSCRIBE.Request"|Id))
-            case Event.`tpe`        => make(Event("SUBSCRIBED.Subscription"|Id, "PUBLISHED.Publication"|Id, "Details"|Dict, "Arguments"|Payload))
-            case _                 => fail("MessageType|Integer")
+            case Hello.tpe        => make(Hello("Realm"|Uri, "Details"|Dict))
+            case Welcome.tpe      => make(Welcome("Session"|Id, "Details"|Dict))
+            case Abort.tpe        => make(Abort("Details"|Dict, "Reason"|Uri))
+            case Goodbye.tpe      => make(Goodbye("Details"|Dict, "Reason"|Uri))
+            case Error.tpe        => make(Error("REQUEST.Type"|Int, "REQUEST.Request"|Id, "Details"|Dict, "Error"|Uri, "Arguments"|Payload))
+            case Publish.tpe      => make(Publish("REQUEST.Request"|Id, "Details"|Dict, "Topic"|Uri, "Arguments"|Payload))
+            case Published.tpe    => make(Published("PUBLISH.Request"|Id, "Publication"|Id))
+            case Subscribe.tpe    => make(Subscribe("Request"|Id, "Options"|Dict, "Topic"|Uri))
+            case Subscribed.tpe   => make(Subscribed("SUBSCRIBE.Request"|Id, "Subscription"|Id))
+            case Unsubscribe.tpe  => make(Unsubscribe("Request"|Id, "SUBSCRIBE.Subscription"|Id))
+            case Unsubscribed.tpe => make(Unsubscribed("UNSUBSCRIBE.Request"|Id))
+            case Event.tpe        => make(Event("SUBSCRIBED.Subscription"|Id, "PUBLISHED.Publication"|Id, "Details"|Dict, "Arguments"|Payload))
+            case _                => fail("MessageType|Integer")
           }
         }
         else fail("MessageType|Integer")
@@ -195,9 +195,21 @@ class JsonSerialization extends Serialization {
       }
 
     payload match {
-      case None                   => elems.map(toJson).mkString("[", ",", "]")
-      case Some(p: TextPayload)   => elems.map(toJson).mkString("[", ",", ",").concat(p.source).concat("]")
-      case Some(p: BinaryPayload) => throw new IllegalStateException("Cannot serialize binary payload as JSON")
+      case None => 
+        elems.map(toJson).mkString("[", ",", "]")
+        
+      case Some(p: TextPayload) => 
+        elems.map(toJson).mkString("[", ",", ",").concat(p.source).concat("]")
+        
+      case Some(p: BinaryPayload) => 
+        throw new IllegalStateException("Cannot serialize binary payload to JSON")
+        
+      case Some(p: Payload.Eager) =>
+        val all = 
+          if (p.memArgsKw.isEmpty) elems ::: p.memArgs :: Nil
+          else elems ::: p.memArgs :: p.memArgsKw :: Nil
+
+        all.map(toJson).mkString("[", ",", "]")
     }
   }
 }

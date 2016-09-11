@@ -65,11 +65,11 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     */
   private def handleTransports: Receive = {
     case bound @ Bound(url) =>
-      log.info("[{}] - Successfully bound on {}", self.path.name, url)
+      log.info("[{}]    Successfully bound on {}", self.path.name, url)
       listener.map(_ ! bound)
     case Disconnect =>
       val client = sender()
-      log.info("[{}] - Client disconnected {}", self.path, client.path.name)
+      log.debug("[{}]    Client disconnected {}", self.path.name, client.path.name)
       switchOn(client)(
         whenSessionOpen = { session =>
           closeSession(session)
@@ -91,7 +91,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
            * the session if that happens.
            */
           // TODO Unspecified scenario. Ask for better WAMP protocol specification.
-          log.warning("SessionException: received HELLO when session already open.")
+          log.warning("[{}] !!! SessionException: received HELLO when session already open.", self.path.name)
           closeSession(session)
         },
         otherwise = { client =>
@@ -129,7 +129,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         },
         otherwise = { transport =>
           // TODO Unspecified scenario. Ask for better WAMP protocol specification.
-          log.warning("SessionException: received GOODBYE when no session")
+          log.warning("[{}] !!! SessionException: received GOODBYE when no session", self.path.name)
         }
       )
     }

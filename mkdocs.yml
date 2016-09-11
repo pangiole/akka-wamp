@@ -6,5 +6,7 @@ pages:
   - Home: 'index.md'
   - Router: 'router.md'
   - Client:
-    - 'Future based': 'client/future.md'
+    - 'Actor based API': 'client/actor.md'
+    - 'Future based API': 'client/future.md'
+    - 'Stream based API': 'client/stream.md'
   - Messages: 'messages.md'  

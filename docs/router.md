@@ -1,4 +1,4 @@
-# Router
+Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
 
 ## Embedded
 Make your SBT build depend on akka-wamp:
@@ -12,20 +12,37 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Create both and actor system and materializer, and then create the router actor as follows:
+Create the Akka ``ActorSystem`` and the Akka Wamp ``Router`` actor as follows:
 
 ```scala
 import akka.actor._
-import akka.stream._
 import akka.wamp.router._
 
 implicit val system = ActorSystem("wamp")
-
 val router = system.actorOf(Router.props(), "router")
+```
+
+Then send a ``Bind`` message to the ``IO(Wamp)`` manager
+
+```scala
 IO(Wamp) ! Bind(router)
 ```
 
-It automatically binds on a server socket by reading the following Akka configuration
+Done ;-)
+
+## Standalone [![Download][download-image]][download-url]
+Download and launch the router as standalone application:
+
+```bash
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.6.0.tgz
+tar xvfz akka-wamp-0.6.0.tar.gz
+cd akka-wamp-0.6.0
+./bin/akka-wamp -Dakka.loglevel=DEBUG
+```
+
+## Settings
+Either the embedded or the standalone router can be configured by applying the following settings:
+
 
  - ``akka.wamp.serialization``  
    
@@ -52,22 +69,11 @@ It automatically binds on a server socket by reading the following Akka configur
     - ``abort-unknown-realms``  
       The boolean switch (default is false) to NOT automatically create realms if they don't exist yet
 
+Above settings can be overridden by
 
-> NOTE: the Akka Wamp Router, by default, expects HTTP Upgrade to WebSocket requests addressed to ``http://127.0.0.1:8080/ws``
+ * providing a TypeSafe Config ``application.conf`` file right in the classpath,
+ * or passing Java system properties (e.g. ``-Dakka.wamp.router.port=7070``) to the Java interpreter on the command line
 
-
-
-## Standalone [![Download][download-image]][download-url]
-Download and launch the router as standalone application:
-
-```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.6.0.tgz
-tar xvfz akka-wamp-0.6.0.tar.gz
-cd akka-wamp-0.6.0
-./bin/akka-wamp -Dakka.loglevel=DEBUG
-```
-
-You can override the above default setting by passing Java system properties on the command line.
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
 [download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion

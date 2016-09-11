@@ -1,8 +1,7 @@
 package akka.wamp.serialization
 
-import java.util.concurrent.TimeoutException
 
-import akka.actor.{ActorSystem, ActorSystemImpl}
+import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.wamp._
 import akka.wamp.messages._
@@ -240,9 +239,8 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
-      "succeed for valid PUBLISH bearing huge mixed arguments" in {
+      "succeed for valid PUBLISH bearing streamed payload arguments" in {
         pending
-        // TODO maybe ScalaCheck a way to generate random huge JSON arrays and objects?
       }
 
       
@@ -455,14 +453,14 @@ class JsonSerializationSpec extends WordSpec
           json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
         }
 
-        val message2 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(TextPayload("""["paolo",40,true]""")))
+        val message2 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(TextPayload("""[],{"arg0":"paolo","age":40,"arg2":true}""")))
+        val message3 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(Dict("arg0"->"paolo","age"->40,"arg2"->true))))
         whenReduced(s.serialize(message3)) { json =>
-          json mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]"""
+          json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]"""
         }
       }
 
@@ -473,17 +471,17 @@ class JsonSerializationSpec extends WordSpec
           json mustBe """[16,341284,{},"myapp.topic1"]"""
         }
 
-        val message2 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(TextPayload("""["paolo",40,true]""")))
+        val message2 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(TextPayload("""[],{"name":"paolo","age":40}""")))
+        val message3 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List(), Dict("name"->"paolo","age"->40))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",[],{"name":"paolo","age":40}]"""
         }
         
-        val message4 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(TextPayload("""["paolo",true],{"age":40}""")))
+        val message4 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo",true), Dict("age"->40))))
         whenReduced(s.serialize(message4)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",["paolo",true],{"age":40}]"""
         }
@@ -523,12 +521,12 @@ class JsonSerializationSpec extends WordSpec
           json mustBe """[36,713845233,5512315,{}]"""
         }
         
-        val message2 = wamp.Event(713845233, 5512315, Dict(), Some(TextPayload("""["paolo",40,true]""")))
+        val message2 = wamp.Event(713845233, 5512315, Dict(), Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe s"""[36,713845233,5512315,{},["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Event(713845233, 5512315, Dict(), Some(TextPayload("""[],{"arg0":"paolo","age":40,"arg2":true}""")))
+        val message3 = wamp.Event(713845233, 5512315, Dict(), Some(Payload(List(), Dict("arg0"->"paolo","age"->40,"arg2"->true))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[36,713845233,5512315,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""
         }
