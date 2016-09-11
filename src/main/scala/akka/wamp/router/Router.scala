@@ -30,7 +30,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   val roles = Set("broker")
   
   val welcomeDetails = Dict()
-    .withAgent("akka-wamp-0.6.0")
+    .withAgent("akka-wamp-0.7.0")
     .withRoles("broker")
   
   /**

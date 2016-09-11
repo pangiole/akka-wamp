@@ -395,7 +395,7 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "succeed for valid EVENT bearing Arguments|list" in {
-        s.deserialize(source("""[36,1,2,{},["paolo",40,{"inner":"map"}],{"arg0":"pietro","age":40,"male":true}]""")) match {
+        s.deserialize(source("""[36,1,2,{},["paolo",40,{"human":true}],{"arg0":"pietro","age":40,"male":true}]""")) match {
           case message: wamp.Event =>
             message.subscriptionId mustBe 1
             message.publicationId mustBe 2
@@ -430,9 +430,9 @@ class JsonSerializationSpec extends WordSpec
       }
       
       "serialize WELCOME" in {
-        val message = wamp.Welcome(1233242, Dict().withAgent("akka-wamp-0.6.0").withRoles("broker"))
+        val message = wamp.Welcome(1233242, Dict().withAgent("akka-wamp-0.7.0").withRoles("broker"))
         whenReduced(s.serialize(message)) { json =>
-          json mustBe """[2,1233242,{"agent":"akka-wamp-0.6.0","roles":{"broker":{}}}]"""
+          json mustBe """[2,1233242,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]"""
         }
       }
 

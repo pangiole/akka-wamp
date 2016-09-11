@@ -22,7 +22,7 @@ class DefaultRouterSpec extends RouterFixtureSpec {
   
   it should "reply WELCOME if client says HELLO for existing realm" in { fixture =>
     fixture.router ! Hello("akka.wamp.realm", Dict().withRoles("publisher"))
-    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.6.0")))
+    expectMsg(Welcome(1, Dict().withRoles("broker").withAgent("akka-wamp-0.7.0")))
     fixture.router.underlyingActor.realms must have size(1)
     fixture.router.underlyingActor.realms must contain only ("akka.wamp.realm")
     fixture.router.underlyingActor.sessions must have size(1)

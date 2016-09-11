@@ -39,7 +39,7 @@ class CustomTransportSpec extends TransportFixtureSpec {
       transport.sendMessage("""[1,"akka.wamp.realm",{"roles":{"publisher":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.6.0","roles":{"broker":{}}}]""")
+      transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
 
       // SESSION #1 OPEN
 
@@ -57,7 +57,7 @@ class CustomTransportSpec extends TransportFixtureSpec {
       transport.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,2,{"agent":"akka-wamp-0.6.0","roles":{"broker":{}}}]""")
+      transport.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
 
       // SESSION #2 OPEN
       
