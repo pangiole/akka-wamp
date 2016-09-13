@@ -7,6 +7,7 @@ import akka.stream.{Materializer, Supervision}
 import akka.stream.scaladsl.Flow
 import akka.wamp.messages.{Validator, Message => WampMessage}
 import org.slf4j.LoggerFactory
+import scala.concurrent.Future
 
 class JsonSerializationFlows(validator: Validator, materializer: Materializer) extends SerializationFlows {
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
@@ -30,12 +31,13 @@ class JsonSerializationFlows(validator: Validator, materializer: Materializer) e
     */
   val deserialize: Flow[WebSocketMessage, WampMessage, NotUsed] =
     Flow[WebSocketMessage]
-      .map {
+      .mapAsync(1) {
         case TextMessage.Strict(text) =>
-          json.deserialize(text)(validator, materializer)
+          Future.successful(json.deserialize(text)(validator, materializer))
 
         case TextMessage.Streamed(source) =>
-          throw new DeserializeException("Streaming not supported yet.")
+          source.runFold("")(_ + _)(materializer)
+            .map( json.deserialize(_)(validator, materializer) )(materializer.executionContext)
 
         case m: BinaryMessage =>
           throw new DeserializeException("Cannot deserialize binary message as JSON message was expected instead!")

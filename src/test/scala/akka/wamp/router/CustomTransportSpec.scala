@@ -1,5 +1,7 @@
 package akka.wamp.router
 
+import akka.http.scaladsl.model.ws.TextMessage
+import akka.stream.scaladsl.Source
 
 /**
   * It tests the ``router.Transport`` behaviour with a custom configuration 
@@ -36,7 +38,7 @@ class CustomTransportSpec extends TransportFixtureSpec {
 
       // --> HELLOs
       transport.sendMessage("""[1,"akka.wamp.realm",{"roles":{"invalid":{}}}]""")
-      transport.sendMessage("""[1,"akka.wamp.realm",{"roles":{"publisher":{}}}]""")
+      transport.sendMessage(TextMessage(Source.single("""[1,"akka.wamp.realm",{"roles":{"publisher":{}}}]""")))
 
       // <-- WELCOME
       transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
