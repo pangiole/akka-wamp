@@ -31,7 +31,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): WampExtension = new WampExtension(system)
 
   /**
-    * The common interface for [[Command]] and [[Signal]].
+    * The common interface for [[Command]]s and [[Signal]]s.
     */
   trait AbstractMessage
 
@@ -52,6 +52,8 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     */
   final case class Connect(client: ActorRef, url: String = "ws://localhost:8080/ws", subprotocol: String = "wamp.2.json") extends Command
 
+  final case object Disconnect extends Command
+  
   /**
     * The Bind message is send to the WAMP manager actor, which is obtained via
     * [[WampExtension#manager]] in order to bind to a listening socket. The manager
@@ -97,10 +99,8 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
 
   final case class ConnectionFailed(cause: Throwable) extends Signal
   
-  
   final case object Disconnected extends Signal
-
-  final case object Disconnect extends Command
+  
 }
 
 

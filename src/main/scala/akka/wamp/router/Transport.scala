@@ -9,9 +9,7 @@ import akka.http.scaladsl.server.{Route, Directives => dsl}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.wamp.messages.Message
-import akka.wamp.Wamp
-import akka.wamp.{messages => wamp, _}
-import akka.wamp.messages.{Message => WampMessage}
+import akka.wamp.{Wamp, messages => wamp, _}
 import akka.wamp.serialization.SerializationFlows
 
 
@@ -22,8 +20,7 @@ import akka.wamp.serialization.SerializationFlows
   * @param router is the first peer that will be connected by this transport
   */
 class Transport(router: ActorRef, serializationFlows: SerializationFlows) 
-  extends akka.wamp.TransportLike 
-    with Actor with ActorLogging 
+  extends Actor with ActorLogging 
 {
   implicit val mat = ActorMaterializer()
   // TODO close the materializer at some point
@@ -32,9 +29,9 @@ class Transport(router: ActorRef, serializationFlows: SerializationFlows)
 
     // A stream source that will be materialized as an actor and
     // that will emit WAMP messages being serialized out to the websocket
-    val transportSource: Source[WampMessage, ActorRef] =
+    val transportSource: Source[Message, ActorRef] =
       Source.
-        actorRef[WampMessage](bufferSize = 4, OverflowStrategies.Fail)
+        actorRef[Message](bufferSize = 4, OverflowStrategies.Fail)
 
     // Create a new transportSink which delivers any message to this transportActor (self)
     val transportSink: Sink[Wamp.AbstractMessage, NotUsed] =
@@ -125,11 +122,11 @@ class Transport(router: ActorRef, serializationFlows: SerializationFlows)
       client = peer
       log.debug("[{}]     Wamp.Connected to client [{}]", self.path.name, client.path.name)
 
-    case msg: wamp.Message if (sender() == router) =>
+    case msg: Message if (sender() == router) =>
       log.debug("[{}] --> {}", self.path.name, msg)
       client ! msg
       
-    case msg: wamp.Message =>
+    case msg: Message =>
       log.debug("[{}] <-- {}", self.path.name, msg)
       router ! msg
       

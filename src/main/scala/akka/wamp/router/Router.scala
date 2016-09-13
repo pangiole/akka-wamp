@@ -5,33 +5,49 @@ import akka.actor.{Scope => _, _}
 import akka.io.IO
 import akka.wamp.Wamp._
 import akka.wamp._
+import akka.wamp.client.Client
 import akka.wamp.messages._
 
 import scala.collection.mutable
 
 /**
-  * A Router is a Peer of the roles Broker and Dealer which is responsible 
-  * for generic call and event routing and do not run any application code.
+  * The Router is a [[Peer]] playing the [[Roles.broker]] and [[Roles.dealer]] 
+  * which is responsible for generic call and [[Event]] routing but do NOT run 
+  * any application code a [[Client]] would.
   * 
   */
 final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef]) 
-  extends Peer with Broker 
+  extends Peer with Broker with Dealer
   with Actor with ActorLogging  
 {
-  
-  val config = context.system.settings.config
-  
-  val abortUnknownRealms = config.getBoolean(s"akka.wamp.router.abort-unknown-realms") 
-  
-  val strictUris = config.getBoolean(s"akka.wamp.serialization.validate-strict-uris")
-  
-  implicit val validator = new Validator(strictUris)
-  
-  val roles = Set("broker")
-  
-  val welcomeDetails = Dict()
+  /**
+    * Global configuration 
+    */
+  private[router] val config = context.system.settings.config
+
+  /**
+    * Boolean switch (default is false) to NOT automatically create
+    * realms if they don't exist yet
+    */
+  private[router] val abortUnknownRealms = config.getBoolean("akka.wamp.router.abort-unknown-realms")
+
+  /**
+    * Boolean switch (default is false) to validate against strict URIs
+    * rather than loose URIs
+    */
+  private[router] val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+
+  /**
+    * Validator that validates values against WAMP protocol types
+    */
+  private[router] implicit val validator = new Validator(strictUris)
+
+  /**
+    * Details of WELCOME message replied by this router
+    */
+  private[router] val welcomeDetails = Dict()
     .withAgent("akka-wamp-0.7.0")
-    .withRoles("broker")
+    .withRoles(Roles.router)
   
   /**
     * Map of existing realms.
@@ -42,31 +58,33 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     * Messages are only routed within a Realm.
     *
     */
-  val realms = mutable.Set[Uri]("akka.wamp.realm")
+  private[router] val realms = mutable.Set[Uri]("akka.wamp.realm")
   
   /**
-    * Map of open Sessions
+    * Map of open sessions
     */
-  val sessions = mutable.Map.empty[Id, Session]
+  private[router] val sessions = mutable.Map.empty[Id, Session]
 
   /**
     * Handle either transports, sessions, subscriptions, publications, 
     * registrations or invocations
     */
   override def receive =
-    handleTransports orElse
-      handleSessions orElse 
-        handleSubscriptions orElse
-          handlePublications
-
+    handleTransports orElse handleSessions orElse 
+      handleSubscriptions orElse handlePublications orElse
+        handleRegistrations
 
   /**
-    * Handle transports connection and disconnection
+    * Handle transports lifecycle signals and events such as: 
+    * BOUND, CONNECT, DISCONNECT and UNBOUND
     */
   private def handleTransports: Receive = {
     case bound @ Bound(url) =>
       log.info("[{}]    Successfully bound on {}", self.path.name, url)
       listener.map(_ ! bound)
+    
+    // TODO case Connect  
+    
     case Disconnect =>
       val client = sender()
       log.debug("[{}]    Client disconnected {}", self.path.name, client.path.name)
@@ -78,8 +96,10 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
       )
   }
   
+  
   /**
-    * Handle session lifecycle related messages such as: HELLO, WELCOME, ABORT and GOODBYE
+    * Handle session lifecycle messages such as: 
+    * HELLO, WELCOME, ABORT and GOODBYE
     */
   private def handleSessions: Receive = {
     case Hello(realm, details) => {
@@ -121,13 +141,13 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     case Abort => ()
 
     case Goodbye(details, reason) => {
-      switchOn(sender())(
+      switchOn(client = sender())(
         whenSessionOpen = { session =>
           closeSession(session)
           session.client ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
           // DO NOT disconnectTransport
         },
-        otherwise = { transport =>
+        otherwise = { _ =>
           // TODO Unspecified scenario. Ask for better WAMP protocol specification.
           log.warning("[{}] !!! SessionException: received GOODBYE when no session", self.path.name)
         }
@@ -136,11 +156,23 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   }
 
 
-  def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
+  private[router] def switchOn(client: ActorRef)(whenSessionOpen: (Session) => Unit, otherwise: ActorRef => Unit): Unit = {
     sessions.values.find(_.client == client) match {
       case Some(session) => whenSessionOpen(session)
       case None => otherwise(client)
     }
+  }
+
+  private[router] def ifSessionOpen(message: Message)(fn: (Session) => Unit): Unit = {
+    switchOn(sender())(
+      whenSessionOpen = { session =>
+        fn(session)
+      },
+      otherwise = { _ =>
+        // TODO Unspecified scenario. Ask for better WAMP protocol specification.
+        log.warning("SessionException: received {} when no session open yet.", message)
+      }
+    )
   }
   
   private def addNewSession(client: ActorRef, details: Dict, realm: Uri) = {
@@ -153,6 +185,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   
   private def closeSession(session: Session) = {
     subscriptions.foreach { case (_, subscription) => unsubscribe(session.client, subscription) }
+    // TODO unregister procedures on close session
     sessions -= session.id
   }
   

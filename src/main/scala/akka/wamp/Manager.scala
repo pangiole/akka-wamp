@@ -1,8 +1,6 @@
 package akka.wamp
 
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.wamp.client.ClientManager
-import akka.wamp.router.RouterManager
 
 
 private[wamp] class Manager extends Actor with ActorLogging {
@@ -12,8 +10,8 @@ private[wamp] class Manager extends Actor with ActorLogging {
   
   override def receive: Receive = {
     case cmd: Wamp.Bind => {
-      val routeManager = context.actorOf(Props(new RouterManager))
-      routeManager.forward(cmd)
+      val manager = context.actorOf(router.Manager.props())
+      manager.forward(cmd)
     }
       
     // case Wamp.Unbind =>
@@ -21,12 +19,12 @@ private[wamp] class Manager extends Actor with ActorLogging {
     //  for { binding <- bindings(router) } yield (binding.unbind())
       
     case cmd: Wamp.Connect => 
-      val clientManager = context.actorOf(Props(new ClientManager))
-      clientManager.forward(cmd)
+      val manager = context.actorOf(client.Manager.props())
+      manager.forward(cmd)
   }
 }
 
 
-object Manager {
+private[wamp] object Manager {
   def props() = Props(new Manager())
 }

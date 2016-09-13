@@ -3,7 +3,7 @@ package akka.wamp.router
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.testkit._
 import akka.testkit._
-import akka.wamp.messages.Validator
+import akka.wamp.Validator
 import akka.wamp.serialization.JsonSerializationFlows
 import org.scalatest._
 

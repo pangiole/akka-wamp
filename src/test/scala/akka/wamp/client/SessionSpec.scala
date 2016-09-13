@@ -3,13 +3,14 @@ package akka.wamp.client
 import akka.Done
 import akka.wamp.messages.Event
 import org.scalamock.scalatest.MockFactory
+
 import scala.concurrent.duration._
 
 class SessionSpec extends ClientFixtureSpec with MockFactory {
 
   "A client session" should "reply goodbye and close on goodbye from router" in { f =>
     pending
-    val session = for (s <- Client().connectAndOpen(f.url)) yield s
+    val session = for (s <- Client().connectAndOpenSession(f.url)) yield s
     whenReady(session) { session =>
       // TODO cannot simulate Goodbye("wamp.error.system_shutdown") from router
     }
@@ -17,7 +18,7 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
   
   it should "fail publish to topic when it turns to be closed" in { f =>
     pending 
-    val session = for (s <- Client().connectAndOpen(f.url)) yield s
+    val session = for (s <- Client().connectAndOpenSession(f.url)) yield s
     whenReady(session) { session =>
       // TODO cannot simulate publish after session closed
     }
@@ -25,7 +26,7 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
 
   it should "succeed publish(noack) to topic" in { f =>
     val publication = for {
-      session <- Client().connectAndOpen(f.url)
+      session <- Client().connectAndOpenSession(f.url)
       publication <- session.publish("myapp.topic")
     } yield publication
 
@@ -37,8 +38,8 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
 
   it should "succeed publish(ack) to topic and receive ack" in { f =>
     val publication = for {
-      session <- Client().connectAndOpen(f.url)
-      publication <- session.publish("myapp.topic", acknowledge = true)
+      session <- Client().connectAndOpenSession(f.url)
+      publication <- session.publish("myapp.topic", ack = true)
     } yield publication
 
     whenReady(publication) { publication =>
@@ -52,17 +53,17 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
 
   it should "succeed subscribe to topic and receive events" in { f =>
     val eventHandler = stubFunction[Event, Unit]
-    val publisher = for (session1 <- Client().connectAndOpen(f.url)) yield session1
+    val publisher = for (session1 <- Client().connectAndOpenSession(f.url)) yield session1
     whenReady(publisher) { publisher =>
       val subscription = for {
-        session2 <- Client().connectAndOpen(f.url)
+        session2 <- Client().connectAndOpenSession(f.url)
         subscription <- session2.subscribe("myapp.topic")(eventHandler)
       } yield subscription
 
       whenReady(subscription) { s =>
         s.requestId mustBe 1
         s.subscriptionId mustBe 1
-        val publication = publisher.publish("myapp.topic", acknowledge = true)
+        val publication = publisher.publish("myapp.topic", ack = true)
         whenReady(publication) { p =>
           awaitAssert(eventHandler.verify(*).once(), 5 seconds)
         }

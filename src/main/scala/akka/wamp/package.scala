@@ -1,6 +1,8 @@
 package akka
 
 import akka.wamp.messages._
+
+import scala.collection.SortedSet
 import scala.util.Random.{nextDouble => rnd}
 
 /**
@@ -20,6 +22,18 @@ package object wamp {
   object Roles {
     val subscriber = "subscriber"
     val publisher = "publisher"
+    val callee = "callee"
+    val caller = "caller"
+    val broker = "broker"
+    /**
+      * All roles for a fully capable client
+      */
+    val client = Set(callee, caller, publisher, subscriber)
+    val dealer = "dealer"
+    /**
+      * All roles for a fully capable broker
+      */
+    val router = Set(broker, dealer)
   }
   
   /**
@@ -74,8 +88,11 @@ package object wamp {
   }
 
   implicit class RichDict(dict: Dict) {
+    def withRoles(roles: Set[Role]): Dict = {
+      withRoles(roles.toList: _*)
+    }
     def withRoles(roles: Role*): Dict = {
-      dict ++ Map("roles" -> roles.map(role => (role -> Map())).toMap)
+      dict ++ Map("roles" -> roles.sorted.map(r => (r -> Map())).toMap)
     }
 
     def withAgent(agent: String): Dict = {

@@ -10,30 +10,45 @@ libraryDependencies ++= Seq(
 )  
 ```
 
-## Read the Docs [![Documentation Status][docs-image]][docs-url] 
-Detailed documentation is published [here](http://akka-wamp.readthedocs.io/)
+## Docs [![Docs Status][docs-image]][docs-url] 
+Please, [read the docs](http://akka-wamp.readthedocs.io/) for further details.
+
 
 ## Client
+Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
 
-Connect a transport, open a session, subscribe a topic and receive events in few lines of Scala!
+### Publisher/Subscriber
 
-```scala
+```
 import akka.actor._
 import akka.wamp.client._
+import akka.wamp.messages._
+import akka.wamp.serialization._
 
-object SubscriberApp extends App {
-  implicit val system = ActorSystem()
+object PubSubApp extends App {
+  implicit val system = ActorSystem("myapp")
   implicit val ec = system.dispatcher
 
+  val session = Client().connectAndOpenSession()
+  
+  val handler: EventHandler = { event =>
+    event.payload.map(_.arguments.map(println))
+  }
+  for { 
+    ssn <- session
+    sub <- ssn.subscribe("myapp.topic")(handler)
+  } yield ()
+
+  val payload = Payload(List("paolo", 40, true))
   for {
-    session <- Client().connectAndOpen()
-    subscription <- session.subscribe("myapp.topic") { 
-      _.payload.map(_.arguments.map(println)) 
-    }
-  } 
+    ssn <- session
+    pub <- ssn.publish("myapp.topic", ack=true, Some(payload))
+  } yield ()
 }
 ```
-Please, [read the docs](http://akka-wamp.readthedocs.io/) for a deeper explanation and further details.
+
+### Callee/Caller
+TBD
 
  
 ## Router [![Download][download-image]][download-url]
@@ -43,13 +58,18 @@ Akka Wamp provides you with a router that can be either embedded into your appli
 
  * It works with Scala 2.11 (no older Scala)
  * WebSocket transport without SSL/TLS encryption (no raw TCP yet)  
- * Router works as _broker_ (no _dealer_ yet).
- * Client works as _publisher_/_subscriber_ (no _callee_/_caller_ yet).
  * Provide WAMP Basic Profile (no Advanced Profile yet)
  * Provide JSON serialization (no MsgPack yet)
 
+## Changelog
+Please, read [CHANGELOG.md](CHANGELOG.md)
+
+## Contributing
+Please, read [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## Licence 
 This software comes with [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
 
 
 [travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=v0.7.0

@@ -5,7 +5,8 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage, Message => WebSo
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{Materializer, Supervision}
 import akka.stream.scaladsl.Flow
-import akka.wamp.messages.{Validator, Message => WampMessage}
+import akka.wamp.Validator
+import akka.wamp.messages.Message
 import org.slf4j.LoggerFactory
 
 class JsonSerializationFlows(validator: Validator, materializer: Materializer) extends SerializationFlows {
@@ -15,10 +16,10 @@ class JsonSerializationFlows(validator: Validator, materializer: Materializer) e
   /**
     * Serialize from WampMessage object to textual WebSocketMessage
     */
-  val serialize: Flow[WampMessage, WebSocketMessage, NotUsed] =
-    Flow[WampMessage].
+  val serialize: Flow[Message, WebSocketMessage, NotUsed] =
+    Flow[Message].
       map {
-        case message: WampMessage =>
+        case message: Message =>
           val source = json.serialize(message)
           TextMessage(source)
       }
@@ -28,7 +29,7 @@ class JsonSerializationFlows(validator: Validator, materializer: Materializer) e
   /**
     * Deserialize textual WebSocketMessage to WampMessage object
     */
-  val deserialize: Flow[WebSocketMessage, WampMessage, NotUsed] =
+  val deserialize: Flow[WebSocketMessage, Message, NotUsed] =
     Flow[WebSocketMessage]
       .map {
         case TextMessage.Strict(text) =>

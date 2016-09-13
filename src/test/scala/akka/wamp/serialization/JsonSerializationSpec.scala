@@ -5,7 +5,6 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.wamp._
 import akka.wamp.messages._
-import akka.wamp.{messages => wamp}
 
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -20,7 +19,7 @@ class JsonSerializationSpec extends WordSpec
   with BeforeAndAfterAll
 {
 
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("test")
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
   
@@ -66,7 +65,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid HELLO" in {
         s.deserialize(source("""[  1  ,"myapp.realm",  {"roles":{"caller":{},"callee":{}}}]""")) match {
-          case message: wamp.Hello =>
+          case message: Hello =>
             message.realm mustBe "myapp.realm"
             message.details mustBe Map("roles" -> Map("caller" -> Map(), "callee" -> Map()))
           case _ => fail
@@ -88,7 +87,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid WELCOME" in {
         s.deserialize(source("""[2,9007199254740992,{"roles":{"broker":{}}}]""")) match {
-          case message: wamp.Welcome =>
+          case message: Welcome =>
             message.sessionId mustBe 9007199254740992L
             message.details mustBe Map("roles" -> Map("broker" -> Map()))
           case _ => fail
@@ -109,7 +108,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid ABORT" in {
         s.deserialize(source("""[3, {"message": "The realm does not exist."},"wamp.error.no_such_realm"]""")) match {
-          case message: wamp.Abort =>
+          case message: Abort =>
             message.details mustBe Map("message" ->"The realm does not exist.")
             message.reason mustBe "wamp.error.no_such_realm"
           case _ => fail
@@ -131,7 +130,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid GOODBYE" in {
         s.deserialize(source("""[6,{"message": "The host is shutting down now."},"akka.wamp.system_shutdown"]""")) match {
-          case message: wamp.Goodbye =>
+          case message: Goodbye =>
             message.details mustBe Map("message" -> "The host is shutting down now.")
             message.reason mustBe "akka.wamp.system_shutdown"
           case _ => fail
@@ -158,7 +157,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid ERROR bearing NO payload at all" in {
         s.deserialize(source("""[8,34,9007199254740992,{},"wamp.error.no_such_subscription"]""")) match {
-          case message: wamp.Error =>
+          case message: Error =>
             message.requestType mustBe 34
             message.requestId mustBe 9007199254740992L
             message.details mustBe empty
@@ -169,7 +168,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid ERROR bearing Arguments|list" in {
         s.deserialize(source("""[8,34,1,{},"wamp.error.no_such_subscription",["paolo",40],{"arg0":"pietro","age":40,"male":true}]""")) match {
-          case message: wamp.Error =>
+          case message: Error =>
             message.requestType mustBe 34
             message.requestId mustBe 1
             message.details mustBe empty
@@ -208,7 +207,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid PUBLISH bearing NO payload at all" in  {
         s.deserialize(source("""[16,9007199254740992,{"acknowledge":true},"myapp.topic1"]"""")) match {
-          case message: wamp.Publish =>
+          case message: Publish =>
             message.requestId mustBe 9007199254740992L
             message.options mustBe Map("acknowledge"->true)
             message.topic mustBe "myapp.topic1"
@@ -219,7 +218,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid PUBLISH bearing a payload" in {
         s.deserialize(source(s"""[16,1,{},"myapp.topic1",["paolo",40],{"arg0":"pietro","age":40,"male":true}]""")) match {
-          case message: wamp.Publish =>
+          case message: Publish =>
             message.requestId mustBe 1
             message.options mustBe empty
             message.topic mustBe "myapp.topic1"
@@ -262,7 +261,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid PUBLISHED" in {
         s.deserialize(source("""[17,9007199254740988,9007199254740992]""")) match {
-          case message: wamp.Published =>
+          case message: Published =>
             message.requestId mustBe 9007199254740988L
             message.publicationId mustBe 9007199254740992L
           case _ => fail
@@ -286,7 +285,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid SUBSCRIBE" in {
         s.deserialize(source("""[32,9007199254740992,{},"myapp.topic1"]""")) match {
-          case message: wamp.Subscribe =>
+          case message: Subscribe =>
             message.requestId mustBe 9007199254740992L
             message.options mustBe empty
             message.topic mustBe "myapp.topic1"
@@ -312,7 +311,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid SUBSCRIBED" in {
         s.deserialize(source("""[33,9007199254740977,9007199254740992]""")) match {
-          case message: wamp.Subscribed =>
+          case message: Subscribed =>
             message.requestId mustBe 9007199254740977L
             message.subscriptionId mustBe 9007199254740992L
           case _ => fail
@@ -337,7 +336,7 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid UNSUBSCRIBE" in {
         s.deserialize(source("""[34,9007199254740955,9007199254740992]""")) match {
-          case message: wamp.Unsubscribe =>
+          case message: Unsubscribe =>
             message.requestId mustBe 9007199254740955L
             message.subscriptionId mustBe 9007199254740992L
           case _ => fail
@@ -358,9 +357,9 @@ class JsonSerializationSpec extends WordSpec
       }
       "succeed for valid UNSUBSCRIBED" in {
         s.deserialize(source("""[35,9007199254740992]""")) match {
-          case message: wamp.Unsubscribed => 
+          case message: Unsubscribed => 
             message.requestId mustBe 9007199254740992L
-          case _ =>  fail
+          case m => fail(s"Unexpected message $m")
         }
       }
 
@@ -385,7 +384,7 @@ class JsonSerializationSpec extends WordSpec
       
       "succeed for valid EVENT bearing NO payload at all" in {
         s.deserialize(source("""[36,9007199254740933,9007199254740992,{}]""")) match {
-          case message: wamp.Event =>
+          case message: Event =>
             message.subscriptionId mustBe 9007199254740933L
             message.publicationId mustBe 9007199254740992L
             message.details mustBe empty
@@ -396,7 +395,7 @@ class JsonSerializationSpec extends WordSpec
 
       "succeed for valid EVENT bearing Arguments|list" in {
         s.deserialize(source("""[36,1,2,{},["paolo",40,{"human":true}],{"arg0":"pietro","age":40,"male":true}]""")) match {
-          case message: wamp.Event =>
+          case message: Event =>
             message.subscriptionId mustBe 1
             message.publicationId mustBe 2
             message.details mustBe empty
@@ -416,6 +415,55 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
+
+      //[REGISTER, Request|id, Options|dict, Topic|uri]
+      "fail for invalid REGISTER" in {
+        List(
+          """[64]""",
+          """[64,null]""",
+          """[64,1,null]""",
+          """[64,1,{},null]""",
+          """[64,1,{},"invalid..uri"]""",
+          """[64,0,{},"myapp.procedure1"]""",
+          """[64,9007199254740993,{},"myapp.procedure1"]"""
+        ).foreach { text =>
+          a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
+        }
+      }
+      "succeed for valid REGISTER" in {
+        s.deserialize(source("""[64,9007199254740992,{},"myapp.procedure1"]""")) match {
+          case message: Register =>
+            message.requestId mustBe 9007199254740992L
+            message.options mustBe empty
+            message.procedure mustBe "myapp.procedure1"
+          case _ => fail
+        }
+      }
+
+
+      //[REGISTERED, REGISTER.Request|id, Subscription|id]
+      "fail for invalid REGISTERED" in {
+        List(
+          """[65]""",
+          """[65,null]""",
+          """[65,1]""",
+          """[65,1,null]""",
+          """[65,0,2]""",
+          """[65,9007199254740993,2]""",
+          """[65,1,0]""",
+          """[65,1,9007199254740993]"""
+        ).foreach { text =>
+          a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
+        }
+      }
+      "succeed for valid REGISTERED" in {
+        s.deserialize(source("""[65,9007199254740977,9007199254740992]""")) match {
+          case message: Registered =>
+            message.requestId mustBe 9007199254740977L
+            message.registrationId mustBe 9007199254740992L
+          case m => fail(s"Unexpected message $m")
+        }
+      }
     }
     
     
@@ -423,21 +471,21 @@ class JsonSerializationSpec extends WordSpec
     "serializing" should {
 
       "serialize HELLO" in {
-        val message = wamp.Hello("akka.wamp.realm", Dict().withRoles("publisher"))
+        val message = messages.Hello("akka.wamp.realm", Dict().withRoles(Roles.client))
         whenReduced(s.serialize(message)) { json =>
-          json mustBe """[1,"akka.wamp.realm",{"roles":{"publisher":{}}}]"""  
+          json mustBe """[1,"akka.wamp.realm",{"roles":{"callee":{},"caller":{},"publisher":{},"subscriber":{}}}]"""  
         }
       }
       
       "serialize WELCOME" in {
-        val message = wamp.Welcome(1233242, Dict().withAgent("akka-wamp-0.7.0").withRoles("broker"))
+        val message = messages.Welcome(1233242, Dict().withAgent("akka-wamp-0.7.0").withRoles(Roles.broker))
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[2,1233242,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]"""
         }
       }
 
       "serialize GOODBYE" in {
-        val message = wamp.Goodbye(Dict(), "wamp.error.goobye_and_out")
+        val message = messages.Goodbye(Dict(), "wamp.error.goobye_and_out")
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[6,{},"wamp.error.goobye_and_out"]"""
         }
@@ -448,17 +496,17 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "serialize ERROR" in {
-        val message1 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription")
+        val message1 = messages.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription")
         whenReduced(s.serialize(message1)) { json =>
           json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
         }
 
-        val message2 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(List("paolo", 40, true))))
+        val message2 = messages.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(Dict("arg0"->"paolo","age"->40,"arg2"->true))))
+        val message3 = messages.Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(Dict("arg0"->"paolo","age"->40,"arg2"->true))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription",[],{"arg0":"paolo","age":40,"arg2":true}]"""
         }
@@ -466,67 +514,67 @@ class JsonSerializationSpec extends WordSpec
 
 
       "serialize PUBLISH" in {
-        val message1 = wamp.Publish(341284, options = Dict(), "myapp.topic1")
+        val message1 = messages.Publish(341284, options = Dict(), "myapp.topic1")
         whenReduced(s.serialize(message1)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1"]"""
         }
 
-        val message2 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo", 40, true))))
+        val message2 = messages.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List(), Dict("name"->"paolo","age"->40))))
+        val message3 = messages.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List(), Dict("name"->"paolo","age"->40))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",[],{"name":"paolo","age":40}]"""
         }
         
-        val message4 = wamp.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo",true), Dict("age"->40))))
+        val message4 = messages.Publish(341284, options = Dict(), "myapp.topic1", Some(Payload(List("paolo",true), Dict("age"->40))))
         whenReduced(s.serialize(message4)) { json =>
           json mustBe """[16,341284,{},"myapp.topic1",["paolo",true],{"age":40}]"""
         }
       }
 
       "serialize PUBLISHED" in {
-        val message =  wamp.Published(713845233, 5512315)
+        val message =  messages.Published(713845233, 5512315)
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[17,713845233,5512315]"""
         }
       }
       
       "serialize SUBSCRIBE" in {
-        val message =  wamp.Subscribe(1, Dict(), "myapp.topic1")
+        val message =  messages.Subscribe(1, Dict(), "myapp.topic1")
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[32,1,{},"myapp.topic1"]"""
         }
       }
       
       "serialize SUBSCRIBED" in {
-        val message =  wamp.Subscribed(713845233, 5512315)
+        val message =  messages.Subscribed(713845233, 5512315)
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[33,713845233,5512315]"""
         }
       }
 
       "serialize UNSUBSCRIBED" in {
-        val message =  wamp.Unsubscribed(85346237)
+        val message =  messages.Unsubscribed(85346237)
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[35,85346237]"""
         }
       }
 
       "serialize EVENT" in {
-        val message1 = wamp.Event(713845233, 5512315)
+        val message1 = messages.Event(713845233, 5512315)
         whenReduced(s.serialize(message1)) { json =>
           json mustBe """[36,713845233,5512315,{}]"""
         }
         
-        val message2 = wamp.Event(713845233, 5512315, Dict(), Some(Payload(List("paolo", 40, true))))
+        val message2 = messages.Event(713845233, 5512315, Dict(), Some(Payload(List("paolo", 40, true))))
         whenReduced(s.serialize(message2)) { json =>
           json mustBe s"""[36,713845233,5512315,{},["paolo",40,true]]"""
         }
 
-        val message3 = wamp.Event(713845233, 5512315, Dict(), Some(Payload(List(), Dict("arg0"->"paolo","age"->40,"arg2"->true))))
+        val message3 = messages.Event(713845233, 5512315, Dict(), Some(Payload(List(), Dict("arg0"->"paolo","age"->40,"arg2"->true))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[36,713845233,5512315,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""
         }

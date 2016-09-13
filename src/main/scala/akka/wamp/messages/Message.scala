@@ -1,8 +1,9 @@
 package akka.wamp.messages
 
-import akka.wamp._
 import akka.wamp.Wamp._
-import akka.wamp.router.Session
+import akka.wamp._
+import akka.wamp.client.Client
+import akka.wamp.router._
 import akka.wamp.serialization.Payload
 
 /**
@@ -14,7 +15,7 @@ sealed trait Message extends AbstractMessage {
 
 
 /**
-  * Sent by a Client to initiate opening of a Session to a Router
+  * Sent by a [[Client]] to initiate opening of a [[Session]] to a [[Router]]
   * attaching to a Realm.
   *
   * ```
@@ -26,7 +27,7 @@ sealed trait Message extends AbstractMessage {
   * - implementations only supporting subsets of functionality
   * - future extensibility
   *
-  * A Client must announce the roles it supports via "Hello.Details.roles|dict", 
+  * A [[Client]] must announce the roles it supports via "Hello.Details.roles|dict", 
   * with a key mapping to a "Hello.Details.roles.<role>|dict" where "<role>" can be:
   *
   * - "publisher"
@@ -41,19 +42,16 @@ final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.def
   protected val tpe = Hello.tpe
   validator.validate(realm)
   require(details != null, s"invalid dict $details")
-  require(details.isDefinedAt("roles") && !details.roles.isEmpty, s"missing roles in dict ${details}")
-  require(details.roles.forall(isValid), s"invalid roles in dict $details")
-
-  private def isValid(role: String) = Seq("publisher", "subscriber", "caller", "callee").contains(role)
+  validator.validateRoles(details)
 }
 final object Hello {
   val tpe = 1
-  val defaultDetails = Dict("roles" -> Map("publisher" -> Map(), "subscriber" -> Map()))
+  val defaultDetails = Dict("roles" -> Roles.client.toList.sorted.map(_ -> Map()).toMap)
 }
 
 
 /**
-  * Sent by a Router to accept a Client and let it know the Session is now open
+  * Sent by a [[Router]] to accept a [[Client]] and let it know the [[Session]] is now open
   *
   * ```
   * [WELCOME, Session|id, Details|dict]
@@ -73,10 +71,11 @@ final object Welcome {
 }
 
 /**
-  * Sent by a peer to abort the opening of a Session.
+  * Sent by a peer to abort the opening of a [[Session]].
   * No response is expected.
   *
-  * @param details is a dictionary (empty by default) that allows to provide additional and optional closing information
+  * @param details is a dictionary (empty by default) that allows to 
+  *                provide additional and optional closing information
   * @param reason is the reason given as URI (e.g. "wamp.error.no_such_realm")
   */
 final case class Abort(details: Dict = Abort.defaultDetails, reason: Uri)(implicit validator: Validator) extends Message {
@@ -91,15 +90,17 @@ final object Abort {
 
 
 /**
-  * Sent by a peer to close a previously opened Session.  
+  * Sent by a peer to close a previously opened [[Session]].  
   * Must be echo'ed by the receiving peer.
   *
   * ```
   * [GOODBYE, Details|dict, Reason|uri]
   * ```
  *
-  * @param details is a dictionary (empty by default) that allows to provide additional and optional closing information
-  * @param reason is the reason ("wamp.error.close_realm" by default) given as URI
+  * @param details is a dictionary (empty by default) that allows to 
+  *                provide additional and optional closing information
+  * @param reason is the reason ("wamp.error.close_realm" by default) 
+  *               given as URI
   */
 final case class Goodbye(details: Dict = Goodbye.defaultDetails, reason: Uri = Goodbye.defaultReason)(implicit validator: Validator) extends Message {
   protected val tpe = Goodbye.tpe
@@ -150,9 +151,11 @@ final object Error {
   * [PUBLISH, Request|id, Options|dict, Topic|uri, Arguments|list, ArgumentsKw|dict]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Publisher and used to correlate the Broker's response with the request.
+  * @param requestId is a random, ephemeral ID chosen by the Publisher and used 
+  *                  to correlate the Broker's response with the request.
   * @param topic     is the topic published to.
-  * @param options   is a dictionary that allows to provide additional publication request details in an extensible way.
+  * @param options   is a dictionary that allows to provide additional publication 
+  *                  request details in an extensible way.
   * @param payload   is either a list of any arguments or a key-value-pairs set 
   */
 final case class Publish(requestId: Id, options: Dict = Publish.defaultOptions, topic: Uri, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
@@ -191,8 +194,10 @@ final object Published {
   * [SUBSCRIBE, Request|id, Options|dict, Topic|uri]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Subscribe and used to correlate the Broker's response with the request
-  * @param options   is a dictionary that allows to provide additional subscription request details in a extensible way
+  * @param requestId is a random, ephemeral ID chosen by the Subscriber and used to 
+  *                  correlate the Broker's response with the request
+  * @param options   is a dictionary that allows to provide additional subscription 
+  *                  request details in a extensible way
   * @param topic     is the topic the Subscribe  wants to subscribe to 
   */
 final case class Subscribe(requestId: Id, options: Dict = Subscribe.defaultOptions, topic: Uri)(implicit validator: Validator) extends Message {
@@ -232,8 +237,10 @@ final object Subscribed {
   * [UNSUBSCRIBE, Request|id, SUBSCRIBED.Subscription|id]
   * ```
   *
-  * @param requestId      is a random, ephemeral ID chosen by the Unsubscribe and used to correlate the Broker's response with the request
-  * @param subscriptionId is the ID for the subscription to unsubscribe from, originally handed out by the Broker to the Subscriber
+  * @param requestId      is a random, ephemeral ID chosen by the Unsubscribe 
+  *                       and used to correlate the Broker's response with the request
+  * @param subscriptionId is the ID for the subscription to unsubscribe from, 
+  *                       originally handed out by the Broker to the Subscriber
   */
 final case class Unsubscribe(requestId: Id, subscriptionId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Unsubscribe.tpe
@@ -272,10 +279,13 @@ final object Unsubscribed {
   * [EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
   * ```
   *
-  * @param subscriptionId is the ID for the subscription under which the Subscribe receives the event (the ID for the subscription originally handed out by the Broker to the Subscriber.
+  * @param subscriptionId is the ID for the subscription under which the Subscribe 
+  *                       receives the event (the ID for the subscription originally 
+  *                       handed out by the Broker to the Subscriber.
   * @param publicationId  is the ID of the publication of the published event
   * @param payload        is either a list of any arguments or a key-value-pairs set
-  * @param details        is a dictionary that allows to provide additional event details in an extensible way.
+  * @param details        is a dictionary that allows to provide additional event details 
+  *                       in an extensible way.
   */
 final case class Event(subscriptionId: Id, publicationId: Id, details: Dict = Event.defaultOptions, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Event.tpe
@@ -285,5 +295,78 @@ final case class Event(subscriptionId: Id, publicationId: Id, details: Dict = Ev
 }
 final object Event {
   val tpe = 36
+  val defaultOptions = Dict()
+}
+
+
+/**
+  * Register request sent by a Callee to a Dealer to register a Procedure.
+  *
+  * ```
+  * [REGISTER, Request|id, Options|dict, Procedure|uri]
+  * ```
+  *
+  * @param requestId is a random, ephemeral ID chosen by the Callee and 
+  *                  used to correlate the Dealer's response with the request
+  * @param options   is a dictionary that allows to provide additional registration 
+  *                  request details in a extensible way
+  * @param procedure is the procedure the Callee wants to register 
+  */
+final case class Register(requestId: Id, options: Dict = Register.defaultOptions, procedure: Uri)(implicit validator: Validator) extends Message {
+  protected val tpe = Register.tpe
+  validator.validate(requestId)
+  require(options != null, "invalid Dict")
+  validator.validate(procedure)
+}
+final object Register {
+  val tpe = 64
+  val defaultOptions = Dict()
+}
+
+
+/**
+  * Acknowledge sent by a [[Dealer]] to a [[Callee]] to acknowledge a [[Registration]]
+  *
+  * ```
+  * [REGISTERED, REGISTER.Request|id, Registration|id]
+  * ```
+  *
+  * @param requestId      is the ID from the original [[Register]] request
+  * @param registrationId is an ID chosen by the [[Dealer]] for the [[Registration]]
+  */
+final case class Registered(requestId: Id, registrationId: Id)(implicit validator: Validator) extends Message {
+  protected val tpe = Registered.tpe
+  validator.validate(requestId)
+  validator.validate(registrationId)
+}
+final object Registered {
+  val tpe = 65
+}
+
+
+
+/**
+  * Invocation dispatched by the [[Broker]] to the [[Roles.callee]] providing
+  * the [[Registration]] the invocation was matching.
+  *
+  * ```
+  * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict]
+  * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict, CALL.Arguments|list]
+  * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict, CALL.Arguments|list, CALL.ArgumentsKw|dict]
+  * ```
+  *
+  * @param requestId is a random, ephemeral ID chosen by the Dealer and used to correlate the _Callee's_ response with the request.
+  * @param registrationId is the registration ID under which the procedure was registered at the Dealer.
+  * @param details        is a dictionary that allows to provide additional invocation request details in an extensible way 
+  * @param payload        is either the original list of positional call arguments or dictionary of keyword arguments as provided by the Caller.
+  */
+final case class Invocation(requestId: Id, registrationId: Id, details: Dict = Event.defaultOptions, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
+  protected val tpe = Invocation.tpe
+  validator.validate(requestId)
+  validator.validate(registrationId)
+  require(details != null, "invalid Dict")
+}
+final object Invocation {
+  val tpe = 68
   val defaultOptions = Dict()
 }

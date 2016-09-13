@@ -21,7 +21,7 @@ class JsonSerialization extends Serialization {
 
   private val log = LoggerFactory.getLogger(classOf[JsonSerialization])
 
-  val UTF8 = Charset.forName("UTF-8")
+  private val UTF8 = Charset.forName("UTF-8")
 
   @throws(classOf[DeserializeException])
   override def deserialize(source: String)(implicit validator: Validator, materializer: Materializer): Message = {
@@ -148,6 +148,8 @@ class JsonSerialization extends Serialization {
             case Unsubscribe.tpe  => make(Unsubscribe("Request"|Id, "SUBSCRIBE.Subscription"|Id))
             case Unsubscribed.tpe => make(Unsubscribed("UNSUBSCRIBE.Request"|Id))
             case Event.tpe        => make(Event("SUBSCRIBED.Subscription"|Id, "PUBLISHED.Publication"|Id, "Details"|Dict, "Arguments"|Payload))
+            case Register.tpe     => make(Register("Request"|Id, "Options"|Dict, "Procedure"|Uri))
+            case Registered.tpe   => make(Registered("REGISTER.Request"|Id, "Registration"|Id))
             case _                => fail("MessageType|Integer")
           }
         }
@@ -192,6 +194,8 @@ class JsonSerialization extends Serialization {
         case Unsubscribe(requestId, subscriptionId)         => (Unsubscribe.tpe :: requestId :: subscriptionId :: Nil, None)
         case Unsubscribed(requestId)                        => (Unsubscribed.tpe :: requestId :: Nil, None)
         case Event(subId, pubId, details, payload)          => (Event.tpe :: subId :: pubId :: details :: Nil, payload)
+        case Register(requestId, options, procedure)        => (Register.tpe :: requestId :: options :: procedure :: Nil, None)
+        case Registered(requestId, registrationId)          => (Registered.tpe :: requestId :: registrationId :: Nil, None)
       }
 
     payload match {

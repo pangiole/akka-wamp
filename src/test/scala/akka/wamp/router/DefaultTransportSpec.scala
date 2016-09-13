@@ -46,7 +46,7 @@ class DefaultTransportSpec extends TransportFixtureSpec
       transport.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
+      transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #1 OPEN
 
@@ -64,7 +64,7 @@ class DefaultTransportSpec extends TransportFixtureSpec
       transport.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
+      transport.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #2 OPEN
 
@@ -87,7 +87,7 @@ class DefaultTransportSpec extends TransportFixtureSpec
       client.sendMessage("""[1,"myapp.realm",  {"roles":{"subscriber":{}, "publisher":{}}}]""")
       
       // <-- WELCOME
-      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]""")
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION OPEN
       

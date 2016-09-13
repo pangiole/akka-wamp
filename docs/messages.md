@@ -1,9 +1,50 @@
-# Transport and Session
+## Connections and Sessions
+```
+   ,------.                                    ,------.
+   | Peer |                                    | Peer |
+   `--+---'                                    `--+---'
+      |               TCP established             |
+      |<----------------------------------------->|
+      |                                           |
+      |               TLS established             |
+      |+<--------------------------------------->+|
+      |+                                         +|
+      |+           WebSocket established         +|
+      |+|<------------------------------------->|+|
+      |+|                                       |+|
+      |+|            WAMP established           |+|
+      |+|+<----------------------------------->+|+|
+      |+|+                                     +|+|
+      |+|+                                     +|+|
+      |+|+            WAMP closed              +|+|
+      |+|+<----------------------------------->+|+|
+      |+|                                       |+|
+      |+|                                       |+|
+      |+|            WAMP established           |+|
+      |+|+<----------------------------------->+|+|
+      |+|+                                     +|+|
+      |+|+                                     +|+|
+      |+|+            WAMP closed              +|+|
+      |+|+<----------------------------------->+|+|
+      |+|                                       |+|
+      |+|           WebSocket closed            |+|
+      |+|<------------------------------------->|+|
+      |+                                         +|
+      |+              TLS closed                 +|
+      |+<--------------------------------------->+|
+      |                                           |
+      |               TCP closed                  |
+      |<----------------------------------------->|
+      |                                           |
+   ,--+---.                                    ,--+---.
+   | Peer |                                    | Peer |
+   `------'                                    `------'
+```
 
 <a name="Connect"></a>
 
-## Connect
-It is the message you send to the Akka IO entry point to connect a transport to the remote router. It can be constructed passing the following parameters:
+### Connect
+It is the message you send to the Akka IO entry point to establish a WAMP connection to a router. It can be constructed passing the following parameters:
 
 * ``client``  
   It is your client actor reference to which messages from the remote router are delivered while the connection is established.
@@ -26,7 +67,7 @@ IO(Wamp) ! Connect(client, subprotocol = "wamp.2.mgspack")
 ```
 
 
-## <a name="Hello"></a>Hello
+### <a name="Hello"></a>Hello
 It is the message you send to the transport to request a new session being opened with the given realm attached plus additional details. It can be constructed passing the following parameters:
 
 * ``realm``  
@@ -41,21 +82,21 @@ It is the message you send to the transport to request a new session being opene
 Examples:
 
 ```scala
-transport ! Hello()
-transport ! Hello("myapp.realm")
-transport ! Hello(details = Dict().withRoles("subscriber"))
-transport ! Hello("myapp.realm", Dict().withRoles("publisher"))
+connection ! Hello()
+connection ! Hello("myapp.realm")
+connection ! Hello(details = Dict().withRoles("subscriber"))
+connection ! Hello("myapp.realm", Dict().withRoles("publisher"))
 ```
 
 
 <a name="Abort"></a>
 
-## Abort
+### Abort
 TBD
 
 <a name="Welcome"></a>
 
-## Welcome
+### Welcome
 It is the message you receive from the remote router upon session opening. It can be deconstructed (via Scala pattern matching) to the following parameters:
 
 * ``sessionId``  
@@ -86,7 +127,7 @@ def opened: Receive = {
 
 <a name="Goodbye"></a>
 
-## Goodbye
+### Goodbye
 It is the message either you send to the transport or receive from the remote router to request session closing. It can be constructed (deconstructed) with (to) the following parameters:
 
 * ``reason``  
@@ -98,9 +139,9 @@ It is the message either you send to the transport or receive from the remote ro
 Some sending snippets are:
 
 ```scala
-transport ! Goodbye()
-transport ! Goodbye("wamp.error.system_shutdown")
-transport ! Goodbye(details = Dict().withEntry(reason -> "Serious error occured!"))
+connection ! Goodbye()
+connection ! Goodbye("wamp.error.system_shutdown")
+connection ! Goodbye(details = Dict().withEntry(reason -> "Serious error occured!"))
 ```
 
 A receiving snippet is:
@@ -109,10 +150,10 @@ A receiving snippet is:
 def opened: Receive = {
   case Goodbye(reason, details) =>
     log warn s"Router closed session because of $details"
-    transport ! Goodbye("wamp.error.goodbye_and_out")
+    connection ! Goodbye("wamp.error.goodbye_and_out")
     if (reason != "wamp.error.system_shutdown")
       // why not requesting a new session 
-      transport ! Hello
+      connection ! Hello
     else
       IO(Wamp) ! Connect(self)
 }
@@ -124,7 +165,7 @@ def opened: Receive = {
 
 <a name="Subscribe"></a>
 
-## Subscribe
+### Subscribe
 It is the message you send to the transport to subscribe to a topic. It can be constructed passing the following parameters:
 
 * ``requestId``
@@ -139,17 +180,17 @@ It is the message you send to the transport to subscribe to a topic. It can be c
 Examples:
 
 ```scala
-transport ! Subscribe(requestId = 34, "myapp.tick.topic")
+connection ! Subscribe(requestId = 34, "myapp.tick.topic")
 ```
 
 <a name="Subscribed"></a>
 
-## Subscribed
+### Subscribed
 TBD
 
 <a name="publish"></a>
 
-## Publish
+### Publish
 It is the message you send to the transport to publish an event. It can be constructed passing the following parameters:
 
 * ``requestId``  
@@ -167,26 +208,26 @@ It is the message you send to the transport to publish an event. It can be const
 Examples:
 
 ```scala
-transport ! Publish(requestId = 34, "myapp.tick.topic")
+connection ! Publish(requestId = 34, "myapp.tick.topic")
 
 val list = Payload("paolo", 40, true)
-transport ! Publish(nextId(), "myapp.topic1", Some(list))
+connection ! Publish(nextId(), "myapp.topic1", Some(list))
 
 val mixed = Payload("paolo", "age"->40, true)
-transport ! Publish(nextId(), "myapp.topic1", Some(mixed))
+connection ! Publish(nextId(), "myapp.topic1", Some(mixed))
 
-transport ! Publish(89, "myapp.topic3", options = Dict().withAcknowledge(true))
+connection ! Publish(89, "myapp.topic3", options = Dict().withAcknowledge(true))
 ```
 
 <a name="Error"></a>
 
-## Error
+### Error
 TBD
 
 
 <a name="Event"></a>
 
-## Event
+### Event
 It is the message you receive from the remote router each time other clients have published to the same topics you subscribed to. It can be deconstructed (via Scala pattern matching) to the following parameters:
 
 * ``subscriptionId``    
@@ -217,7 +258,9 @@ def opened: Receive = {
 
 <a name="Payload"></a>
 
-# Payload
+## Serialization
+
+### Payload
 An (option of) Payload is carried by either [Error](#error), [Publish](#publish) or [Event](#event) messages. Akka Wamp provides easy ways to both create and handle payloads.
 
 You can create some outgoing payload for the [Publish](#publish) message by invoking the following factory method
@@ -232,7 +275,7 @@ which means you can pass in any number of arguments in any type you like. For ex
 
 ```scala
 val payload = Payload("paolo", 40, true)
-transport ! Publish(nextId(), Some(payload)
+connection ! Publish(nextId(), Some(payload)
 // serializes to [... , ["paolo", 40, true]]
 ```
 

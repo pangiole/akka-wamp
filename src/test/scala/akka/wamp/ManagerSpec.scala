@@ -15,19 +15,22 @@ class ManagerSpec
   with ParallelTestExecution
 {
 
-  "The IO(Wamp) manager" should "bind router" in { fixture =>
+  "The IO(Wamp) manager" should "bind a router" in { f =>
     val manager = IO(Wamp)
-    manager ! Bind(fixture.listener.ref)
-    val bound = fixture.listener.expectMsgType[Bound](16 seconds)
+    manager ! Bind(f.listener.ref)
+    val bound = f.listener.expectMsgType[Bound](16 seconds)
     bound.url must startWith("ws://127.0.0.1:")
     bound.url must endWith("/ws")
   }
+
+  it should "unbind a router" in { fixture =>
+    pending
+  }
   
-  
-  it should "connect client" in { fixture =>
+  it should "connect a client" in { f =>
     val manager = IO(Wamp)
-    manager ! Bind(fixture.router)
-    val bound = fixture.listener.expectMsgType[Bound](16 seconds)
+    manager ! Bind(f.router)
+    val bound = f.listener.expectMsgType[Bound](16 seconds)
     
     manager ! Connect(client = testActor, bound.url)
     val connected = expectMsgType[Wamp.Connected](16 seconds)
@@ -35,12 +38,8 @@ class ManagerSpec
   }
   
   
-  it should "unbind router" in { fixture =>
-    pending
-  }
-
-  
-  it should "disconnect client" in { fixture =>
+  it should "disconnect a client" in { f =>
+    // TODO https://github.com/angiolep/akka-wamp/issues/29
     pending
   }
 

@@ -1,19 +1,17 @@
 package akka.wamp.router
 
-import akka.Done
-import akka.actor.{Actor, ActorSystem}
-import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.wamp.Wamp
-import akka.wamp.messages.Validator
-import akka.wamp.serialization.JsonSerializationFlows
+import akka.actor._
+import akka.http.scaladsl._
+import akka.stream._
+import akka.stream.scaladsl._
+import akka.wamp._
+import akka.wamp.serialization._
 
-import scala.concurrent.Future
+import scala.concurrent._
 import scala.util.{Failure, Success}
 
 
-private[wamp] class RouterManager extends Actor  {
+private[wamp] class Manager extends Actor  {
   
   implicit val ec = context.system.dispatcher
   implicit val materializer = ActorMaterializer()
@@ -43,7 +41,7 @@ private[wamp] class RouterManager extends Actor  {
               binder ! Wamp.ConnectionFailed(cause)
           })
 
-      val handleConnection: Sink[Http.IncomingConnection, Future[Done]] =
+      val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
           val transport = context.actorOf(Transport.props(router, serializationFlows))
           transport ! conn
@@ -67,4 +65,8 @@ private[wamp] class RouterManager extends Actor  {
       }
     }
   }
+}
+
+private[wamp] object Manager {
+  def props() = Props(new Manager())
 }

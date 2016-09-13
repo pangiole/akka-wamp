@@ -19,12 +19,9 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   implicit val defaultPatience =
     PatienceConfig(timeout = 16 seconds, interval = 100 millis)
 
-  // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
-  case class FixtureParam(router: TestActorRef[Router], listener: TestProbe, url: String)
-
+  case class FixtureParam(client: Client, router: TestActorRef[Router], listener: TestProbe, url: String)
   
   override def withFixture(test: OneArgTest) = {
-    
     val scopes = Map(
       'global -> new Scope.Session {},
       'router -> new Scope.Session {},
@@ -35,7 +32,7 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     try {
       IO(Wamp) ! Bind(router)
       val bound = listener.expectMsgType[Bound](16 seconds)
-      val theFixture = FixtureParam(router, listener, bound.url)
+      val theFixture = FixtureParam(Client(), router, listener, bound.url)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {

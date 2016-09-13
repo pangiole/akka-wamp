@@ -4,8 +4,7 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.testkit.{TestActorRef, TestProbe}
 import akka.wamp.Wamp.{Bind, Bound}
-import akka.wamp.messages.Validator
-import akka.wamp.{ActorSpec, Wamp}
+import akka.wamp.{ActorSpec, Validator, Wamp}
 import org.scalatest.ParallelTestExecution
 
 import scala.concurrent.duration._

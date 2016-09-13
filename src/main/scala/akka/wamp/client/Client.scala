@@ -1,89 +1,164 @@
 package akka.wamp.client
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor._
 import akka.io.IO
-import akka.wamp.Roles._
-import akka.wamp.Wamp._
 import akka.wamp._
-import akka.wamp.messages._
-import org.slf4j.LoggerFactory
+import org.slf4j._
 
 import scala.concurrent.{Future, Promise}
 
 /**
-  * It is the entry point of the Akka Wamp future-based API
+  * WAMP clients are components which implement any or all of the 
+  * subscriber, publisher, caller and callee roles. They can establish 
+  * WAMP connections to a router and open new sessions.
   * 
-  * @param system
+  * {{{
+  *   import akka.actor._
+  *   import akka.wamp.client._
+  *   import akka.wamp.serialization._
+  *   
+  *   implicit val system = ActorSystem("myapp")
+  *   implicit val ec = system.dispatcher
+  *   
+  *   val client = Client()
+  *   val conn: Future[Connection] = client.connect("ws://host:9999/router")
+  *   // ... map connection to ...
+  * }}}
+  * 
+  * @param system the (implicit) actor system
   */
-private[client] class Client()(implicit system: ActorSystem) /*extends Peer*/ {
+class Client private[client] ()(implicit system: ActorSystem) extends Peer {
+
+  /**
+    * The logger
+    */
   private val log = LoggerFactory.getLogger(classOf[Client])
+
+  /**
+    * The execution context required by futures
+    */
   private implicit val ec = system.dispatcher
 
   /**
-    * It connects to a router at the given URL negotiating the given subprotocol
+    * Establish a WAMP connection to a router which is listening at 
+    * the given URL and negotiate the given subprotocol
     * 
-    * @param url is the URL to connect to (default is "ws://localhost:8080/ws")
-    * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
-    * @return a future of [[Session]] that can be composed in monadic expressions
+    * @param url is the URL to connect to
+    * @param subprotocol is the subprotocol to negotiate
+    * @return a (future of) connection
     */
   def connect(
     url: String = "ws://127.0.0.1:8080/ws", 
-    subprotocol: String = "wamp.2.json"): Future[Transport] = 
+    subprotocol: String = "wamp.2.json"): Future[Connection] = 
   {
-    val promise = Promise[Transport]
+    val promise = Promise[Connection]
     val client = system.actorOf(Props(new ClientActor(promise)))
-    IO(Wamp) ! Connect(client, url, subprotocol)
+    IO(Wamp) ! Wamp.Connect(client, url, subprotocol)
     promise.future
   }
 
-  
+
   /**
-    * It connects to a router and says [[Hello]] to open a [[Session]]
-    * 
-    * @param url
-    * @param subprotocol
-    * @param realm
-    * @param roles
-    * @return
+    * Establish a WAMP connection to a router and open a new session
+    *
+    * @param url is the URL to connect to
+    * @param subprotocol is the subprotocol to negotiate
+    * @param realm is the realm to attach the session to
+    * @param roles is this client roles set
+    * @return a (future of) session 
     */
-  def connectAndOpen(
+  def connectAndOpenSession(
     url: String = "ws://localhost:8080/ws", 
     subprotocol: String = "wamp.2.json", 
     realm: Uri = "akka.wamp.realm",
-    roles: Set[Role] = Set(publisher, subscriber)): Future[Session] = 
+    roles: Set[Role] = Roles.client): Future[Session] = 
   {
     for {
-      transport <- connect(url, subprotocol)
-      session <- transport.open(realm, roles)
-    } yield session
+      conn <- connect(url, subprotocol)
+      ssn <- conn.openSession(realm, roles)
+    } yield ssn
   }
 }
 
-
+/**
+  * Factory for [[Client]] instances.
+  *
+  * {{{
+  *   import akka.actor._
+  *   import akka.wamp.client._
+  *   import akka.wamp.serialization._
+  *
+  *   implicit val system = ActorSystem("myapp")
+  *   implicit val ec = system.dispatcher
+  *
+  *   val client = Client()
+  *   val conn: Future[Connection] = client.connect("ws://host:9999/router")
+  *   // ... map connection to ...
+  * }}}
+  */
 object Client {
+  /**
+    * Create a new client instance
+    * 
+    * @param system is the (implicit) actor system
+    * @return a new client instance
+    */
   def apply()(implicit system: ActorSystem) = new Client()
 }
 
+/**
+  * INTERNAL API
+  * 
+  * The client actor which will keep (or break) the given connection promise
+  *  
+  * @param promise is the promise of connection to fulfill
+  */
+private[client] class ClientActor(promise: Promise[Connection]) extends Actor with ActorLogging {
 
-// the actor which will keep (or break) the given promise
-private[client] class ClientActor(promise: Promise[Transport]) extends Actor with ActorLogging {
-  var transport: Transport = _
+  /**
+    * The connection
+    */
+  private var conn: Connection = _
 
-  val config = context.system.settings.config
-  val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-  implicit val validator = new Validator(strictUris)
-  
-  def receive = {
-    case Connected(router) =>
-      this.transport = new Transport(self, router)
+  /**
+    * The global configuration
+    */
+  private val config = context.system.settings.config
+
+  /**
+    * The boolean switch (default is false) to validate against strict URIs rather than loose URIs
+    */
+  private val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+
+  /**
+    * The WAMP types Validator
+    */
+  private implicit val validator = new Validator(strictUris)
+
+  /**
+    * This actor receive partial function
+    */
+  override def receive: Receive = {
+    case signal @ Wamp.Connected(router) =>
+      this.conn = new Connection(self, router)
       context.become { 
-        case message => transport.receive(message) 
+        case message =>
+          // delegate any "message processing" to the connection object
+          conn.receive(message) 
       }
-      promise.success(transport)
+      promise.success(conn)
 
-    case message: ConnectionFailed =>
-      log.debug(message.toString)
-      promise.failure(new ConnectionException(message.toString))
+    // TODO https://github.com/angiolep/akka-wamp/issues/29  
+    // case command @ Wamp.Disconnect =>
+      
+    case signal @ Wamp.ConnectionFailed(cause) =>
+      log.debug("!!! {}", signal)
+      promise.failure(new ConnectionException(signal.toString))
+      context.stop(self)
+
+    case message =>
+      log.debug("!!! {}", message)
+      promise.failure(new ConnectionException(s"Unexpected message $message"))
       context.stop(self)
   }
 }
