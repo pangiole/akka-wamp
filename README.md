@@ -19,7 +19,7 @@ Connect a transport, open a session, subscribe a topic, receive events, register
 
 ### Publisher/Subscriber
 
-```
+```scala
 import akka.actor._
 import akka.wamp.client._
 import akka.wamp.messages._
@@ -29,7 +29,8 @@ object PubSubApp extends App {
   implicit val system = ActorSystem("myapp")
   implicit val ec = system.dispatcher
 
-  val session = Client().connectAndOpenSession()
+  val session = Client()
+    .connectAndOpenSession("ws://host.net:9999/router)
   
   val handler: EventHandler = { event =>
     event.payload.map(_.arguments.map(println))

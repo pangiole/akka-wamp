@@ -15,14 +15,9 @@ import scala.concurrent.{Future, Promise}
   * {{{
   *   import akka.actor._
   *   import akka.wamp.client._
-  *   import akka.wamp.serialization._
   *   
   *   implicit val system = ActorSystem("myapp")
-  *   implicit val ec = system.dispatcher
-  *   
   *   val client = Client()
-  *   val conn: Future[Connection] = client.connect("ws://host:9999/router")
-  *   // ... map connection to ...
   * }}}
   * 
   * @param system the (implicit) actor system
@@ -40,6 +35,11 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
   private implicit val ec = system.dispatcher
 
   /**
+    * Client configuration 
+    */
+  private val config = system.settings.config.getConfig("akka.wamp.client")
+
+  /**
     * Establish a WAMP connection to a router which is listening at 
     * the given URL and negotiate the given subprotocol
     * 
@@ -48,11 +48,11 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
     * @return a (future of) connection
     */
   def connect(
-    url: String = "ws://127.0.0.1:8080/ws", 
+    url: String, 
     subprotocol: String = "wamp.2.json"): Future[Connection] = 
   {
     val promise = Promise[Connection]
-    val client = system.actorOf(Props(new ClientActor(promise)))
+    val client = system.actorOf(Props(new ConnectionActor(promise)))
     IO(Wamp) ! Wamp.Connect(client, url, subprotocol)
     promise.future
   }
@@ -68,7 +68,7 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
     * @return a (future of) session 
     */
   def connectAndOpenSession(
-    url: String = "ws://localhost:8080/ws", 
+    url: String, 
     subprotocol: String = "wamp.2.json", 
     realm: Uri = "akka.wamp.realm",
     roles: Set[Role] = Roles.client): Future[Session] = 
@@ -93,7 +93,7 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
   *
   *   val client = Client()
   *   val conn: Future[Connection] = client.connect("ws://host:9999/router")
-  *   // ... map connection to ...
+  *   
   * }}}
   */
 object Client {
@@ -104,61 +104,4 @@ object Client {
     * @return a new client instance
     */
   def apply()(implicit system: ActorSystem) = new Client()
-}
-
-/**
-  * INTERNAL API
-  * 
-  * The client actor which will keep (or break) the given connection promise
-  *  
-  * @param promise is the promise of connection to fulfill
-  */
-private[client] class ClientActor(promise: Promise[Connection]) extends Actor with ActorLogging {
-
-  /**
-    * The connection
-    */
-  private var conn: Connection = _
-
-  /**
-    * The global configuration
-    */
-  private val config = context.system.settings.config
-
-  /**
-    * The boolean switch (default is false) to validate against strict URIs rather than loose URIs
-    */
-  private val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-
-  /**
-    * The WAMP types Validator
-    */
-  private implicit val validator = new Validator(strictUris)
-
-  /**
-    * This actor receive partial function
-    */
-  override def receive: Receive = {
-    case signal @ Wamp.Connected(router) =>
-      this.conn = new Connection(self, router)
-      context.become { 
-        case message =>
-          // delegate any "message processing" to the connection object
-          conn.receive(message) 
-      }
-      promise.success(conn)
-
-    // TODO https://github.com/angiolep/akka-wamp/issues/29  
-    // case command @ Wamp.Disconnect =>
-      
-    case signal @ Wamp.ConnectionFailed(cause) =>
-      log.debug("!!! {}", signal)
-      promise.failure(new ConnectionException(signal.toString))
-      context.stop(self)
-
-    case message =>
-      log.debug("!!! {}", message)
-      promise.failure(new ConnectionException(s"Unexpected message $message"))
-      context.stop(self)
-  }
 }

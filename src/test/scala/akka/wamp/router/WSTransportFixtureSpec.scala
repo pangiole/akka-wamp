@@ -19,20 +19,19 @@ import org.scalatest._
   * httpRoute is wrapped by ``testkit.Route.seal()`` when HTTP rejections
   * need to be checked
   */
-class TransportFixtureSpec 
+class WsTransportFixtureSpec 
   extends fixture.FlatSpec 
     with MustMatchers with BeforeAndAfterAll
     with ScalatestRouteTest
     with ParallelTestExecution
     with SequentialIdGenerators
 {
-  // It can be whatever URL
-  val URL = "http://127.0.0.1:8080/ws"
+  val URL = "http://127.0.0.1:8080/router"
   
-  def withHttpHandler(route: Route)(testScenario: (WSProbe) => Unit) = {
-    val transport = WSProbe()
-    WS(URL, transport.flow, List("wamp.2.json")) ~> route ~> check {
-      testScenario(transport)
+  def withWsClient(route: Route)(testScenario: (WSProbe) => Unit) = {
+    val probe = WSProbe()
+    WS(URL, probe.flow, List("wamp.2.json")) ~> route ~> check {
+      testScenario(probe)
     }
   }
 
@@ -40,9 +39,9 @@ class TransportFixtureSpec
   
   override def withFixture(test: OneArgTest) = {
     val wampRouter = TestActorRef[Router](Router.props(scopes))
-    
-    val strictUris = system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-    val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
+
+    val strictUri = testConfig.getBoolean("akka.wamp.router.validate-strict-uris")
+    val serializationFlows = new JsonSerializationFlows(strictUri)
     
     val transport = TestActorRef[Transport](Transport.props(wampRouter, serializationFlows))
     

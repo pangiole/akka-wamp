@@ -42,12 +42,6 @@ cd akka-wamp-0.7.0
 
 ## Settings
 Either the embedded or the standalone router can be configured by applying the following settings:
-
-
- - ``akka.wamp.serialization``  
-   
-    - ``validate-strict-uris``  
-      The boolean switch (default is false) to validate against strict URIs rather than loose URIs 
  
  - ``akka.wamp.router``  
    
@@ -64,8 +58,11 @@ Either the embedded or the standalone router can be configured by applying the f
       The port number the router binds to (default is ``8080``)
 
     - ``path``  
-      The path the router expects WebSocket connection requests (default is ``/ws``)
-      
+      The URL path incoming HTTP Upgrade request are expected to be addressed to (default is ``router``)   
+   
+    - ``validate-strict-uris``  
+      The boolean switch (default is false) to validate against strict URIs rather than loose URIs
+            
     - ``abort-unknown-realms``  
       The boolean switch (default is false) to NOT automatically create realms if they don't exist yet
 

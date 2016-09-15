@@ -20,10 +20,11 @@ class ManagerSpec
     manager ! Bind(f.listener.ref)
     val bound = f.listener.expectMsgType[Bound](16 seconds)
     bound.url must startWith("ws://127.0.0.1:")
-    bound.url must endWith("/ws")
+    bound.url must endWith("/router")
   }
 
   it should "unbind a router" in { fixture =>
+    // TODO https://github.com/angiolep/akka-wamp/issues/13
     pending
   }
   

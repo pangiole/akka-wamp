@@ -20,32 +20,26 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   extends Peer with Broker with Dealer
   with Actor with ActorLogging  
 {
-  /**
-    * Global configuration 
-    */
-  private[router] val config = context.system.settings.config
+  /** Router configuration */
+  private val config = context.system.settings.config.getConfig("akka.wamp.router")
 
   /**
     * Boolean switch (default is false) to NOT automatically create
     * realms if they don't exist yet
     */
-  private[router] val abortUnknownRealms = config.getBoolean("akka.wamp.router.abort-unknown-realms")
+  val abortUnknownRealms = config.getBoolean("abort-unknown-realms")
 
   /**
     * Boolean switch (default is false) to validate against strict URIs
     * rather than loose URIs
     */
-  private[router] val strictUris = config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  val strictUris = config.getBoolean("validate-strict-uris")
 
-  /**
-    * Validator that validates values against WAMP protocol types
-    */
-  private[router] implicit val validator = new Validator(strictUris)
+  /** WAMP types validator */
+  protected implicit val validator = new Validator(strictUris)
 
-  /**
-    * Details of WELCOME message replied by this router
-    */
-  private[router] val welcomeDetails = Dict()
+  /** Details of WELCOME message replied by this router */
+  private val welcomeDetails = Dict()
     .withAgent("akka-wamp-0.7.0")
     .withRoles(Roles.router)
   

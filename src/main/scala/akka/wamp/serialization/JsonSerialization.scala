@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 
 
-class JsonSerialization extends Serialization {
+class JsonSerialization() extends Serialization {
   type T = String
 
   private val log = LoggerFactory.getLogger(classOf[JsonSerialization])

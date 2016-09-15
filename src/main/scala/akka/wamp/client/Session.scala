@@ -15,7 +15,7 @@ import scala.concurrent.{Future, Promise}
   * 
   * {{{
   *   val client = Client()
-  *   val session = for {
+  *   val session: Future[Session] = for {
   *     conn <- client.connect("ws://host:9999", "wamp.2.json")
   *     ssn <- conn.open("myapp.realm", Set(Roles.publisher))
   *   } yield ssn
@@ -62,7 +62,7 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
     closed = true
   }
   
-  private[client] def futureOf[T](fn: (Promise[T]) => Unit): Future[T] = {
+  private[client] def withPromise[T](fn: (Promise[T]) => Unit): Future[T] = {
     val promise = Promise[T]
     if (closed) {
       promise.failure(SessionException("session closed"))
@@ -75,16 +75,19 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
   
   
   def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Goodbye] = {
-    futureOf[Goodbye] { promise =>
-      def goodbyeReceive: Receive = {
+    withPromise[Goodbye] { promise =>
+      def handleGoodbye: Receive = {
         case msg: Goodbye =>
+          // upon receiving goodbye message FROM the router 
           log.debug("<-- {}", msg)
+          doClose()
           promise.success(msg)
       }
       conn.become(
-        goodbyeReceive orElse
-          handleUnexpected(promise = Some(promise))
+        handleGoodbye orElse
+          handleUnexpected(Some(promise))
       )
+      // send goodbye message TO the router
       conn ! Goodbye(details, reason)
     }
   }
@@ -92,7 +95,7 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
   
   
   def subscribe(topic: Uri, options: Dict = Subscribe.defaultOptions)(handler: EventHandler): Future[Subscribed] = {
-    futureOf[Subscribed] { promise =>
+    withPromise[Subscribed] { promise =>
       val msg = Subscribe(requestId = nextId(), options, topic)
       subscriptions += (msg.requestId -> promise)
       conn.become(
@@ -116,7 +119,7 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
     * @return
     */
   def publish(topic: Uri, ack: Boolean = false, payload: Option[Payload] = None): Future[Either[Done, Published]] =  {
-    futureOf[Either[Done, Published]] { promise =>
+    withPromise[Either[Done, Published]] { promise =>
       val message = Publish(requestId = nextId(), Dict().withAcknowledge(ack), topic, payload)
       publications += (message.requestId -> promise)
       if (!ack) {
@@ -137,7 +140,7 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
 
   
   def register(procedure: Uri, options: Dict = Register.defaultOptions)(handler: InvocationHandler): Future[Registered] = {
-    futureOf[Registered] { promise =>
+    withPromise[Registered] { promise =>
       val msg = Register(requestId = nextId(), options, procedure)
       registrations += (msg.requestId -> promise)
       conn.become(

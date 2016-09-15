@@ -14,7 +14,8 @@ class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     with ParallelTestExecution 
     with SequentialIdGenerators
 {
-  val strictUris = system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  val strictUris = system.settings.config.getBoolean("akka.wamp.router.validate-strict-uris")
+  
   implicit val validator = new Validator(strictUris)
   
   case class FixtureParam(router: TestActorRef[Router], url: String)

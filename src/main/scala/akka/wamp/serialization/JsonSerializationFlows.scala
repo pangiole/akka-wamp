@@ -1,39 +1,52 @@
 package akka.wamp.serialization
 
 import akka.NotUsed
-import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage, Message => WebSocketMessage}
+import akka.http.scaladsl.model.{ws => websocket}
+import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{Materializer, Supervision}
 import akka.stream.scaladsl.Flow
 import akka.wamp.Validator
-import akka.wamp.messages.Message
+import akka.wamp.{messages => wamp}
 import org.slf4j.LoggerFactory
 
-class JsonSerializationFlows(validator: Validator, materializer: Materializer) extends SerializationFlows {
+/**
+  * The JSON serialization flows
+  * 
+  * @param strictUris is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
+  * @param materializer is the Akka Stream materializer
+  */
+class JsonSerializationFlows(strictUris: Boolean)(implicit materializer: Materializer) 
+  extends SerializationFlows 
+{
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
-  val json = new JsonSerialization
+  
+  val json = new JsonSerialization()
+
+  /** The WAMP types validator */
+  implicit val validator = new Validator(strictUris)
+
 
   /**
-    * Serialize from WampMessage object to textual WebSocketMessage
+    * Serialize from wamp.Message object to textual websocket.Message
     */
-  val serialize: Flow[Message, WebSocketMessage, NotUsed] =
-    Flow[Message].
+  val serialize: Flow[wamp.Message, websocket.Message, NotUsed] =
+    Flow[wamp.Message].
       map {
-        case message: Message =>
-          val source = json.serialize(message)
-          TextMessage(source)
+        case message: wamp.Message =>
+          TextMessage(json.serialize(message))
       }
 
 
 
   /**
-    * Deserialize textual WebSocketMessage to WampMessage object
+    * Deserialize textual websocket.Message to wamp.Message object
     */
-  val deserialize: Flow[WebSocketMessage, Message, NotUsed] =
-    Flow[WebSocketMessage]
+  val deserialize: Flow[websocket.Message, wamp.Message, NotUsed] =
+    Flow[websocket.Message]
       .map {
         case TextMessage.Strict(text) =>
-          json.deserialize(text)(validator, materializer)
+          json.deserialize(text)
 
         case TextMessage.Streamed(source) =>
           throw new DeserializeException("Streaming not supported yet.")

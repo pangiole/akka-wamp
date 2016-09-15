@@ -10,21 +10,47 @@ import akka.wamp.serialization._
 import scala.concurrent._
 import scala.util.{Failure, Success}
 
-
-private[wamp] class Manager extends Actor  {
+/**
+  * INTERNAL API
+  * 
+  * The Akka IO manager actor for the WAMP router
+  */
+private class Manager extends Actor {
   
-  implicit val ec = context.system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  /** The execution context */
+  private implicit val ec = context.system.dispatcher
+
+  /** The actor materializer for Akka Stream */
   // TODO close the materializer at some point
-  
-  val iface = context.system.settings.config.getString("akka.wamp.router.iface")
-  
-  val port = context.system.settings.config.getInt("akka.wamp.router.port")
+  private implicit val materializer = ActorMaterializer()
 
-  val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
+  /** Router configuration */
+  private val config = context.system.settings.config.getConfig("akka.wamp.router")
+
+  /**
+    * The TCP interface (default is 127.0.0.1) to bind to
+    */
+  private val iface = config.getString("iface")
+
+  /**
+    * The TCP port number (default is 8080) to bind to
+    */
+  private val port = config.getInt("port")
+
+  /**
+    * The boolean switch (default is false) to validate against 
+    * strict URIs rather than loose URIs
+    */
+  private val strictUris = config.getBoolean("validate-strict-uris")
+
+  /** The serialization flows */
+  // TODO https://github.com/angiolep/akka-wamp/issues/12
+  private val serializationFlows = new JsonSerializationFlows(strictUris)
+
   
-  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
-  
+  /**
+    * Handle BIND and UNBIND commands
+    */
   override def receive: Receive = {
     case cmd @ Wamp.Bind(router) => {
       val binder = sender()
@@ -64,9 +90,18 @@ private[wamp] class Manager extends Actor  {
           router ! Wamp.BindFailed(cause)
       }
     }
+
+    // TODO https://github.com/angiolep/akka-wamp/issues/13
+    // case cmd @ Wamp.Unbind
   }
 }
 
-private[wamp] object Manager {
+/**
+  * INTERNAL API
+  */
+private object Manager {
+  /**
+    * Factory for [[Manager]] instances
+    */
   def props() = Props(new Manager())
 }

@@ -12,10 +12,18 @@ import scala.concurrent.{Future, Promise}
   * WAMP connections are established by clients to a router.
   * 
   * {{{
-  *   val session = for {
-  *     conn <- client.connect("ws://host:9999", "wamp.2.json")
-  *     ssn <- conn.open("myapp.realm", Set(Roles.publisher))
-  *   } yield ssn
+  *   import akka.actor._
+  *   import akka.wamp.client._
+  *
+  *   implicit val system = ActorSystem("myapp")
+  *   implicit val ec = system.dispatcher
+  *
+  *   val client = Client()
+  *   val conn: Future[Connection] = client.connect(
+  *     url = "ws://localhost:8080/router",
+  *     subprotocol = "wamp.2.json"
+  *   )
+  *   
   * }}}
   *
   * 
@@ -193,3 +201,5 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
       }
   }
 }
+
+

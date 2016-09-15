@@ -12,19 +12,39 @@ import akka.wamp.serialization._
 
 import scala.concurrent.Future
 
+/**
+  * INTERNAL API
+  * 
+  * The Akka IO manager actor for the WAMP client
+  */
+private class Manager extends Actor {
 
-private[wamp] class Manager extends Actor {
-  
-  implicit val ec = context.system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  /** The execution context */
+  private implicit val ec = context.system.dispatcher
+
+  /** The actor materializer for Akka Stream */
   // TODO close the materializer at some point
-  
-  val strictUris = context.system.settings.config.getBoolean("akka.wamp.serialization.validate-strict-uris")
-  val serializationFlows = new JsonSerializationFlows(new Validator(strictUris), materializer)
+  private implicit val materializer = ActorMaterializer()
+
+  /** Client configuration */
+  private val config = context.system.settings.config.getConfig("akka.wamp.client")
+
+  /**
+    * The boolean switch (default is false) to validate against 
+    * strict URIs rather than loose URIs
+    */
+  private val strictUris = config.getBoolean("validate-strict-uris")
+
+  /** The serialization flows */
+  // TODO https://github.com/angiolep/akka-wamp/issues/12
+  private val serializationFlows = new JsonSerializationFlows(strictUris)
   
   // inlet -> outlet
-  var outlets = Map.empty[ActorRef, ActorRef]
+  private var outlets = Map.empty[ActorRef, ActorRef]
 
+  /**
+    * Handle CONNECT and DISCONNECT commands
+    */
   override def receive: Receive = {
     case cmd @ Wamp.Connect(client, uri, subprotocol) => {
       try {
@@ -81,6 +101,13 @@ private[wamp] class Manager extends Actor {
   }
 }
 
-private[wamp] object Manager {
-  def props() = Props(new Manager)
+
+/**
+  * INTERNAL API
+  */
+private object Manager {
+  /**
+    * Factory for [[Manager]] instances
+    */
+  def props() = Props(new Manager())
 }

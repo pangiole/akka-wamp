@@ -6,12 +6,14 @@ import akka.http.scaladsl.server._
 import akka.stream.scaladsl._
 
 /**
-  * It tests the ``router.Transport`` behaviour with its default configuration 
+  * It tests the ``router.Transport`` behaviour with its 
+  * 
+  *   DEFAULT configuration
+  * 
   * (NO custom settings) by exercising it with various JSON messages covering
-  * the most common scenarios (session handling, subscriptions, publications, etc.) 
-  * a given client could drive into.
+  * the most common scenarios (session handling, subscriptions, publications, etc.)
   */
-class DefaultTransportSpec extends TransportFixtureSpec
+class WsTransportSpec extends WsTransportFixtureSpec
 {
   "The default router.Transport" should "reject websocket requests if no subprotocol matches" in { fixture =>
     WS(URL, clientSideHandler = Flow[WebSocketMessage]) ~> fixture.httpRoute ~> check {
@@ -38,51 +40,52 @@ class DefaultTransportSpec extends TransportFixtureSpec
   }
 
   it should "handle sessions" in { fixture =>
-    withHttpHandler(fixture.httpRoute) { transport =>
+    withWsClient(fixture.httpRoute) { client =>
 
       // --> HELLOs
-      transport.sendMessage("""[1,"invalid..realm",{"roles":{"subscriber":{}}}]""")
-      transport.sendMessage("""[1,"myapp.realm",{"roles":{"invalid":{}}}]""")
-      transport.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
+      client.sendMessage("""[1,"invalid..realm",{"roles":{"subscriber":{}}}]""")
+      client.sendMessage("""[1,"myapp.realm",{"roles":{"invalid":{}}}]""")
+      client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #1 OPEN
 
       // --> GOODBYEs
-      transport.sendMessage("""[6,{},"invalid..reason"]""")
-      transport.sendMessage("""[6,{},"wamp.error.close_realm"]""")
+      client.sendMessage("""[6,{},"invalid..reason"]""")
+      client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
 
       // <-- GOODBYE
-      transport.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
+      client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
 
       // SESSION #1 CLOSED
       // but TRANSPORT still CONNECTED!
 
       // --> HELLO
-      transport.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{}}}]""")
+      client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{}}}]""")
 
       // <-- WELCOME
-      transport.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
+      client.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #2 OPEN
 
       // --> GOODBYE
-      transport.sendMessage("""[6,{},"wamp.error.close_realm"]""")
+      client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
 
       // <-- GOODBYE
-      transport.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
+      client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
 
       // SESSION #2 OPEN
       // but TRANSPORT still CONNECTED!
 
-      transport.expectNoMessage()
+      client.expectNoMessage()
     }
   }
   
+  
   it should "handle messages exchanged in publish/subscribe scenario" in { fixture =>
-    withHttpHandler(fixture.httpRoute) { client =>
+    withWsClient(fixture.httpRoute) { client =>
       // --> HELLO 
       client.sendMessage("""[1,"myapp.realm",  {"roles":{"subscriber":{}, "publisher":{}}}]""")
       
