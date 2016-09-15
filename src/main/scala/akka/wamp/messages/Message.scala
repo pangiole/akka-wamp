@@ -46,6 +46,7 @@ final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.def
 }
 final object Hello {
   val tpe = 1
+  val defaultRealm = "akka.wamp.realm"
   val defaultDetails = Dict("roles" -> Roles.client.toList.sorted.map(_ -> Map()).toMap)
 }
 

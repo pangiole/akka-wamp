@@ -15,7 +15,8 @@ object PubSubApp extends App {
   implicit val system = ActorSystem("myapp")
   implicit val ec = system.dispatcher
 
-  val session = Client().connectAndOpenSession()
+  val session = Client()
+      .connectAndOpenSession("ws://host.net:9999/router")
   
   val handler: EventHandler = { event =>
     event.payload.map(_.arguments.map(println))

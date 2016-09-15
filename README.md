@@ -30,7 +30,7 @@ object PubSubApp extends App {
   implicit val ec = system.dispatcher
 
   val session = Client()
-    .connectAndOpenSession("ws://host.net:9999/router)
+    .connectAndOpenSession("ws://host.net:9999/router")
   
   val handler: EventHandler = { event =>
     event.payload.map(_.arguments.map(println))
@@ -73,7 +73,7 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 
 
 
-[travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=v0.7.0
+[travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
 [travis-url]: https://travis-ci.org/angiolep/akka-wamp
 
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1

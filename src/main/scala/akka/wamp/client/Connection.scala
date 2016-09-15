@@ -23,9 +23,7 @@ import scala.concurrent.{Future, Promise}
   *     url = "ws://localhost:8080/router",
   *     subprotocol = "wamp.2.json"
   *   )
-  *   
   * }}}
-  *
   * 
   * WAMP connections can use any transport that is message-based, ordered,
   * reliable and bi-directional, with WebSocket as the default transport.
@@ -93,14 +91,30 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
   private[client] val routerRef: ActorRef = router
   
   /**
-    * Open a new session sending an HELLO message to the router 
-    * for the given realm and roles
+    * Open a WAMP session with the given realm and roles.
     * 
-    * @param realm is the realm to attach the session to
-    * @param roles is this client roles set
-    * @return a (future of) session               
+    * The client sends a HELLO message to the router which
+    * in turn replies with a WELCOME or ABORT message.
+    *
+    * {{{
+    *     ,------.              ,------.
+    *     |Client|              |Router|
+    *     `--+---'              `--+---'
+    *        |      HELLO          |
+    *        | ------------------> |
+    *        |                     |
+    *        |   WELCOME / ABORT   |
+    *        | <------------------ |
+    *     ,--+---.              ,--+---.
+    *     |Client|              |Router|
+    *     `------'              `------'
+    * }}}
+    * 
+    * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
+    * @param roles is this client roles set (default is all possible client roles)
+    * @return the (future of) session or [[AbortException]]
     */
-  def openSession(realm: Uri = "akka.wamp.realm", roles: Set[Role] = Roles.client): Future[Session] = {
+  def openSession(realm: Uri = Hello.defaultRealm, roles: Set[Role] = Roles.client): Future[Session] = {
     val promise = Promise[Session]
     try {
       val hello = Hello(realm, Dict().withRoles(roles.toList: _*))

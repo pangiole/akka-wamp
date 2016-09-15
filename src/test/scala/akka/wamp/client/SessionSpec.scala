@@ -43,6 +43,11 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
     }
   }
 
+
+  it should "fail publish to topic when hasn't open with publisher role" in { f =>
+    pending
+  }
+  
   
   it should "succeed publish(noack) to topic" in { f =>
     f.withSession { session =>
@@ -79,6 +84,11 @@ class SessionSpec extends ClientFixtureSpec with MockFactory {
         }
       }
     }
+  }
+
+  
+  it should "fail subscribe on topic when hasn't open with subscriber role" in { f =>
+    pending
   }
 
   

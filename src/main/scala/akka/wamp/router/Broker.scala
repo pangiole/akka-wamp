@@ -11,21 +11,14 @@ import akka.wamp.messages._
   */
 trait Broker { this: Router =>
 
-  /**
-    * Map of topics subscriptions. 
-    * Each entry is for one topic only and it can have one or many subscribers
-    */
+  /** Map of subscriptions. Each entry is for one topic only and it can have one or many subscribers */
   private[router] var subscriptions = Map.empty[Id, Subscription]
   
-  /**
-    * Set of publication identifiers
-    */
+  /** Set of publication identifiers */
   private[router] var publications = Set.empty[Id]
 
 
-  /**
-    * Handle publications lifecycle messages such as: PUBLISH
-    */
+  /** Handle publications lifecycle messages such as: PUBLISH */
   private[router] def handlePublications: Receive = {
     case message @ Publish(requestId, options, topic, payload) =>
       ifSessionOpen(message) { session =>

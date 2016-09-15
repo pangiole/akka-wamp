@@ -99,7 +99,7 @@ private class Manager extends Actor {
 /**
   * INTERNAL API
   */
-private object Manager {
+private[wamp] object Manager {
   /**
     * Factory for [[Manager]] instances
     */

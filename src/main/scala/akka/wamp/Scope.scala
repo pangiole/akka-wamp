@@ -1,7 +1,7 @@
 package akka.wamp
 
 trait Scope {
-  def nextId(excludes: Set[Id]): Id = {
+  protected[wamp] def nextId(excludes: Set[Id]): Id = {
     var id: Long = 0
     do {
       id = Id.draw()
@@ -19,7 +19,7 @@ object Scope {
 
   trait Session extends Scope {
     private var id: Id = 0
-    final override def nextId(excludes: Set[Id] = Set()): Id = {
+    protected[wamp] final override def nextId(excludes: Set[Id] = Set()): Id = {
       do {
         id = id + 1
       } while (excludes.contains(id))

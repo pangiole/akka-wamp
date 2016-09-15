@@ -3,6 +3,7 @@ package akka.wamp.client
 import akka.actor._
 import akka.io.IO
 import akka.wamp._
+import akka.wamp.messages.Hello
 import org.slf4j._
 
 import scala.concurrent.{Future, Promise}
@@ -45,7 +46,7 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
     * 
     * @param url is the URL to connect to
     * @param subprotocol is the subprotocol to negotiate
-    * @return a (future of) connection
+    * @return the (future of) connection or [[ConnectionException]]
     */
   def connect(
     url: String, 
@@ -62,15 +63,15 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
     * Establish a WAMP connection to a router and open a new session
     *
     * @param url is the URL to connect to
-    * @param subprotocol is the subprotocol to negotiate
-    * @param realm is the realm to attach the session to
-    * @param roles is this client roles set
-    * @return a (future of) session 
+    * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
+    * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
+    * @param roles is this client roles set (default is all possible client roles) 
+    * @return the (future of) session or [[ConnectionException]] or [[AbortException]] 
     */
   def connectAndOpenSession(
     url: String, 
     subprotocol: String = "wamp.2.json", 
-    realm: Uri = "akka.wamp.realm",
+    realm: Uri = Hello.defaultRealm,
     roles: Set[Role] = Roles.client): Future[Session] = 
   {
     for {
