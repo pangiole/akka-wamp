@@ -13,7 +13,7 @@ import scala.collection.mutable
 /**
   * The Router is a [[Peer]] playing the [[Roles.broker]] and [[Roles.dealer]] 
   * which is responsible for generic call and [[Event]] routing but do NOT run 
-  * any application code a [[Client]] would.
+  * any application code a Client would.
   * 
   */
 final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef]) 
@@ -40,8 +40,8 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
 
   /** Details of WELCOME message replied by this router */
   private val welcomeDetails = Dict()
-    .withAgent("akka-wamp-0.7.0")
-    .withRoles(Roles.router)
+    .setAgent("akka-wamp-0.7.0")
+    .addRoles(Roles.router)
   
   /**
     * Map of existing realms.

@@ -188,7 +188,7 @@ connection ! Subscribe(requestId = 34, "myapp.tick.topic")
 ### Subscribed
 TBD
 
-<a name="publish"></a>
+<a name="Publish"></a>
 
 ### Publish
 It is the message you send to the transport to publish an event. It can be constructed passing the following parameters:

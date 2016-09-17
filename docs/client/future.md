@@ -1,164 +1,173 @@
-If you wish your client to be written with a high-level API, and you need to implement no more than practical scenarios, then Akka Wamp provides you with an [Akka Future](http://doc.akka.io/docs/akka/current/scala/futures.html) based API.
-
-It requires you to know what futures are and how to compose them in _monadic_ expressions. You'll be rewarded with succinct and elegant Scala code by just composing asynchronous functions that return transports, sessions, subscriptions, registrations, _"et cetera"_. 
+Akka Wamp provides you with a [Future](http://doc.akka.io/docs/akka/current/scala/futures.html) based API, built on top of [Akka Wamp Actor based API](../client/actor), to let you write your client with a high-level API and few lines of Scala!
 
 ## For the _impatients_
-Let's connect a transport, open a session, subscribe a topic and receive events in few lines of Scala!
+Let's connect a transport, open a session, subscribe to a topic and receive events:
 
 ```scala
-import akka.actor._
-import akka.wamp.client._
-import akka.wamp.messages._
-import akka.wamp.serialization._
-
 object PubSubApp extends App {
-  implicit val system = ActorSystem("myapp")
-  implicit val ec = system.dispatcher
 
-  val session = Client()
-      .connectAndOpenSession("ws://host.net:9999/router")
+  import akka.wamp.client._
+  val client = Client()
   
-  val handler: EventHandler = { event =>
-    event.payload.map(_.arguments.map(println))
-  }
-  for { 
-    ssn <- session
-    sub <- ssn.subscribe("myapp.topic")(handler)
-  } yield ()
-
-  val payload = Payload(List("paolo", 40, true))
+  import scala.concurrent.Future
+  import client.executionContext
+  
   for {
-    ssn <- session
-    pub <- ssn.publish("myapp.topic", ack=true, Some(payload))
-  } yield ()
+    session <- client
+      .openSession(
+        url = "ws://localhost:8080/router",
+        subprotocol = "wamp.2.json",
+        realm = "akka.wamp.realm",
+        roles = Set("subscriber"))
+    subscription <- session
+      .subscribe(
+        topic = "myapp.topic",
+        options = Dict()) {
+        event =>
+          event.payload.map(_.arguments.map(println))
+        }
+    } yield ()
 }
 ```
 
-``Client()`` is the entry point object. Invoke its ``connectAndOpenSession()`` method to get a (future of) session and then yield a (future of) subscription  by invoking the ``subscribe()()`` method. That's a curried method which accepts the topic URI in its first parameters list and an ``EventHandler`` handler in its second parameters list. The event handler maps the (option of) payload to get the (future of) ``arguments`` published by some remote client in a way it __will never ever block__ :-)
+Create the client and invoke its ``openSession()`` method to get a (future of) session. Then yield a (future of) subscription by invoking the ``subscribe()()`` method. That's a curried method which accepts the topic URI in its first parameters list and an ``EventHandler`` handler in its second parameters list. The event handler maps the (option of) payload to get the (future of) ``arguments`` just received.
 
 Please, read on for a deeper explanation and further details.
+
+## Create the client
+
+```scala
+import akka.wamp.client._
+val client = Client("myapp")
+```
+
+The ``Client`` object is the entry point of this API. Create and name it by invoking its companion factory method which internally creates an Akka [ActorSystem](http://doc.akka.io/docs/akka/2.4.10/general/actor-systems.html) named after it. 
+
+> __Note__  
+> The actor system is a heavyweight structure that allocates 1..n threads, so create _one client per logical application_.
+ 
+The client takes care of all the asynchronous communication with the router by exchanging WAMP messages over a connected transport (by default WebSocket). All of the operation provided by client, connection and sessions objects always return futures. In order to execute callbacks and operations, futures need something called an [ExecutionContext](http://doc.akka.io/docs/akka/2.4.10/scala/futures.html). You can import the existing ``client.executionContext`` as implicit in scope or create your own.
+
 
 ## Establish connections
 
 ```scala
-import akka.actor._
-import akka.wamp.client._
-import scala.concurrent._
+import scala.concurrent.Future
+import client.executionContext
 
-implicit val system = ActorSystem("myapp")
-implicit val ec = system.dispatcher
-
-val client = Client()
-val connection: Future[Connection] = client.connect(
-  url = "ws://127.0.0.1:8080/ws",
-  subprotocol = "wamp.2.json"
-)
+val conn1: Future[Connection] = client
+  .connect(
+    url = "ws://localhost:8080/router",
+    subprotocol = "wamp.2.json")
+    
+val conn2 = client
+  .connect(
+    url = "wss://secure.host.net:443/wamp",
+    subprotocol = "wamp.2.msgpack")    
 ```
-Since Akka Wamp is built on Akka, as any other applications built on Akka, it needs the following implicit values in scope:
 
-* the Akka ActorSystem
-* a ``scala.concurrent.ExecutionContext``
+The client provides the ``connect()`` method which accepts ``url`` and ``subprotocol`` arguments as documented for the [``Connect``](../../messages#Connect) message constructor. You can create as many connections as you wish (to the same or to different routers) as the connect method returns a distinct (future of) connection.
 
-The execution context could be the actor system dispatcher (as in the above example) or a different one you might desire to create and configure on purpose.
-
-
-The ``Client`` object is the entry point of the API and it has to be created before any other objects. It takes care of the asynchronous non-blocking communication with the router by exchanging WAMP messages over a transport (for example WebSocket or RawTCP) and it has been written using the low level [Actor based API](/client/actor).
-
-The ``Client`` object provides the ``connect()`` method which accepts ``url`` and ``subprotocol`` arguments as documented for the [``Connect``](../../messages#Connect) message constructor. It returns a (future of) connection that can be composed in monadic expressions.
-
-
-You can either recover or _"give up"_ when the (future of) connection fails. To recover from failures (such as ``ConnectionException`` when router doesn't accept) you can compose a ``recoverWith`` function to attempt another connection (maybe to a fallback router):
+### Recover connection
+You can either recover or _"give up"_ when the (future of) connection fails. To recover from failures (such as ``ConnectionException`` thrown when router doesn't accept) you can compose ``recoverWith`` to attempt another connection (maybe to a fallback router):
 
 ```scala
-val connection = client.connect()
+val conn: Future[Connection] = client
+  .connect("ws://localhost:8080/router")
   .recoverWith { 
-    case ex: ConnectionException =>
-      client.connect(
-        url = "ws://fallback.host.net:9999/ws",
-        subprotocol = "wamp.2.msgpack"
-      )
+    case ex: ConnectionException => client
+      .connect(
+        url = "ws://fallback.host.net:9999/ws")
   }
 ```
 
-Instead of recovering, you could decide to _"give up"_ by a callback function ``onFailure`` that just prints a log message:
+As last resort, instead of recovering, you could decide to _"give up"_ a callback function ``onFailure`` that terminates the application:
 
 ```scala
-connection.onFailure {
-  case ex: Throwable => 
-    system.log.error(ex.getMessage, ex)
+conn.onFailure {
+  case ex: Throwable =>
+    client.terminate().map(_ => System.exit(-1))
 }
 ```
 
 ## Open sessions
 
 ```scala
-val session: Future[Session] = connection.flatMap(
+val session1: Future[Session] = conn1.flatMap(
   _.openSession(
-    realm = "myapp.realm",
-    roles = Set(Roles.subscriber)
-  ))
+    realm = "akka.wamp.realm",
+    roles = Set("subscriber")))
+    
+val session2 = conn2.flatMap(
+  _.openSession(
+    roles = Set("publisher", "callee")))    
 ```
 
-A (future of) connection can be mapped to a (future of) session by just invoking the ``openSession()`` method which accepts ``realm`` and ``roles`` arguments as documented for the [``Hello``](../../messages#Hello) message constructor.
+A (future of) connection can be mapped to a (future of) session by just invoking the ``openSession()`` method which accepts ``realm`` and ``roles`` arguments as documented for the [``Hello``](../../messages#Hello) message constructor. 
+
+> __Note__  
+> You can open _only one session per connection_, therefore if you wish to open a second session then you shall use a second connection.
 
 
-You can also collapse connection establishment and session opening in one single concise statement as follows:
+### Shortcut connect and open
+You can shortcut connection establishment and session opening in one single concise statement (invoking ``openSession`` on the client rather than on the connection) as follows:
+
+```scala
+val session1: Future[Session] = client
+  .openSession(
+    url = "ws://some.host.net:8080/ws",
+    subprotocol = "wamp.2.json",
+    realm = "akka.wamp.realm",
+    roles = Set("subscriber", "caller"))
+```
+
+The ``openSession()`` method accepts all of the ``url``, ``subprotocol``, ``realm`` and ``details`` arguments as mentioned above. It establishes a new connection and opens a new session each time you call it.
+
+
+### Recover session
+You can either recover or _"give up"_ when the (future of) session fails. To recover from failures (such as ``AbortException`` thrown when router doesn't attach to a realm) you can compose ``recoverWith``  to attempt another session opening (maybe to a fallback realm):
 
 ```scala
 val session: Future[Session] = client
-  .connectAndOpenSession(
-    url = "ws://some.host.net:8080/ws",
-    subprotocol = "wamp.2.json",
-    realm = "myapp.realm",
-    roles = Set(Roles.subscriber)
-  )
-```
-
-The ``connectAndOpenSession()`` method accepts all of the ``url``, ``subprotocol``, ``realm`` and ``details`` arguments as mentioned above.
-
-
-You can either recover or _"give up"_ when the (future of) session fails. To recover from failures (such as ``AbortException`` when router doesn't attach to a realm) you can compose a ``recoverWith`` function to attempt another session opening (maybe to a fallback realm):
-
-```scala
-val session = connection.flatMap(
-  _.openSession("myapp.realm"))
+  .openSession(
+    realm = "akka.wamp.realm")
   .recoverWith { 
-    case ex: AbortException =>
-      connection.flatMap(
-        _.openSession(
-          realm = "fallback.realm"
-          // roles = Set(Roles.all)
-       ))
+    case ex: AbortException => client
+      .openSession(
+        realm = "fallback.realm")
   }
 ```
 
-Instead of recovering, you could decide to _"give up"_ by a callback function ``onFailure`` that just prints a log message:
+As last resort, instead of recovering, you could decide to _"give up"_ a callback function ``onFailure`` that just prints a log message:
 
 ```scala
 session.onFailure {
   case ex: Throwable => 
-    system.log.error(ex.getMessage, ex)
+    client.log.error(ex.getMessage, ex)
 }
 ```
+
 
 ## Subscribe topics
 ```scala
 import akka.wamp._
-import akka.wamp.messages._
+import akka.wamp.message._
 
-val handler: EventHandler = { event => 
-  event.payload.map { payload =>
-    payload.arguments.map { arguments =>
-      println(arguments)
-    }
-  }
-}
-
-val subscription: Future[Subscribed] = session.flatMap(
+val subscription: Future[Subscription] = session.flatMap(
   _.subscribe(
-    topic = "myapp.topic.people",
-    options = Dict()
-)(handler))
+    topic = "myapp.topic",
+    options = Dict()) { 
+    event =>
+      client.log.info(s"${event.publicationId}")
+      event.payload.map { p =>
+        p.arguments.map { args =>
+          client.log.info(args.mkString)
+        }
+        p.argumentsKw.map { argsKw =>
+          client.log.info(argsKw.mkString)
+        }
+      }  
+    })
 ```
 
 A (future of) session can be mapped to a (future of) subscription by just invoking the ``subscribe`` method. It is a curried method with two parameter lists.
@@ -167,60 +176,66 @@ A (future of) session can be mapped to a (future of) subscription by just invoki
 def subscribe(topic: String, options: Dict)(handler: EventHandler)
 ```
 
-The first parameter list accepts ``topic`` and ``options`` arguments as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accept a callback handler function of type ``EventHandler`` which gets invoked to process each event from the topic. The ``event`` object provides a (option of) ``payload`` which in turn provides both (future of) ``arguments`` and ``argumentsKw``.
+The first parameter list accepts ``topic`` and ``options`` arguments as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accept a callback handler function of type ``EventHandler`` which gets invoked to process each event from the topic. The ``event`` object provides a (option of) ``payload`` which in turn provides both (future of) ``arguments`` and ``argumentsKw``. 
 
-You can either recover or _"give up"_ when the (future of) subscription fails. To recover from failures (such as ``SessionException`` when session turns to be closed as you try to subscribe) you can compose a ``recoverWith`` function to attempt another session opening (maybe to a fallback realm and/or to a fallback topic):
+### Recover subscription
+You can either recover or _"give up"_ when the (future of) subscription fails. To recover from failures (such as ``SessionException`` thrown when session turn out to be closed) you can compose ``recoverWith`` to attempt another session opening (maybe to a fallback realm and/or to a fallback topic):
 
 ```scala
-val subscription = session.flatMap(_.subscribe("myapp.topic.ticking")(handler)
+val subscription = session.flatMap(
+  _.subscribe("myapp.topic")(handler)
   .recoverWith { 
-    case ex: SessionException =>
-      for {
-        session2 <- connection.flatMap(_.openSession("myapp.realm"))
-        subscription2 <- session2.subscribe("myapp.topic.heartbeat")(handler)
-      }
-      yield subscription2
+    case ex: SessionException => session.flatMap(
+      _.subscribe("myapp.topic.heartbeat")(handler)
   }
 ```
 
-Instead of recovering, you could decide to _"give up"_ by a callback function ``onFailure`` that just prints a log message:
+As last resort, instead of recovering, you could decide to _"give up"_ a callback function ``onFailure`` that just prints a log message:
 
 ```scala
 session.onFailure {
   case ex: Throwable => 
-    system.log.error(ex.getMessage, ex)
+    client.log.error(ex.getMessage, ex)
 }
 ```
 
+## Unsubscribe topics
+TODO
 
 ## Publish events
 ```scala
 import akka.Done
 import akka.wamp.serialization._
 
-val publication: Future[Either[Done, Published]] = session.flatMap(
+val publication: Future[Either[Done, Publication]] = session.flatMap(
   _.publish(
-    topic = "myapp.topic.people",
-    acknowledge = true,
+    topic = "myapp.topic",
+    ack = true,
     payload = Some(Payload(List("paolo", 40, true)))
   ))
 ```
 
-A (future of) session can be mapped to a (future of) either done or published by just invoking the ``publish`` method which accepts ``topic``, ``acknowledge`` and (option of) ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor.
+A (future of) session can be mapped to a (future of) either done or publication by just invoking the ``publish`` method which accepts ``topic``, ``ack`` and (option of) ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor.
 
 
-Note that if you leave the ``acknowledge`` boolean switched off (as by default) then Akka Wamp will not expect to receive the [``Published``](../../messages#Publish) message back from the router and publication immediately completes with (left of) ``Done``. Otherwise, if you switch the ``acknowledge`` boolean flag on then publication later completes with ``Published`` (if no exception were thrown).
+### Send payload arguments
+TDB
 
-You could pass a callback ``onSuccess`` to better understand what happens:
+
+### Acknowledge publications
+
+Note that if you leave ``ack`` switched off (as by default) then Akka Wamp will not expect to receive the [``Published``](../../messages#Publish) message back from the router and the (future of either of) publication or done immediately completes with (left of) ``Done``. Otherwise, if you switch ``ack`` on then the (future of either of) publication or done later completes with (rith of) ``Publication`` (if no exception were thrown).
+
+You could pass a callback ``onSuccess`` to better understand what really happens:
 
 ```scala
-// acknowledge = true
+// ack = true
 publication.onSuccess {
   case Success(Left(Done)) =>
     println(s"Publication done") 
 }
 
-// acknowledge = false
+// ack = false
 publication.onSuccess {
   case Success(Right(p)) =>
     println(s"Published with ${p.publicationId}")
@@ -228,79 +243,62 @@ publication.onSuccess {
 ```
 
 
-You can either recover or _"give up"_ when the (future of) publication fails. To recover from failures (such as ``SessionException`` when session turns to be closed as you try to publish) you can compose a ``recoverWith`` function to attempt another session opening (maybe to a fallback realm and to a fallback topic):
+### Recover publication
+
+You can either recover or _"give up"_ when the (future of) publication fails. To recover from failures (such as ``SessionException`` when session turns out to be closed as you try to publish) you can compose ``recoverWith``  to attempt another session opening (maybe to a fallback realm and to a fallback topic):
 
 ```scala
-val publication = session.flatMap(_.publish("myapp.topic.ticking")
+val publication = session1.flatMap(_.publish("myapp.topic.ticking")
   .recoverWith { 
     case ex: SessionException =>
       for {
-        session2 <- connection.flatMap(_.openSession("myapp.realm"))
+        session2 <- client.openSession()
         publication2 <- session2.publish("myapp.topic.heartbeat")
       }
       yield publication2
   }
 ```
 
-Instead of recovering, you could decide to _"give up"_ by a callback function ``onFailure`` that just prints a log message:
+As last resort, instead of recovering, you could decide to _"give up"_ a callback function ``onFailure`` that just prints a log message:
 
 ```scala
 publication.onFailure {
   case ex: Throwable => 
-    system.log.error(ex.getMessage, ex)
+    client.log.error(ex.getMessage, ex)
 }
 ```
 
+## Register procedures
+TBD
 
-## For-comprehension
-Above code examples were deliberately verbose because this documentation is aimed to give you as much details as possible. You can make your code more concise if
 
-* you don't need to hold the connection reference,
-* you don't need to insert recovery code at each stage,
-* you are happy with default values 
+## Call procedures
+TBD
 
-then you might prefer to compose your stages on the _"happy path"_ via Scala for-comprehension statements:
 
+## Close sessions
 ```scala
-val subscription = for {
-  session <- client.connectAndOpenSession(
-    url = "ws://some.host.net:8080/ws",
-    realm = "myapp.realm"
-  )
-  subscription <- session.subscribe(
-    topic = "myapp.topic.people",
-    options = Dict()
-  )(handler)
-}
-yield subscription
+val session2 = for {
+  conn1 <- session1.close()
+  session2 <- conn1.openSession()
+} yield session2
 ```
 
-Bear in mind that if any exception occurs at any stage then it makes _fail fast_ the entire for-comprehension construct and the (future of) subscription immediately completes with failure. Therefore, you might need something like the following ``onComplete`` callback to pattern match the publication completion:
+You can close a session but keep the connection to open a session again.
 
+
+## Disconnect transports
 ```scala
-subscription.onComplete {
-  case Success(s) =>
-    println(s"Subscribed with ${s.subscriptionId}")
-  case Failure(ex) =>
-    system.log.error(ex, ex.getMessage)
-    for (t <- system.terminate()) System.exit(-1)
-}
+val conn2 = for {
+  client <- conn1.disconnect()
+  conn2 <- client.connect()
+} yield conn2
 ```
 
-A similar for-comprehension construct can be written for your client publisher:
+You can disconnect a connection but keep the client to connect again.
 
+## Terminate the client
 ```scala
-val publication = for {
-  session <- client.connectAndOpenSession(
-    url = "ws://some.host.net:8080/ws",
-    realm = "myapp.realm"
-  )
-  publication <- session.publish(
-    topic = "myapp.topic.people",
-    // acknowledge = false,
-    payload = Some(Payload("paolo", 40, true))
-  )
-}
-yield publication
+client.terminate().map(_ => System.exit(-1))
 ```
 

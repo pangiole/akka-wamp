@@ -28,7 +28,7 @@ class Validator(strictUris: Boolean) {
   /**
     * Validate roles in the given details dictionary.
     * 
-    * A [[Client]] must announce the roles it supports via "Hello.Details.roles|dict", 
+    * A Client must announce the roles it supports via "Hello.Details.roles|dict", 
     * with a key mapping to a "Hello.Details.roles.<role>|dict" where "<role>" can be:
     *
     * - "publisher"

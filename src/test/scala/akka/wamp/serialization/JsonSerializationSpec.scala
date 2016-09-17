@@ -464,6 +464,51 @@ class JsonSerializationSpec extends WordSpec
           case m => fail(s"Unexpected message $m")
         }
       }
+
+
+      //[UNREGISTER, Request|id, REGISTERED.Registration|id]
+      "fail for invalid UNREGISTER" in {
+        List(
+          """[66]""",
+          """[66,null]""",
+          """[66,1]""",
+          """[66,1,null]""",
+          """[66,0,2]""",
+          """[66,9007199254740993,2]""",
+          """[66,1,0]""",
+          """[66,1,9007199254740993]"""
+        ).foreach { text =>
+          a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
+        }
+      }
+      "succeed for valid UNREGISTER" in {
+        s.deserialize(source("""[66,9007199254740955,9007199254740992]""")) match {
+          case message: Unregister =>
+            message.requestId mustBe 9007199254740955L
+            message.registrationId mustBe 9007199254740992L
+          case _ => fail
+        }
+      }
+      
+
+      //[UNREGISTERED, UNREGISTER.Request|id]
+      "fail for invalid UNREGISTERED" in {
+        List(
+          """[67]""",
+          """[67,null]""",
+          """[67,0]""",
+          """[67,9007199254740993]"""
+        ).foreach { text =>
+          a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
+        }
+      }
+      "succeed for valid UNREGISTERD" in {
+        s.deserialize(source("""[67,9007199254740992]""")) match {
+          case message: Unregistered =>
+            message.requestId mustBe 9007199254740992L
+          case m => fail(s"Unexpected message $m")
+        }
+      }
     }
     
     
@@ -471,14 +516,14 @@ class JsonSerializationSpec extends WordSpec
     "serializing" should {
 
       "serialize HELLO" in {
-        val message = messages.Hello("akka.wamp.realm", Dict().withRoles(Roles.client))
+        val message = messages.Hello("akka.wamp.realm", Dict().addRoles(Roles.client))
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[1,"akka.wamp.realm",{"roles":{"callee":{},"caller":{},"publisher":{},"subscriber":{}}}]"""  
         }
       }
       
       "serialize WELCOME" in {
-        val message = messages.Welcome(1233242, Dict().withAgent("akka-wamp-0.7.0").withRoles(Roles.broker))
+        val message = messages.Welcome(1233242, Dict().setAgent("akka-wamp-0.7.0").addRoles(Roles.broker))
         whenReduced(s.serialize(message)) { json =>
           json mustBe """[2,1233242,{"agent":"akka-wamp-0.7.0","roles":{"broker":{}}}]"""
         }
@@ -556,6 +601,13 @@ class JsonSerializationSpec extends WordSpec
         }
       }
 
+      "serialize UNSUBSCRIBE" in {
+        val message =  messages.Unsubscribe(85346237, 984348843)
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[34,85346237,984348843]"""
+        }
+      }
+
       "serialize UNSUBSCRIBED" in {
         val message =  messages.Unsubscribed(85346237)
         whenReduced(s.serialize(message)) { json =>
@@ -577,6 +629,34 @@ class JsonSerializationSpec extends WordSpec
         val message3 = messages.Event(713845233, 5512315, Dict(), Some(Payload(List(), Dict("arg0"->"paolo","age"->40,"arg2"->true))))
         whenReduced(s.serialize(message3)) { json =>
           json mustBe """[36,713845233,5512315,{},[],{"arg0":"paolo","age":40,"arg2":true}]"""
+        }
+      }
+
+      "serialize REGISTER" in {
+        val message =  messages.Register(1, Dict(), "myapp.procedure")
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[64,1,{},"myapp.procedure"]"""
+        }
+      }
+
+      "serialize REGISTERED" in {
+        val message =  messages.Registered(713845233, 5512315)
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[65,713845233,5512315]"""
+        }
+      }
+
+      "serialize UNREGISTER" in {
+        val message =  messages.Unregister(85346237, 43784343)
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[66,85346237,43784343]"""
+        }
+      }
+
+      "serialize UNREGISTERED" in {
+        val message =  messages.Unregistered(85346237)
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[67,85346237]"""
         }
       }
     }

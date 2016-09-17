@@ -70,7 +70,7 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
     }
   }
 
-  it should "succeed open sessions in optimal scenarios" in { f =>
+  it should "succeed open multiple sessions on distinct connections" in { f =>
     f.withConnection { conn1 =>
       whenReady(conn1.openSession()) { session =>
         session.id mustBe 1
@@ -88,13 +88,18 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
   }
   
   
-  it should "disconnect a connection" in { f =>
+  it should "fail open multiple sessions on the same connection" in { f =>
+    pending
+  }
+  
+  
+  it should "succeed disconnect" in { f =>
     // TODO https://github.com/angiolep/akka-wamp/issues/29
     pending
-    f.withConnection { conn =>
-      /*whenReady(conn.disconnect()) { _ =>
+    f.withConnection { conn => 
+      whenReady(conn.disconnect()) { _ =>
         assert(true)
-      }*/
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
-package akka.wamp
+package akka.wamp.router
 
 import akka.actor._
+import akka.wamp._
 
 /**
   * The registration of a callee for a procedure it provides

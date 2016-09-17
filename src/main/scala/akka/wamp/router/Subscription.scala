@@ -1,6 +1,7 @@
-package akka.wamp
+package akka.wamp.router
 
 import akka.actor._
+import akka.wamp._
 
 /**
   * The subscription of a subscriber to a topic

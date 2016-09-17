@@ -6,51 +6,55 @@ import akka.wamp._
 import akka.wamp.messages.Hello
 import org.slf4j._
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
   * WAMP clients are components which implement any or all of the 
   * subscriber, publisher, caller and callee roles. They can establish 
   * WAMP connections to a router and open new sessions.
-  * 
+  *
   * {{{
-  *   import akka.actor._
   *   import akka.wamp.client._
-  *   
-  *   implicit val system = ActorSystem("myapp")
-  *   val client = Client()
+  *   val client = Client("myapp")
+  *
+  *   import scala.concurrent.Future
+  *   import client.executionContext
+  *
+  *   val conn: Future[Connection] = client
+  *     .connect(
+  *       url = "ws://localhost:8080/router",
+  *       subprotocol = "wamp.2.json"
+  *     )
   * }}}
   * 
-  * @param system the (implicit) actor system
+  * @param system is the Akka actor system
   */
-class Client private[client] ()(implicit system: ActorSystem) extends Peer {
+class Client private[client]()(implicit system: ActorSystem) extends Peer {
 
   /**
-    * The logger
+    * This client actor system name
     */
-  private val log = LoggerFactory.getLogger(classOf[Client])
-
+  val name = system.name
+  
   /**
-    * The execution context required by futures
+    * The execution context of futures
     */
-  private implicit val ec = system.dispatcher
-
-  /**
-    * Client configuration 
-    */
-  private val config = system.settings.config.getConfig("akka.wamp.client")
+  implicit val executionContext = system.dispatcher 
+  
+  /** The logger */
+  val log = system.log
 
   /**
     * Establish a WAMP connection to a router which is listening at 
     * the given URL and negotiate the given subprotocol
     * 
-    * @param url is the URL to connect to
-    * @param subprotocol is the subprotocol to negotiate
+    * @param url is the URL to connect to (default is "ws://localhost:8080/router")
+    * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
     * @return the (future of) connection or [[ConnectionException]]
     */
   def connect(
-    url: String, 
-    subprotocol: String = "wamp.2.json"): Future[Connection] = 
+    url: String = Client.defaultUrl, 
+    subprotocol: String = Client.defaultSubprotocol): Future[Connection] = 
   {
     val promise = Promise[Connection]
     val client = system.actorOf(Props(new ConnectionActor(promise)))
@@ -62,47 +66,71 @@ class Client private[client] ()(implicit system: ActorSystem) extends Peer {
   /**
     * Establish a WAMP connection to a router and open a new session
     *
-    * @param url is the URL to connect to
+    * @param url is the URL to connect to (default is "ws://localhost:8080/router")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
     * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
     * @param roles is this client roles set (default is all possible client roles) 
     * @return the (future of) session or [[ConnectionException]] or [[AbortException]] 
     */
-  def connectAndOpenSession(
-    url: String, 
-    subprotocol: String = "wamp.2.json", 
+  def openSession(
+    url: String = Client.defaultUrl, 
+    subprotocol: String = Client.defaultSubprotocol, 
     realm: Uri = Hello.defaultRealm,
     roles: Set[Role] = Roles.client): Future[Session] = 
   {
-    for {
-      conn <- connect(url, subprotocol)
-      ssn <- conn.openSession(realm, roles)
-    } yield ssn
+    connect(url, subprotocol).flatMap(
+      _.openSession(realm, roles)
+    )
+  }
+    
+
+  // TODO ConnectionActor will be stopped on terminate ...
+  
+  /**
+    * Terminate this client.
+    * 
+    * {{{
+    *   client.terminate().map { _ =>
+    *     // ... after terminate completes ...
+    *   }
+    * }}}
+    * 
+    * @return the (future of) terminated event
+    */
+  def terminate(): Future[Terminated] = {
+    system.terminate()
   }
 }
 
 /**
-  * Factory for [[Client]] instances.
+  * Factory for Client instances.
   *
   * {{{
-  *   import akka.actor._
   *   import akka.wamp.client._
-  *   import akka.wamp.serialization._
-  *
-  *   implicit val system = ActorSystem("myapp")
-  *   implicit val ec = system.dispatcher
-  *
-  *   val client = Client()
-  *   val conn: Future[Connection] = client.connect("ws://host:9999/router")
+  *   val client = Client("myapp")
   *   
+  *   import scala.concurrent.Future
+  *   import client.executionContext
+  *   
+  *   val conn: Future[Connection] = client
+  *     .connect(
+  *       url = "ws://localhost:8080/router",
+  *       subprotocol = "wamp.2.json"
+  *     )
   * }}}
   */
 object Client {
   /**
     * Create a new client instance
     * 
-    * @param system is the (implicit) actor system
+    * @param name the unique name of the actor system
     * @return a new client instance
     */
-  def apply()(implicit system: ActorSystem) = new Client()
+  def apply(name: String = defaultName): Client = new Client()(ActorSystem(name))
+  
+  val defaultName = "default"
+  
+  val defaultUrl = "ws://localhost:8080/router"
+  
+  val defaultSubprotocol = "wamp.2.json"
 }

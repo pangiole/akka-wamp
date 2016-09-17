@@ -7,7 +7,7 @@ import akka.wamp.router._
 import akka.wamp.serialization.Payload
 
 /**
-  * Common interface of WAMP messages exchanged by two peers during a [[Session]]
+  * Common interface of WAMP messages exchanged by two peers during a session
   */
 sealed trait Message extends AbstractMessage {
   protected val tpe: TypeCode
@@ -15,7 +15,7 @@ sealed trait Message extends AbstractMessage {
 
 
 /**
-  * Sent by a [[Client]] to initiate opening of a [[Session]] to a [[Router]]
+  * Sent by a client to initiate opening of a session to a router
   * attaching to a Realm.
   *
   * ```
@@ -27,7 +27,7 @@ sealed trait Message extends AbstractMessage {
   * - implementations only supporting subsets of functionality
   * - future extensibility
   *
-  * A [[Client]] must announce the roles it supports via "Hello.Details.roles|dict", 
+  * A client must announce the roles it supports via "Hello.Details.roles|dict", 
   * with a key mapping to a "Hello.Details.roles.<role>|dict" where "<role>" can be:
   *
   * - "publisher"
@@ -52,14 +52,14 @@ final object Hello {
 
 
 /**
-  * Sent by a [[Router]] to accept a [[Client]] and let it know the [[Session]] is now open
+  * Sent by a router to accept a client and let it know the session is now open
   *
   * ```
   * [WELCOME, Session|id, Details|dict]
   * ```
   *
   * @param sessionId is the session identifier
-  * @param details   is the session details
+  * @param details is the session details
   */
 final case class Welcome(sessionId: Id, details: Dict = Welcome.defaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Welcome.tpe
@@ -72,11 +72,10 @@ final object Welcome {
 }
 
 /**
-  * Sent by a peer to abort the opening of a [[Session]].
+  * Sent by a peer to abort the opening of a session.
   * No response is expected.
   *
-  * @param details is a dictionary (empty by default) that allows to 
-  *                provide additional and optional closing information
+  * @param details is a dictionary (empty by default) that allows to provide additional and optional closing information
   * @param reason is the reason given as URI (e.g. "wamp.error.no_such_realm")
   */
 final case class Abort(details: Dict = Abort.defaultDetails, reason: Uri)(implicit validator: Validator) extends Message {
@@ -91,17 +90,15 @@ final object Abort {
 
 
 /**
-  * Sent by a peer to close a previously opened [[Session]].  
+  * Sent by a peer to close a previously opened session.  
   * Must be echo'ed by the receiving peer.
   *
   * ```
   * [GOODBYE, Details|dict, Reason|uri]
   * ```
  *
-  * @param details is a dictionary (empty by default) that allows to 
-  *                provide additional and optional closing information
-  * @param reason is the reason ("wamp.error.close_realm" by default) 
-  *               given as URI
+  * @param details is a dictionary (empty by default) that allows to  provide additional and optional closing information
+  * @param reason is the reason ("wamp.error.close_realm" by default) given as URI
   */
 final case class Goodbye(details: Dict = Goodbye.defaultDetails, reason: Uri = Goodbye.defaultReason)(implicit validator: Validator) extends Message {
   protected val tpe = Goodbye.tpe
@@ -152,12 +149,10 @@ final object Error {
   * [PUBLISH, Request|id, Options|dict, Topic|uri, Arguments|list, ArgumentsKw|dict]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Publisher and used 
-  *                  to correlate the Broker's response with the request.
-  * @param topic     is the topic published to.
-  * @param options   is a dictionary that allows to provide additional publication 
-  *                  request details in an extensible way.
-  * @param payload   is either a list of any arguments or a key-value-pairs set 
+  * @param requestId is a random, ephemeral identifier chosen by the Publisher and used  to correlate the Broker's response with the request.
+  * @param topic is the topic published to.
+  * @param options is a dictionary that allows to provide additional publication  request details in an extensible way.
+  * @param payload  is either a list of any arguments or a key-value-pairs set 
   */
 final case class Publish(requestId: Id, options: Dict = Publish.defaultOptions, topic: Uri, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Publish.tpe
@@ -195,11 +190,9 @@ final object Published {
   * [SUBSCRIBE, Request|id, Options|dict, Topic|uri]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Subscriber and used to 
-  *                  correlate the Broker's response with the request
-  * @param options   is a dictionary that allows to provide additional subscription 
-  *                  request details in a extensible way
-  * @param topic     is the topic the Subscribe  wants to subscribe to 
+  * @param requestId is a random, ephemeral identifier chosen by the Subscriber and used to  correlate the Broker's response with the request
+  * @param options is a dictionary that allows to provide additional subscription  request details in a extensible way
+  * @param topic is the topic the Subscribe  wants to subscribe to 
   */
 final case class Subscribe(requestId: Id, options: Dict = Subscribe.defaultOptions, topic: Uri)(implicit validator: Validator) extends Message {
   protected val tpe = Subscribe.tpe
@@ -220,8 +213,8 @@ final object Subscribe {
   * [SUBSCRIBED, SUBSCRIBE.Request|id, Subscription|id]
   * ```
   *
-  * @param requestId      is the ID from the original Subscribe request
-  * @param subscriptionId is an ID chosen by the Broker for the subscription
+  * @param requestId is the identifier from the original Subscribe request
+  * @param subscriptionId is an identifier chosen by the Broker for the subscription
   */
 final case class Subscribed(requestId: Id, subscriptionId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Subscribed.tpe
@@ -238,10 +231,8 @@ final object Subscribed {
   * [UNSUBSCRIBE, Request|id, SUBSCRIBED.Subscription|id]
   * ```
   *
-  * @param requestId      is a random, ephemeral ID chosen by the Unsubscribe 
-  *                       and used to correlate the Broker's response with the request
-  * @param subscriptionId is the ID for the subscription to unsubscribe from, 
-  *                       originally handed out by the Broker to the Subscriber
+  * @param requestId  is a random, ephemeral identifier chosen by the Unsubscribe and used to correlate the Broker's response with the request
+  * @param subscriptionId is the identifier for the subscription to unsubscribe from, originally handed out by the Broker to the Subscriber
   */
 final case class Unsubscribe(requestId: Id, subscriptionId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Unsubscribe.tpe
@@ -261,7 +252,7 @@ final object Unsubscribe {
   * [UNSUBSCRIBED, UNSUBSCRIBE.Request|id]
   * ```
   *
-  * @param requestId is the ID from the original Subscribed request
+  * @param requestId is the identifier from the original Subscribed request
   */
 final case class Unsubscribed(requestId: Id) (implicit validator: Validator) extends Message {
   protected val tpe = Unsubscribed.tpe
@@ -280,10 +271,10 @@ final object Unsubscribed {
   * [EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
   * ```
   *
-  * @param subscriptionId is the ID for the subscription under which the Subscribe 
-  *                       receives the event (the ID for the subscription originally 
+  * @param subscriptionId is the identifier for the subscription under which the Subscribe 
+  *                       receives the event (the identifier for the subscription originally 
   *                       handed out by the Broker to the Subscriber.
-  * @param publicationId  is the ID of the publication of the published event
+  * @param publicationId  is the identifier of the publication of the published event
   * @param payload        is either a list of any arguments or a key-value-pairs set
   * @param details        is a dictionary that allows to provide additional event details 
   *                       in an extensible way.
@@ -301,13 +292,13 @@ final object Event {
 
 
 /**
-  * Register request sent by a Callee to a Dealer to register a Procedure.
+  * Register request sent by a callee to a dealer to register a procedure endpoint
   *
   * ```
   * [REGISTER, Request|id, Options|dict, Procedure|uri]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Callee and 
+  * @param requestId is a random, ephemeral identifier chosen by the Callee and 
   *                  used to correlate the Dealer's response with the request
   * @param options   is a dictionary that allows to provide additional registration 
   *                  request details in a extensible way
@@ -326,14 +317,14 @@ final object Register {
 
 
 /**
-  * Acknowledge sent by a [[Dealer]] to a [[Callee]] to acknowledge a [[Registration]]
+  * Acknowledge sent by a dealer to a callee to acknowledge a registration
   *
   * ```
   * [REGISTERED, REGISTER.Request|id, Registration|id]
   * ```
   *
-  * @param requestId      is the ID from the original [[Register]] request
-  * @param registrationId is an ID chosen by the [[Dealer]] for the [[Registration]]
+  * @param requestId is the identifier from the original register request
+  * @param registrationId is an identifier chosen by the dealer for the registration
   */
 final case class Registered(requestId: Id, registrationId: Id)(implicit validator: Validator) extends Message {
   protected val tpe = Registered.tpe
@@ -347,8 +338,46 @@ final object Registered {
 
 
 /**
-  * Invocation dispatched by the [[Broker]] to the [[Roles.callee]] providing
-  * the [[Registration]] the invocation was matching.
+  * Unregister request sent by a callee to a dealer to unregister a procedure endpoint.
+  * 
+  * ```
+  * [UNREGISTER, Request|id, REGISTERED.Registration|id]
+  * ```
+  *
+  * @param requestId is a random, ephemeral identifier chosen by the callee and used to correlate the dealer's response with the request.
+  * @param registrationId is the identifier for the registration to revoke, originally handed out by the dealer to the callee.
+  */
+final case class Unregister(requestId: Id, registrationId: Id)(implicit validator: Validator) extends Message {
+  protected val tpe = Unregister.tpe
+  validator.validate(requestId)
+  validator.validate(registrationId)
+}
+final object Unregister {
+  val tpe = 66
+}
+
+
+/**
+  *
+  * Acknowledge sent by a dealer to a callee to acknowledge unregistration.
+  *
+  * ```
+  * [UNREGISTERED, UNREGISTER.Request|id]
+  * ```
+  *
+  * @param requestId is the identifier from the original Subscribed request
+  */
+final case class Unregistered(requestId: Id)(implicit validator: Validator) extends Message {
+  protected val tpe = Unregistered.tpe
+  validator.validate(requestId)
+}
+final object Unregistered {
+  val tpe = 67
+}
+
+
+/**
+  * Invocation dispatched by the dealer to the callee providing the registration the invocation was matching.
   *
   * ```
   * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict]
@@ -356,8 +385,8 @@ final object Registered {
   * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict, CALL.Arguments|list, CALL.ArgumentsKw|dict]
   * ```
   *
-  * @param requestId is a random, ephemeral ID chosen by the Dealer and used to correlate the _Callee's_ response with the request.
-  * @param registrationId is the registration ID under which the procedure was registered at the Dealer.
+  * @param requestId is a random, ephemeral identifier chosen by the Dealer and used to correlate the _Callee's_ response with the request.
+  * @param registrationId is the registration identifier under which the procedure was registered at the Dealer.
   * @param details        is a dictionary that allows to provide additional invocation request details in an extensible way 
   * @param payload        is either the original list of positional call arguments or dictionary of keyword arguments as provided by the Caller.
   */

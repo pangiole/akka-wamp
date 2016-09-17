@@ -81,11 +81,6 @@ private class Manager extends Actor {
             client ! Wamp.ConnectionFailed(new Exception(upgrade.response.toString))
           }
         }
-
-        upgradeResponse.onFailure {
-          case ex: Throwable =>
-            client ! Wamp.ConnectionFailed(ex)
-        }
       } catch {
         case ex: Throwable =>
           client ! Wamp.ConnectionFailed(ex)

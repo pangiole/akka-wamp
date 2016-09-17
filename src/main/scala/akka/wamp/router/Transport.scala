@@ -15,7 +15,7 @@ import akka.wamp.serialization.SerializationFlows
 
 /**
   * This router.Transport connects two [[Peer]]s and provides a WebSocket channel
-  * over which JSON [[Message]]s for a [[Session]] can flow in both directions.
+  * over which JSON Messages for a [[Session]] can flow in both directions.
   *
   * @param router is the first peer that will be connected by this transport
   */

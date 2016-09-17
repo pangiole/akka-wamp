@@ -97,7 +97,7 @@ object Wamp extends ExtensionId[WampExtension] with ExtensionIdProvider {
     */
   final case class Connected(peer: ActorRef) extends Signal
 
-  final case class ConnectionFailed(cause: Throwable) extends Signal
+  final case class ConnectionFailed(ex: Throwable) extends Signal
   
   final case object Disconnected extends Signal
   

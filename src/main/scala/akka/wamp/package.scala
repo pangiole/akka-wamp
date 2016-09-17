@@ -13,12 +13,13 @@ import scala.util.Random.{nextDouble => rnd}
 package object wamp {
 
   /**
-    * A Peer could be either a [[Client]] or a [[Router]]
+    * A Peer could be either a Client or a [[Router]]
     *  - it must implement one [[Role]], and
     *  - may implement more [[Role]]s.
     */
   type Role = String
 
+  // TODO use a Scala enumeration (or sealed trait)
   object Roles {
     val subscriber = "subscriber"
     val publisher = "publisher"
@@ -43,15 +44,14 @@ package object wamp {
   
   final object TypeCode {
     val all = List(
-      Hello.tpe, 
-      Welcome.tpe, 
-      Abort.tpe, 
-      Goodbye.tpe,
+      Hello.tpe, Welcome.tpe, Abort.tpe, Goodbye.tpe,
       Error.tpe,
       Publish.tpe, Published.tpe,
       Subscribe.tpe, Subscribed.tpe,
       Unsubscribe.tpe, Unsubscribed.tpe,
-      Event.tpe
+      Event.tpe,
+      Register.tpe, Registered.tpe,
+      Unregister.tpe, Unregistered.tpe
     )
     def isValid(typeCode: TypeCode): Boolean = all.contains(typeCode)
   }
@@ -88,18 +88,18 @@ package object wamp {
   }
 
   implicit class RichDict(dict: Dict) {
-    def withRoles(roles: Set[Role]): Dict = {
-      withRoles(roles.toList: _*)
+    def addRoles(roles: Set[Role]): Dict = {
+      addRoles(roles.toList: _*)
     }
-    def withRoles(roles: Role*): Dict = {
+    def addRoles(roles: Role*): Dict = {
       dict ++ Map("roles" -> roles.sorted.map(r => (r -> Map())).toMap)
     }
 
-    def withAgent(agent: String): Dict = {
+    def setAgent(agent: String): Dict = {
       dict + ("agent" -> agent)
     }
     
-    def withAcknowledge(bool: Boolean = true): Dict = {
+    def setAck(bool: Boolean = true): Dict = {
       dict + ("acknowledge" -> bool)
     }
 

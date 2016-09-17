@@ -16,21 +16,16 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     with ParallelTestExecution
     with ScalaFutures {
 
+  
+  
   implicit val defaultPatience =
     PatienceConfig(timeout = 16 seconds, interval = 100 millis)
 
-  case class FixtureParam(router: TestActorRef[Router], url: String) {
-    // create a new client to test with
-    def withClient(testCode: Client => Unit) = {
-      val client = Client() 
-      testCode(client)
-    }
-    // create a new client/connection to test with
+  case class FixtureParam(client: Client, router: TestActorRef[Router], url: String) {
+    // create a new connection to test with
     def withConnection(testCode: Connection => Unit) = {
-      withClient { client =>
-        whenReady(client.connect(url)) { conn =>
-          testCode(conn)
-        }  
+      whenReady(client.connect(url)) { conn =>
+        testCode(conn)
       }
     }
     // create a new client/connection/session to test with
@@ -54,7 +49,8 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     try {
       IO(Wamp) ! Bind(router)
       val bound = listener.expectMsgType[Bound](16 seconds)
-      val theFixture = FixtureParam(router, bound.url)
+      val client = new Client()(system)
+      val theFixture = FixtureParam(client, router, bound.url)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {

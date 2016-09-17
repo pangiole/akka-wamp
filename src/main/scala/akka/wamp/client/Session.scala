@@ -1,35 +1,29 @@
 package akka.wamp.client
 
-import akka.Done
 import akka.actor.Actor.Receive
 import akka.wamp._
 import akka.wamp.messages._
-import akka.wamp.serialization._
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
 /**
   * WAMP sessions are established over a WAMP connection.
   * 
   * {{{
-  *   import akka.actor._
   *   import akka.wamp.client._
+  *   val client = Client("myapp")
   *
-  *   implicit val system = ActorSystem("myapp")
-  *   implicit val ec = system.dispatcher
+  *   import scala.concurrent.Future
+  *   import client.executionContext
   *   
-  *   val client = Client()
   *   val session: Future[Session] = 
-  *     client.connect(
-  *       url = "ws://host:9999/router", 
-  *       subprotocol = "wamp.2.json"
-  *     )
-  *     .flatMap(_.openSession(
+  *     client.openSession(
+  *       url = "ws://localhost:8080/router", 
+  *       subprotocol = "wamp.2.json",
   *       realm = "myapp.realm", 
   *       roles = Set(Roles.publisher)
-  *     ))
+  *     )
   * }}}
   * 
   * A session is joined to a realm on a router. Routing occurs only
@@ -50,17 +44,17 @@ import scala.concurrent.{Future, Promise}
   *       )(handler))
   * }}}
   * 
-  * @param conn is the WAMP connection
+  * @param connection is the WAMP connection
   * @param welcome is the WELCOME message
   * @param validator is WAMP types validator
   */
-class Session private[client](conn: Connection, welcome: Welcome)(implicit validator: Validator) 
-  extends SessionLike 
+class Session private[client](val connection: Connection, welcome: Welcome)(implicit val validator: Validator) 
+  extends SessionLike with Subscriber with Publisher with Callee
     with Scope.Session 
 {
-  import conn.{handleGoodbye, handleUnexpected}
+  import connection.{handleGoodbye, handleUnexpected}
   
-  private val log = LoggerFactory.getLogger(classOf[Connection])
+  protected val log = LoggerFactory.getLogger(classOf[Connection])
 
   /**
     * This session identifier
@@ -72,26 +66,12 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
     */
   val details = welcome.details
   
-  /** The subscriptions map */
-  private var subscriptions = mutable.Map.empty[Id, Promise[Subscribed]]
-
-  /** The event handler map */
-  private var eventHandlers = mutable.Map.empty[Id, EventHandler]
-
-  /** The event publications map */
-  private var publications = mutable.Map.empty[Id, Promise[Either[Done, Published]]]
-
-  /** The procedure registrations map */
-  private var registrations = mutable.Map.empty[Id, Promise[Registered]]
-
-  /** The procedure invocations map */
-  private var invocationHandlers = mutable.Map.empty[Id, InvocationHandler]
-  
   /** The boolean switch to determine if this session is closed */
   private var closed = false
 
   /**
     * If this session is closed
+    *
     * @return true or false
     */
   def isClosed = closed
@@ -132,196 +112,46 @@ class Session private[client](conn: Connection, welcome: Welcome)(implicit valid
     * 
     * @param reason is the reason to close (default is ``wamp.error.close_realm``)
     * @param details are the details to send (default is empty)
-    * @return the (future of) message replied by the router
+    * @return the (future of) connection
     */
-  def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Goodbye] = {
-    withPromise[Goodbye] { promise =>
+  def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Connection] = {
+    withPromise[Connection] { promise =>
       def handleGoodbye: Receive = {
         case msg: Goodbye =>
           // upon receiving goodbye message FROM the router 
           log.debug("<-- {}", msg)
           doClose()
-          promise.success(msg)
+          promise.success(connection)
       }
-      conn.become(
-        handleGoodbye orElse
-          handleUnexpected(Some(promise))
+      connection.become(
+        handleGoodbye orElse 
+        handleUnexpected
       )
       // send goodbye message TO the router
-      conn ! Goodbye(details, reason)
+      connection ! Goodbye(details, reason)
     }
+    // TODO dispose all pending promises
   }
   
   
   // TODO def onClose() = { /* when the router sends GOODBYE */ }
-
-
-  /**
-    * Subscribe to the given topic so that the given handler will be 
-    * triggered on events.
-    * 
-    * {{{
-    *   ,---------.          ,------.             ,----------.
-    *   |Publisher|          |Broker|             |Subscriber|
-    *   `----+----'          `--+---'             `----+-----'
-    *        |                  |                      |
-    *        |                  |                      |
-    *        |                  |       SUBSCRIBE      |
-    *        |                  | <---------------------
-    *        |                  |                      |
-    *        |                  |  SUBSCRIBED or ERROR |
-    *        |                  | --------------------->
-    *        |                  |                      |
-    *        |                  |                      |
-    *        |                  |                      |
-    *        |                  |                      |
-    *        |                  |      UNSUBSCRIBE     |
-    *        |                  | <---------------------
-    *        |                  |                      |
-    *        |                  | UNSUBSCRIBED or ERROR|
-    *        |                  | --------------------->
-    *   ,----+----.          ,--+---.             ,----+-----.
-    *   |Publisher|          |Broker|             |Subscriber|
-    *   `---------'          `------'             `----------'
-    * }}}
-    * 
-    * @param topic is the topic to subscribe to
-    * @param options is the option dictionary (default is empty)
-    * @param handler is the handler to trigger on events
-    * @return the (future of) subscription 
-    */
-  def subscribe(topic: Uri, options: Dict = Subscribe.defaultOptions)(handler: EventHandler): Future[Subscribed] = {
-    withPromise[Subscribed] { promise =>
-      val msg = Subscribe(requestId = nextId(), options, topic)
-      subscriptions += (msg.requestId -> promise)
-      conn.become(
-        handleGoodbye(session = this) orElse
-          handleError(subscriptions) orElse
-            handleSubscribed(subscriptions, handler) orElse
-              handleEvent(eventHandlers) orElse
-                handleUnexpected(promise = Some(promise))
-      )
-      conn ! msg
-    }
-  }
-
-
-  /**
-    * Publish an event to the given topic with the given (option of) payload
-    * 
-    * {{{
-    *    ,---------.          ,------.          ,----------.
-    *   |Publisher|          |Broker|          |Subscriber|
-    *   `----+----'          `--+---'          `----+-----'
-    *        |     PUBLISH      |                   |
-    *        |------------------>                   |
-    *        |                  |                   |
-    *        |PUBLISHED or ERROR|                   |
-    *        |<------------------                   |
-    *        |                  |                   |
-    *        |                  |       EVENT       |
-    *        |                  | ------------------>
-    *   ,----+----.          ,--+---.          ,----+-----.
-    *   |Publisher|          |Broker|          |Subscriber|
-    *   `---------'          `------'          `----------'
-    * }}}
-    * 
-    * @param topic is the topic to publish to
-    * @param ack is the acknowledge boolean switch (default is ``false``)
-    * @param payload is the (option of) payload (default is ``None``)
-    * @return either done or a (future of) publication 
-    */
-  def publish(topic: Uri, ack: Boolean = false, payload: Option[Payload] = None): Future[Either[Done, Published]] =  {
-    withPromise[Either[Done, Published]] { promise =>
-      val message = Publish(requestId = nextId(), Dict().withAcknowledge(ack), topic, payload)
-      publications += (message.requestId -> promise)
-      if (!ack) {
-        conn ! message
-        promise.success(Left(Done))
-      }
-      else {
-        conn.become(
-          handleGoodbye(session = this) orElse
-            handleError(publications) orElse
-              handlePublished(publications) orElse
-                handleUnexpected(promise = Some(promise))
-        )
-        conn ! message
-      } 
-    }
-  }
-
-  
-  def register(procedure: Uri, options: Dict = Register.defaultOptions)(handler: InvocationHandler): Future[Registered] = {
-    withPromise[Registered] { promise =>
-      val msg = Register(requestId = nextId(), options, procedure)
-      registrations += (msg.requestId -> promise)
-      conn.become(
-        handleGoodbye(session = this) orElse
-          handleError(registrations) orElse
-          handleRegistered(registrations, handler) orElse
-          handleInvocation(invocationHandlers) orElse
-          handleUnexpected(promise = Some(promise))
-      )
-      conn ! msg
-    }
-  }
   
   
-  
-  private[client] def handleError[T](promises: mutable.Map[Id, Promise[T]]): Receive = {
-    case msg: Error =>
-      log.debug("<-- {}", msg)
-      if (promises.isDefinedAt(msg.requestId)) {
-        promises(msg.requestId).failure(new Throwable(msg.toString()))
-        promises - msg.requestId
-      }
-  }
-  
-
-  private[client] def handleSubscribed(promises: mutable.Map[Id, Promise[Subscribed]], handler: EventHandler): Receive = {
-    case msg: Subscribed =>
-      log.debug("<-- {}", msg)
-      promises.get(msg.requestId).map { p =>
-        eventHandlers += (msg.subscriptionId -> handler)
-        p.success(msg)
-        promises - msg.requestId
-      }
+  def handle: Receive = {
+    handleGoodbye(session = this) orElse
+      handleSubscriptionSuccess orElse
+      handleSubscriptionError orElse
+      handleUnsubscribed orElse 
+      handleUnsubscribedError orElse
+      handlePublicationSuccess orElse
+      handlePublicationError orElse
+      handleEvent orElse
+      handleRegistrationSuccess orElse
+      handleRegistrationError orElse
+      // TODO handleUnregisterSuccess orElse handleUnregisterError 
+      handleInvocation orElse
+      handleUnexpected
   }
 
-  private[client] def handlePublished(promises: mutable.Map[Id, Promise[Either[Done, Published]]]): Receive = {
-    case msg: Published =>
-      log.debug("<-- {}", msg)
-      promises.get(msg.requestId).map { p =>
-        p.success(Right(msg))
-        promises - msg.requestId
-      }
-  }
-
-  private[client] def handleEvent(handlers: mutable.Map[Id, EventHandler]): Receive = {
-    case event: Event =>
-      log.debug("<-- {}", event)
-      handlers.get(event.subscriptionId).map(_(event))
-  }
-
-  private[client] def handleRegistered(promises: mutable.Map[Id, Promise[Registered]], handler: InvocationHandler): Receive = {
-    case msg: Registered =>
-      log.debug("<-- {}", msg)
-      promises.get(msg.requestId).map { p =>
-        invocationHandlers += (msg.registrationId -> handler)
-        p.success(msg)
-        promises - msg.requestId
-      }
-  }
-
-  
-  // TODO private[client] def handleCall
-
-  
-  private[client] def handleInvocation(handlers: mutable.Map[Id, InvocationHandler]): Receive = {
-    case invocation: Invocation =>
-      log.debug("<-- {}", invocation)
-      handlers.get(invocation.requestId).map(_(invocation))
-  }
 }
 

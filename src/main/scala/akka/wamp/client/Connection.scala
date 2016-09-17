@@ -1,5 +1,6 @@
 package akka.wamp.client
 
+import akka.Done
 import akka.actor.Actor.Receive
 import akka.actor._
 import akka.wamp._
@@ -12,17 +13,17 @@ import scala.concurrent.{Future, Promise}
   * WAMP connections are established by clients to a router.
   * 
   * {{{
-  *   import akka.actor._
   *   import akka.wamp.client._
+  *   val client = Client("myapp")
   *
-  *   implicit val system = ActorSystem("myapp")
-  *   implicit val ec = system.dispatcher
+  *   import scala.concurrent.Future
+  *   import client.executionContext
   *
-  *   val client = Client()
-  *   val conn: Future[Connection] = client.connect(
-  *     url = "ws://localhost:8080/router",
-  *     subprotocol = "wamp.2.json"
-  *   )
+  *   val conn: Future[Connection] = client
+  *     .connect(
+  *       url = "ws://localhost:8080/router",
+  *       subprotocol = "wamp.2.json"
+  *     )
   * }}}
   * 
   * WAMP connections can use any transport that is message-based, ordered,
@@ -31,47 +32,6 @@ import scala.concurrent.{Future, Promise}
   * A WAMP session can be opened during the WAMP connection lifecycle, but
   * only one at the time.
   * 
-  * {{{
-  *    ,------.                                    ,------.
-  *    | Peer |                                    | Peer |
-  *    `--+---'                                    `--+---'
-  *       |               TCP established             |
-  *       |<----------------------------------------->|
-  *       |                                           |
-  *       |               TLS established             |
-  *       |+<--------------------------------------->+|
-  *       |+                                         +|
-  *       |+           WebSocket established         +|
-  *       |+|<------------------------------------->|+|
-  *       |+|                                       |+|
-  *       |+|            WAMP established           |+|
-  *       |+|+<----------------------------------->+|+|
-  *       |+|+                                     +|+|
-  *       |+|+                                     +|+|
-  *       |+|+            WAMP closed              +|+|
-  *       |+|+<----------------------------------->+|+|
-  *       |+|                                       |+|
-  *       |+|                                       |+|
-  *       |+|            WAMP established           |+|
-  *       |+|+<----------------------------------->+|+|
-  *       |+|+                                     +|+|
-  *       |+|+                                     +|+|
-  *       |+|+            WAMP closed              +|+|
-  *       |+|+<----------------------------------->+|+|
-  *       |+|                                       |+|
-  *       |+|           WebSocket closed            |+|
-  *       |+|<------------------------------------->|+|
-  *       |+                                         +|
-  *       |+              TLS closed                 +|
-  *       |+<--------------------------------------->+|
-  *       |                                           |
-  *       |               TCP closed                  |
-  *       |<----------------------------------------->|
-  *       |                                           |
-  *    ,--+---.                                    ,--+---.
-  *    | Peer |                                    | Peer |
-  *    `------'                                    `------'
-  * }}}
   *
   * @param client is the client actor reference
   * @param router is the router representative actor reference
@@ -117,11 +77,11 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
   def openSession(realm: Uri = Hello.defaultRealm, roles: Set[Role] = Roles.client): Future[Session] = {
     val promise = Promise[Session]
     try {
-      val hello = Hello(realm, Dict().withRoles(roles.toList: _*))
+      val hello = Hello(realm, Dict().addRoles(roles.toList: _*))
       become {
         handleWelcome(promise) orElse
         handleAbort(promise) orElse
-        handleUnexpected(promise = Some(promise))
+        handleUnexpected
       }
       log.debug("--> {}", hello)
       routerRef ! hello
@@ -134,7 +94,12 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
   }
   
   // TODO https://github.com/angiolep/akka-wamp/issues/29
-  // def disconnect(): Future[Done]
+  /**
+    * Disestablish this connection
+    * 
+    * @return
+    */
+  def disconnect(): Future[Done] = ???
   
   /**
     * Process any message received by the client
@@ -165,10 +130,7 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
     case message: Welcome =>
       log.debug("<-- {}", message)
       val session = new Session(this, message)
-      become {
-        handleGoodbye(session) orElse
-        handleUnexpected(None)
-      }
+      become(session.handle)
       promise.success(session)
   }
 
@@ -184,9 +146,8 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
   }
 
   /**
-    * Handle an incoming GOODBYE message
-    * by sending a GOODBYE reply to the router
-    * and closing the given session
+    * Handle an incoming GOODBYE message by sending a GOODBYE reply 
+    * to the router and closing the given session
     */
   private[client] def handleGoodbye(session: Session): Receive = {
     case message: Goodbye =>
@@ -200,19 +161,9 @@ class Connection private[client](client: ActorRef, router: ActorRef)(implicit va
       routerRef ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
       session.doClose()
   }
-
-
-  /**
-    * Handle any unexpected message by 
-    * by failing the given (option of) promise of session
-    */
-  private[client] def handleUnexpected[T](promise: Option[Promise[T]]): Receive = {
-    case message =>
-      log.warn("!!! {}", message)
-      promise.map { p =>
-        if (!p.isCompleted)
-          p.failure(new SessionException(s"unexpected $message"))
-      }
+  
+  private[client] def handleUnexpected: Receive = {
+    case message => log.warn("!!! {}", message)
   }
 }
 

@@ -20,31 +20,29 @@ Connect a transport, open a session, subscribe a topic, receive events, register
 ### Publisher/Subscriber
 
 ```scala
-import akka.actor._
-import akka.wamp.client._
-import akka.wamp.messages._
-import akka.wamp.serialization._
-
 object PubSubApp extends App {
-  implicit val system = ActorSystem("myapp")
-  implicit val ec = system.dispatcher
 
-  val session = Client()
-    .connectAndOpenSession("ws://host.net:9999/router")
+  import akka.wamp.client._
+  val client = Client()
   
-  val handler: EventHandler = { event =>
-    event.payload.map(_.arguments.map(println))
-  }
-  for { 
-    ssn <- session
-    sub <- ssn.subscribe("myapp.topic")(handler)
-  } yield ()
-
-  val payload = Payload(List("paolo", 40, true))
+  import scala.concurrent.Future
+  import client.executionContext
+  
   for {
-    ssn <- session
-    pub <- ssn.publish("myapp.topic", ack=true, Some(payload))
-  } yield ()
+    session <- client
+      .openSession(
+        url = "ws://localhost:8080/router",
+        subprotocol = "wamp.2.json",
+        realm = "akka.wamp.realm",
+        roles = Set("subscriber"))
+    subscription <- session
+      .subscribe(
+        topic = "myapp.topic",
+        options = Dict()) {
+        event =>
+          event.payload.map(_.arguments.map(println))
+        }
+    } yield ()
 }
 ```
 

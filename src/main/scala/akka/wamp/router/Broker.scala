@@ -4,28 +4,28 @@ import akka.actor._
 import akka.wamp.client.Client
 import akka.wamp._
 import akka.wamp.messages._
+import scala.collection.mutable
 
 /**
-  * The broker routes [[Event]]s incoming from [[Client]]s with [[Roles.publisher]] to 
-  * [[Client]]s with [[Roles.subscriber]] that are [[Subscribed]] to respective [[Topic]]s
+  * The broker routes [[Event]]s incoming from Clients with [[Roles.publisher]] to 
+  * Clients with [[Roles.subscriber]] that are [[Subscribed]] to respective [[Topic]]s
   */
 trait Broker { this: Router =>
 
   /** Map of subscriptions. Each entry is for one topic only and it can have one or many subscribers */
-  private[router] var subscriptions = Map.empty[Id, Subscription]
+  private[router] val subscriptions = mutable.Map.empty[Id, Subscription]
   
   /** Set of publication identifiers */
-  private[router] var publications = Set.empty[Id]
+  private[router] val publications = mutable.Set.empty[Id]
 
 
   /** Handle publications lifecycle messages such as: PUBLISH */
   private[router] def handlePublications: Receive = {
     case message @ Publish(requestId, options, topic, payload) =>
       ifSessionOpen(message) { session =>
-        val publisher = session.client
         val ack = options.get("acknowledge") == Some(true)
         if (session.roles.contains(Roles.publisher)) {
-          val publicationId = scopes('global).nextId(excludes = publications)
+          val publicationId = scopes('global).nextId(excludes = publications.toSet)
           /**
             * By default, publications are unacknowledged, and the Broker will
             * not respond, whether the publication was successful indeed or not.
@@ -39,7 +39,7 @@ trait Broker { this: Router =>
                 * Actually, no subscribers has subscribed to the given topic.
                 */
               if (ack) {
-                publisher ! Published(requestId, publicationId)
+                session.client ! Published(requestId, publicationId)
               }
             case subscription :: Nil =>
               /**
@@ -50,12 +50,12 @@ trait Broker { this: Router =>
                 * Note that the publisher of an event will never receive the published 
                 * event even if the publisher is also a subscriber of the topic published to.
                 */
-              subscription.subscribers.filter(_ != publisher).foreach { subscriber =>
+              subscription.subscribers.filter(_ != session.client).foreach { subscriber =>
                 publications += publicationId
                 subscriber ! Event(subscription.id, publicationId, Dict(), payload)
               }
               if (ack) {
-                publisher ! Published(requestId, publicationId)
+                session.client ! Published(requestId, publicationId)
               }
               
             case _ => 
@@ -64,7 +64,8 @@ trait Broker { this: Router =>
         }
         else {
           if (ack) {
-            publisher ! Error(Publish.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_publisher_role")
+            // TODO Lack of specification! What to do? File an issue on GitHub
+            session.client ! Error(Publish.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_publisher_role")
           }
         }
       }
@@ -83,17 +84,17 @@ trait Broker { this: Router =>
               /**
                 * No subscribers have subscribed to the given topic yet.
                 */
-              val subscriptionId = scopes('router).nextId(excludes = subscriptions.keySet)
+              val subscriptionId = scopes('router).nextId(excludes = subscriptions.toMap.keySet)
               subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(session.client), topic))
               session.client ! Subscribed(requestId, subscriptionId)
             }
             case subscription :: Nil => {
               if (!subscription.subscribers.contains(session.client)) {
                 /**
-                  * In case of receiving a SUBSCRIBE message from a client to the 
-                  * topic already subscribed by others, broker should update the 
-                  * subscribers set of the existing subscription and answer with 
-                  * SUBSCRIBED message, containing the existing subscription ID. 
+                  * In case of receiving a SUBSCRIBE message from a client2 to the 
+                  * topic already subscribed by some other client1, broker should 
+                  * update the subscribers set of the existing subscription and 
+                  * answer SUBSCRIBED the existing subscription ID. 
                   */
                 subscriptions += (subscription.id -> subscription.copy(subscribers = subscription.subscribers + session.client))
               }
@@ -112,6 +113,7 @@ trait Broker { this: Router =>
           }
         }
         else {
+          // TODO Lack of specification! What to do? File an issue on GitHub
           session.client ! Error(Subscribe.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_subscriber_role")
         }
       }
@@ -120,8 +122,8 @@ trait Broker { this: Router =>
       ifSessionOpen(message) { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
-            unsubscribe(session.client, subscription)
-            session.client ! Unsubscribed(requestId)
+            if (unsubscribe(session.client, subscription)) session.client ! Unsubscribed(requestId)
+            else () // TODO Lack of specification! What to reply if session.client was NOT subscribed?
           case None =>
             session.client ! Error(Unsubscribe.tpe, requestId, Error.defaultDetails, "wamp.error.no_such_subscription")
         }
@@ -135,16 +137,18 @@ trait Broker { this: Router =>
     * 
     * @param client is the client actor reference
     * @param subscription is the subscription the client has to be removed from
+    * @return ``true`` if given client was subscribed, ``false`` otherwise                     
     */
-  private[router] def unsubscribe(client: ActorRef, subscription: Subscription) = {
+  private[router] def unsubscribe(client: ActorRef, subscription: Subscription): Boolean = {
     if (subscription.subscribers.contains(client)) {
       if (subscription.subscribers.size == 1) {
         subscriptions -= subscription.id
       } else {
         subscriptions += (subscription.id -> subscription.copy(subscribers = subscription.subscribers - client))
       }
+      true
     }
+    else false
   }
-
 }
 

@@ -150,6 +150,8 @@ class JsonSerialization() extends Serialization {
             case Event.tpe        => make(Event("SUBSCRIBED.Subscription"|Id, "PUBLISHED.Publication"|Id, "Details"|Dict, "Arguments"|Payload))
             case Register.tpe     => make(Register("Request"|Id, "Options"|Dict, "Procedure"|Uri))
             case Registered.tpe   => make(Registered("REGISTER.Request"|Id, "Registration"|Id))
+            case Unregister.tpe   => make(Unregister("Request"|Id, "REGISTER.Registration"|Id))
+            case Unregistered.tpe => make(Unregistered("UNREGISTER.Request"|Id))
             case _                => fail("MessageType|Integer")
           }
         }
@@ -196,6 +198,8 @@ class JsonSerialization() extends Serialization {
         case Event(subId, pubId, details, payload)          => (Event.tpe :: subId :: pubId :: details :: Nil, payload)
         case Register(requestId, options, procedure)        => (Register.tpe :: requestId :: options :: procedure :: Nil, None)
         case Registered(requestId, registrationId)          => (Registered.tpe :: requestId :: registrationId :: Nil, None)
+        case Unregister(requestId, registrationId)          => (Unregister.tpe :: requestId :: registrationId :: Nil, None)
+        case Unregistered(requestId)                        => (Unregistered.tpe :: requestId :: Nil, None)
       }
 
     payload match {

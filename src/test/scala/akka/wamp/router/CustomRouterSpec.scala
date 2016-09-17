@@ -25,11 +25,13 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
     """.stripMargin)
 )) {
 
-  "A custom router actor" should "reply ABORT if client says HELLO for unknown realm" in { fixture =>
+  "A router with custom settings" should "reply ABORT if client says HELLO for unknown realm" in { fixture =>
     fixture.router ! Hello("unknown.realm")
     expectMsg(Abort(Dict("message" -> "The realm unknown.realm does not exist."), "wamp.error.no_such_realm"))
     fixture.router.underlyingActor.realms must have size(1)
     fixture.router.underlyingActor.realms must contain only ("akka.wamp.realm")
     fixture.router.underlyingActor.sessions mustBe empty
   }
+  
+  // TODO test some behaviours involving strict URI validation
 }

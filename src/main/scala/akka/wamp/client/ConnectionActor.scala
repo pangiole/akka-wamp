@@ -1,6 +1,6 @@
 package akka.wamp.client
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Status}
 import akka.wamp.{Validator, Wamp}
 
 import scala.concurrent.Promise
@@ -39,25 +39,30 @@ private[client] class ConnectionActor(promise: Promise[Connection]) extends Acto
     */
   override def receive: Receive = {
     case signal @ Wamp.Connected(router) =>
+      log.debug("    {}", signal)
+      // switch its receive method so to delegate to a connection object
       this.conn = new Connection(self, router)
-      context.become {
-        case message =>
-          // delegate any "message processing" to the connection object
-          conn.receive(message)
-      }
+      context.become { case msg => conn.receive(msg) }
       promise.success(conn)
 
     // TODO https://github.com/angiolep/akka-wamp/issues/29  
     // case command @ Wamp.Disconnect =>
-
+      
     case signal @ Wamp.ConnectionFailed(cause) =>
-      log.debug("!!! {}", signal)
-      promise.failure(new ConnectionException(signal.toString))
-      context.stop(self)
+      fail(signal.toString, cause.getMessage)
 
-    case message =>
-      log.debug("!!! {}", message)
-      promise.failure(new ConnectionException(s"Unexpected message $message"))
+    case signal @ Status.Failure(cause) =>
+      fail(signal.toString, cause.getMessage)
+
+    case msg =>
+      log.warning("!!! {}", msg)
+      promise.failure(new ConnectionException(s"Unexpected message $msg"))
       context.stop(self)
+  }
+  
+  private def fail(signal: String, cause: String) = {
+    log.warning("!!! {}", signal)
+    promise.failure(new ConnectionException(cause))
+    context.stop(self)
   }
 }
