@@ -41,7 +41,7 @@ sealed trait Message extends AbstractMessage {
 final case class Hello(realm: Uri = "akka.wamp.realm", details: Dict = Hello.defaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Hello.tpe
   validator.validate(realm)
-  require(details != null, s"invalid dict $details")
+  validator.validate(details)
   validator.validateRoles(details)
 }
 final object Hello {
@@ -64,7 +64,7 @@ final object Hello {
 final case class Welcome(sessionId: Id, details: Dict = Welcome.defaultDetails)(implicit validator: Validator) extends Message {
   protected val tpe = Welcome.tpe
   validator.validate(sessionId)
-  require(details != null, "invalid Dict")
+  validator.validate(details)
 }
 final object Welcome {
   val tpe = 2
@@ -80,7 +80,7 @@ final object Welcome {
   */
 final case class Abort(details: Dict = Abort.defaultDetails, reason: Uri)(implicit validator: Validator) extends Message {
   protected val tpe = Abort.tpe
-  require(details != null, "invalid Dict")
+  validator.validate(details)
   validator.validate(reason)
 }
 final object Abort {
@@ -102,7 +102,7 @@ final object Abort {
   */
 final case class Goodbye(details: Dict = Goodbye.defaultDetails, reason: Uri = Goodbye.defaultReason)(implicit validator: Validator) extends Message {
   protected val tpe = Goodbye.tpe
-  require(details != null, "invalid Dict")
+  validator.validate(details)
   validator.validate(reason)
 }
 final object Goodbye {
@@ -131,7 +131,7 @@ final case class Error(requestType: Int, requestId: Id, details: Dict = Error.de
   protected val tpe = Error.tpe
   require(TypeCode.isValid(requestType), "invalid Type")
   validator.validate(requestId)
-  require(details != null, "invalid Dict")
+  validator.validate(details)
   validator.validate(error)
 }
 final object Error {
@@ -157,7 +157,7 @@ final object Error {
 final case class Publish(requestId: Id, options: Dict = Publish.defaultOptions, topic: Uri, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Publish.tpe
   validator.validate(requestId)
-  require(options != null, "invalid Dict")
+  validator.validate(options)
   validator.validate(topic)
 }
 final object Publish {
@@ -197,7 +197,7 @@ final object Published {
 final case class Subscribe(requestId: Id, options: Dict = Subscribe.defaultOptions, topic: Uri)(implicit validator: Validator) extends Message {
   protected val tpe = Subscribe.tpe
   validator.validate(requestId)
-  require(options != null, "invalid Dict")
+  validator.validate(options)
   validator.validate(topic)
 }
 final object Subscribe {
@@ -271,19 +271,16 @@ final object Unsubscribed {
   * [EVENT, SUBSCRIBED.Subscription|id, PUBLISHED.Publication|id, Details|dict, Arguments|list, ArgumentsKw|dict]
   * ```
   *
-  * @param subscriptionId is the identifier for the subscription under which the Subscribe 
-  *                       receives the event (the identifier for the subscription originally 
-  *                       handed out by the Broker to the Subscriber.
+  * @param subscriptionId is the identifier for the subscription under which the Subscribe receives the event (the identifier for the subscription originally handed out by the Broker to the Subscriber.
   * @param publicationId  is the identifier of the publication of the published event
-  * @param payload        is either a list of any arguments or a key-value-pairs set
-  * @param details        is a dictionary that allows to provide additional event details 
-  *                       in an extensible way.
+  * @param payload is either a list of any arguments or a key-value-pairs set
+  * @param details is a dictionary that allows to provide additional event details in an extensible way.
   */
 final case class Event(subscriptionId: Id, publicationId: Id, details: Dict = Event.defaultOptions, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Event.tpe
   validator.validate(subscriptionId)
   validator.validate(publicationId)
-  require(details != null, "invalid Dict")
+  validator.validate(details)
 }
 final object Event {
   val tpe = 36
@@ -298,16 +295,14 @@ final object Event {
   * [REGISTER, Request|id, Options|dict, Procedure|uri]
   * ```
   *
-  * @param requestId is a random, ephemeral identifier chosen by the Callee and 
-  *                  used to correlate the Dealer's response with the request
-  * @param options   is a dictionary that allows to provide additional registration 
-  *                  request details in a extensible way
+  * @param requestId is a random, ephemeral identifier chosen by the Callee and used to correlate the Dealer's response with the request
+  * @param options   is a dictionary that allows to provide additional registration request details in a extensible way
   * @param procedure is the procedure the Callee wants to register 
   */
 final case class Register(requestId: Id, options: Dict = Register.defaultOptions, procedure: Uri)(implicit validator: Validator) extends Message {
   protected val tpe = Register.tpe
   validator.validate(requestId)
-  require(options != null, "invalid Dict")
+  validator.validate(options)
   validator.validate(procedure)
 }
 final object Register {
@@ -387,14 +382,14 @@ final object Unregistered {
   *
   * @param requestId is a random, ephemeral identifier chosen by the Dealer and used to correlate the _Callee's_ response with the request.
   * @param registrationId is the registration identifier under which the procedure was registered at the Dealer.
-  * @param details        is a dictionary that allows to provide additional invocation request details in an extensible way 
-  * @param payload        is either the original list of positional call arguments or dictionary of keyword arguments as provided by the Caller.
+  * @param details is a dictionary that allows to provide additional invocation request details in an extensible way 
+  * @param payload is either the original list of positional call arguments or dictionary of keyword arguments as provided by the Caller.
   */
 final case class Invocation(requestId: Id, registrationId: Id, details: Dict = Event.defaultOptions, payload: Option[Payload] = None)(implicit validator: Validator) extends Message {
   protected val tpe = Invocation.tpe
   validator.validate(requestId)
   validator.validate(registrationId)
-  require(details != null, "invalid Dict")
+  validator.validate(details)
 }
 final object Invocation {
   val tpe = 68

@@ -9,9 +9,12 @@ import akka.wamp.client.Client
   */
 class Validator(strictUris: Boolean) {
 
-  private val regex = 
+  private val uriRegex = 
     if (strictUris)  """^([0-9a-z_]+\.)*([0-9a-z_]+)$""".r
     else /* loose */ """^([^\s\.#]+\.)*([^\s\.#]+)$""".r
+
+  private val dictKeyRegex = 
+    """[a-z][a-z0-9_]{2,}""".r
   
   def validate[T](value: T): Unit = value match {
     case id: Id =>
@@ -19,10 +22,16 @@ class Validator(strictUris: Boolean) {
         throw new IllegalArgumentException(s"invalid ID $id")
       
     case uri: Uri => 
-      if (!regex.pattern.matcher(uri).matches) 
+      if (!uriRegex.pattern.matcher(uri).matches) 
         throw new IllegalArgumentException(s"invalid URI $uri")
-      
-    // TODO issue-19: Validate dictionaries  
+
+    case dict: Dict =>
+      if (dict == null)
+        throw new IllegalArgumentException(s"invalid DICT")
+      dict.keys.foreach { key =>
+        if (!dictKeyRegex.pattern.matcher(key).matches)
+          throw new IllegalArgumentException(s"invalid KEY $key")
+      }
   }
 
   /**

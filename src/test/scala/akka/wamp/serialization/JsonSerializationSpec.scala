@@ -55,6 +55,7 @@ class JsonSerializationSpec extends WordSpec
           """[1,"myapp.realm"]""",
           """[1,"myapp.realm",null]""",
           """[1,"myapp.realm",{}]"""",
+          """[1,"myapp.realm",{"INVALID":null}]"""",
           """[1,"myapp.realm",{"roles":null}]"""",
           """[1,"myapp.realm",{"roles":{}}]"""",
           """[1,"myapp.realm",{"roles":{"invalid":{}}}]"""",
@@ -79,6 +80,7 @@ class JsonSerializationSpec extends WordSpec
           """[2,null]""",
           """[2,1]""",
           """[2,1,null]""",
+          """[2,1,{"123":null}]""",
           """[2,0,{"roles":{"broker":{}}}]""",
           """[2,9007199254740993,{"roles":{"broker":{}}}]"""
         ).foreach { text =>
@@ -101,7 +103,8 @@ class JsonSerializationSpec extends WordSpec
           """[3]""",
           """[3,null]""",
           """[3,{}]""",
-          """[3,{},null]"""
+          """[3,{},null]""",
+          """[3,{},{"ab":null}]"""
         ).foreach { text =>
           a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
         }

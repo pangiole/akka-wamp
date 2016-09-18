@@ -47,7 +47,7 @@ object PubSubApp extends App {
 ```
 
 ### Callee/Caller
-TBD
+Coming soon ...
 
  
 ## Router [![Download][download-image]][download-url]
