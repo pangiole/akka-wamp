@@ -1,3 +1,5 @@
+# Actor based API
+
 Akka Wamp provides you with an [Actor](http://doc.akka.io/docs/akka/2.4.10/scala/actors.html) based API to let you write your client with a low-level API and have full control of it!
 
 ## For the _impatients_

@@ -1,4 +1,6 @@
-Akka Wamp provides you with a [Future](http://doc.akka.io/docs/akka/current/scala/futures.html) based API, built on top of [Akka Wamp Actor based API](../client/actor), to let you write your client with a high-level API and few lines of Scala!
+# Future based API
+
+Akka Wamp provides you with an [Akka Future](http://doc.akka.io/docs/akka/current/scala/futures.html) based API, built on top of [Akka Wamp Actor based API](../client/actor), to let you write your client with a high-level API and few lines of Scala!
 
 ## For the _impatients_
 Let's connect a transport, open a session, subscribe to a topic and receive events:

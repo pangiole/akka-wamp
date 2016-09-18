@@ -48,7 +48,7 @@ import scala.concurrent.{Future, Promise}
   * @param welcome is the WELCOME message
   * @param validator is WAMP types validator
   */
-class Session private[client](val connection: Connection, welcome: Welcome)(implicit val validator: Validator) 
+class Session private[client](val connection: Connection, welcome: Welcome)(implicit protected val validator: Validator) 
   extends SessionLike with Subscriber with Publisher with Callee
     with Scope.Session 
 {
