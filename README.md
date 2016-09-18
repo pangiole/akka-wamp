@@ -79,7 +79,7 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
 
 [docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=v0.7.0
-[docs-url]: http://akka-wamp.readthedocs.io/en/latest/?badge=v0.7.0
+[docs-url]: http://akka-wamp.readthedocs.io/en/v0.7.0/?badge=v0.7.0
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
 [download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion

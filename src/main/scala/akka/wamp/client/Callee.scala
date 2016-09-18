@@ -113,4 +113,4 @@ trait Callee { this: Session =>
 
 case class Registration(procedure: Uri, registered: Registered)
 
-private case class PendingRegistration(register: Register, handler: InvocationHandler, promise: Promise[Registered])
+private[client] case class PendingRegistration(register: Register, handler: InvocationHandler, promise: Promise[Registered])

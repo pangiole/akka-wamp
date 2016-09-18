@@ -151,5 +151,5 @@ object Subscriber
 
 case class Subscription(topic: Uri, subscribed: Subscribed)
 
-private case class PendingSubscription(subscribe: Subscribe, handler: EventHandler, promise: Promise[Subscription])
+private[client] case class PendingSubscription(subscribe: Subscribe, handler: EventHandler, promise: Promise[Subscription])
 
