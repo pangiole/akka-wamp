@@ -6,18 +6,18 @@ import akka.wamp._
 import scala.annotation.tailrec
 
 /**
-  * A Session is a transient conversation between two Peers (tipically a
-  * a Router and a Client) attached to a Realm and running over 
-  * a Transport.
+  * A Session is a transient conversation between two peers (tipically a
+  * a router and a client) attached to a realm and running over 
+  * a transport.
   * 
-  * Routing occurs only between Sessions that have joined the same Realm
+  * Routing occurs only between sessions that have joined the same realm
   * 
   * @param id is the session identifer in global scope
-  * @param client is the client actor reference
-  * @param roles are the client roles
+  * @param peer is the peer (tipically a client) actor reference
+  * @param roles are the peer roles
   * @param realm is the realm this session attaches to
   */
-class Session(val id: Id, val client: ActorRef, val roles: Set[String], val realm: Uri) 
+class Session(val id: Id, val peer: ActorRef, val roles: Set[String], val realm: Uri) 
 extends akka.wamp.SessionLike
 
 

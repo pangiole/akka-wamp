@@ -9,7 +9,7 @@ import org.scalatest._
 
 /**
   * The SUT - System Under Test of this tests suite is meant to be 
-  * the ``router.Transport.httpRoute``
+  * the ``router.Connection.httpRoute``
   * 
   * Test methods of this suite are setup with fresh fixture instance
   * providing the SUT and any necessary DOC - Depends-on Components
@@ -19,7 +19,7 @@ import org.scalatest._
   * httpRoute is wrapped by ``testkit.Route.seal()`` when HTTP rejections
   * need to be checked
   */
-class WsTransportFixtureSpec 
+class ConnectionFixtureSpec 
   extends fixture.FlatSpec 
     with MustMatchers with BeforeAndAfterAll
     with ScalatestRouteTest
@@ -29,28 +29,29 @@ class WsTransportFixtureSpec
   val URL = "http://127.0.0.1:8080/router"
   
   def withWsClient(route: Route)(testScenario: (WSProbe) => Unit) = {
-    val probe = WSProbe()
-    WS(URL, probe.flow, List("wamp.2.json")) ~> route ~> check {
-      testScenario(probe)
-    }
+    
   }
 
-  case class FixtureParam(httpRoute: Route)
+  case class FixtureParam(httpRoute: Route, client: WSProbe)
   
   override def withFixture(test: OneArgTest) = {
     val wampRouter = TestActorRef[Router](Router.props(scopes))
-
-    val strictUri = testConfig.getBoolean("akka.wamp.router.validate-strict-uris")
-    val serializationFlows = new JsonSerializationFlows(strictUri)
+    val wampClient = WSProbe()
     
-    val transport = TestActorRef[Transport](Transport.props(wampRouter, serializationFlows))
+    val routerConfig = testConfig.getConfig("akka.wamp.router")
+    val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
+    val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
+    val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
+    
+    val transport = TestActorRef[Connection](Connection.props(wampRouter, serializationFlows))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = transport.underlyingActor.httpRoute
-    
-    val theFixture = FixtureParam(httpRoute)
+    val theFixture = FixtureParam(httpRoute, wampClient)
     try {
-      withFixture(test.toNoArgTest(theFixture))
+      WS(URL, wampClient.flow, List("wamp.2.json")) ~> httpRoute ~> check {
+        withFixture(test.toNoArgTest(theFixture))
+      }
     }
     finally {
       system.stop(wampRouter)

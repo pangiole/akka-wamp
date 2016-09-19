@@ -13,10 +13,11 @@ import org.slf4j.LoggerFactory
 /**
   * The JSON serialization flows
   * 
-  * @param strictUris is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
+  * @param validateStrictUri is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
+  * @param disconnectOffendingPeers is the boolean switch to disconnect those clients that send invalid messages
   * @param materializer is the Akka Stream materializer
   */
-class JsonSerializationFlows(strictUris: Boolean)(implicit materializer: Materializer) 
+class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeers: Boolean)(implicit materializer: Materializer) 
   extends SerializationFlows 
 {
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
@@ -24,7 +25,7 @@ class JsonSerializationFlows(strictUris: Boolean)(implicit materializer: Materia
   val json = new JsonSerialization()
 
   /** The WAMP types validator */
-  implicit val validator = new Validator(strictUris)
+  implicit val validator = new Validator(validateStrictUri)
 
 
   /**
@@ -56,7 +57,12 @@ class JsonSerializationFlows(strictUris: Boolean)(implicit materializer: Materia
       }
       .withAttributes(supervisionStrategy {
         case ex: DeserializeException =>
-          log.warn("DeserializeException: {}", ex.getMessage)
-          Supervision.Resume
+          if (!disconnectOffendingPeers) {
+            log.warn("Resume from DeserializeException: {}", ex.getMessage)
+            Supervision.Resume
+          }
+          else {
+            Supervision.Stop 
+          }
       })
 }

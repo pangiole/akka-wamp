@@ -63,7 +63,7 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
       session.failed.futureValue match {
         case AbortException(abort) =>
           abort.reason mustBe "wamp.error.no_such_realm"
-          abort.details mustBe Dict("message" -> "The realm unknown.realm does not exist.")
+          abort.details mustBe Dict("message" -> "The realm 'unknown.realm' does not exist.")
         case other =>
           fail(s"unexpected $other")
       }

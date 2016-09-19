@@ -13,16 +13,18 @@ import scala.concurrent.duration._
   */
 class DealerSpec extends RouterFixtureSpec {
 
-  "The default router as dealer" should "fail connection on REGISTER but no session open" in { f =>
-    // TODO https://github.com/angiolep/akka-wamp/issues/22
-    pending
+  // TODO https://github.com/angiolep/akka-wamp/issues/22
+  // TODO write a CustomDealerSpec to expect disconnections before open session
+  "The default router as dealer" should "drop message and resume on REGISTER before open session" in { f =>
     f.router ! Register(1, options = Dict(), "myapp.procedure")
-    expectMsg(???)
+    f.router ! Hello()
+    expectMsgType[Welcome]
+    f.router.underlyingActor.sessions must have size(1)
   }
 
 
 
-  it should "reply ERROR on REGISTER but no 'callee' role in session" in { f =>
+  it should "reply ERROR on REGISTER but did not announce 'callee' role" in { f =>
     val client = TestProbe("client")
     client.send(f.router, Hello(details = Dict().addRoles(Roles.publisher))); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "myapp.procedure"))
@@ -50,7 +52,7 @@ class DealerSpec extends RouterFixtureSpec {
   }
 
 
-  it should "confirm existing registration on repeated REGISTER the same procedure" in { f =>
+  it should "confirm existing registration on repeated REGISTER same procedure" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello()); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "mypp.procedure")); client.receiveOne(0.seconds)
@@ -69,7 +71,7 @@ class DealerSpec extends RouterFixtureSpec {
   }
 
 
-  it should "create new registration2 on REGISTER to procedure2 from same client" in { f =>
+  it should "create new registration2 on REGISTER procedure2 from same client" in { f =>
     val client = TestProbe("client")
     client.send(f.router, Hello()); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "mypp.procedure1"))
@@ -93,14 +95,14 @@ class DealerSpec extends RouterFixtureSpec {
   }
 
 
-  it should "reply ERROR on REGISTER existing procedure" in { f =>
+  it should "reply ERROR on REGISTER existing procedure1 from different client2" in { f =>
     val client1 = TestProbe("client1")
     client1.send(f.router, Hello()); client1.receiveOne(0.seconds)
-    client1.send(f.router, Register(1, procedure = "mypp.procedure")); client1.receiveOne(0.second)
+    client1.send(f.router, Register(1, procedure = "mypp.procedure1")); client1.receiveOne(0.second)
     
     val client2 = TestProbe("client2")
     client2.send(f.router, Hello()); client2.receiveOne(0.seconds)
-    client2.send(f.router, Register(2, procedure = "mypp.procedure"))
+    client2.send(f.router, Register(2, procedure = "mypp.procedure1"))
     client2.expectMsg(Error(Register.tpe, 2, Error.defaultDetails, "wamp.error.procedure_already_exists"))
     client2.expectNoMsg()
     f.router.underlyingActor.registrations must have size(1)
@@ -108,7 +110,7 @@ class DealerSpec extends RouterFixtureSpec {
 
   
   it should "remove existing registration on UNREGISTER" in { f =>
-    val client = TestProbe("client1")
+    val client = TestProbe("client")
     client.send(f.router , Hello()); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "mypp.procedure"))
     val registrationId = client.receiveOne(0.seconds).asInstanceOf[Registered].registrationId
@@ -117,10 +119,44 @@ class DealerSpec extends RouterFixtureSpec {
     f.router.underlyingActor.registrations  mustBe empty
   }
 
+  
   it should "reply ERROR on UNREGISTER unknown registration" in { f =>
-    val client = TestProbe("client1")
-    client.send(f.router , Hello()); client.receiveOne(0.seconds)
-    client.send(f.router, Unregister(1, 9999))
-    client.expectMsg(Error(Unregister.tpe, 1, Error.defaultDetails, "wamp.error.no_such_registration"))
+    val client1 = TestProbe("client1")
+    client1.send(f.router , Hello()); client1.receiveOne(0.seconds)
+    client1.send(f.router, Register(1, procedure = "mypp.procedure"))
+    val registrationId1 = client1.receiveOne(0.seconds).asInstanceOf[Registered].registrationId
+    
+    val client2 = TestProbe("client2")
+    client2.send(f.router , Hello()); client2.receiveOne(0.seconds)
+    
+    client2.send(f.router, Unregister(1, registrationId1))
+    client2.expectMsg(Error(Unregister.tpe, 1, error = "wamp.error.no_such_registration"))
+
+    client2.send(f.router, Unregister(2, registrationId = 999))
+    client2.expectMsg(Error(Unregister.tpe, 2, error = "wamp.error.no_such_registration"))
+  }
+  
+  
+  
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  
+  it should "drop message and resume on CALL before open session" in { f =>
+    pending
+//    f.router ! Call(1, "myapp.procedure")
+//    f.router ! Hello()
+//    expectMsgType[Welcome]
+//    f.router.underlyingActor.sessions must have size(1)
+  }
+  
+
+  it should "reply ERROR on CALL but did not announce 'caller' role" in { f =>
+    pending
+//    val client = TestProbe("client")
+//    client.send(f.router, Hello(details = Dict().addRoles(Roles.publisher))); client.receiveOne(0.seconds)
+//    client.send(f.router, Call(1, "myapp.procedure"))
+//    client.expectMsg(Error(Call.tpe, 1, Error.defaultDetails, "akka.wamp.error.no_caller_role"))
+//    client.expectNoMsg()
+//    f.router.underlyingActor.calls mustBe empty
   }
 }

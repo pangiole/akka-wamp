@@ -8,20 +8,21 @@ import akka.wamp.serialization._
 import scala.concurrent.duration._
 
 /**
-  * It tests the Router running with its default settings 
-  * (when NO custom configuration is applied)
+  * It tests the router running with its default settings 
+  * (NO custom configuration is applied)
   */
 class BrokerSpec extends RouterFixtureSpec {
 
-  "The default router as broker" should "fail connection on SUBSCRIBE but no session open" in { f =>
-    // TODO https://github.com/angiolep/akka-wamp/issues/22
-    pending
+  // TODO https://github.com/angiolep/akka-wamp/issues/22
+  "The default router as broker" should "drop message and resume on SUBSCRIBE before open session" in { f =>
     f.router ! Subscribe(1, topic = "mypp.topic")
-    expectMsg(???)
+    f.router ! Hello()
+    expectMsgType[Welcome]
+    f.router.underlyingActor.sessions must have size(1)
   }
   
 
-  it should "reply ERROR on SUBSCRIBE but no 'subscriber' role in session" in { f =>
+  it should "reply ERROR on SUBSCRIBE but did not announce 'subscriber' role" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello(details = Dict().addRoles( Roles.publisher)))
     client.receiveOne(0.seconds)
@@ -115,7 +116,7 @@ class BrokerSpec extends RouterFixtureSpec {
   }
 
 
-  it should "update existing subscription1 on UNSUBSCRIBE topic1 from some client2" in { f =>
+  it should "update existing subscription1 on UNSUBSCRIBE topic1 from client2" in { f =>
     val client1 = TestProbe("client1")
     client1.send(f.router , Hello()); client1.receiveOne(0.seconds)
     client1.send(f.router, Subscribe(1, topic = "mypp.topic1"))
@@ -149,25 +150,35 @@ class BrokerSpec extends RouterFixtureSpec {
 
 
   it should "reply ERROR on UNSUBSCRIBE unknown subscription" in { f =>
-    val client = TestProbe("client1")
-    client.send(f.router , Hello()); client.receiveOne(0.seconds)
-    client.send(f.router, Unsubscribe(1, 9999))
-    client.expectMsg(Error(Unsubscribe.tpe, 1, Error.defaultDetails, "wamp.error.no_such_subscription"))
+    val client1 = TestProbe("client1")
+    client1.send(f.router, Hello()); client1.receiveOne(0.seconds)
+    client1.send(f.router, Subscribe(1, topic = "mypp.topic"))
+    val subsriptionId1 = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+    
+    val client2 = TestProbe("client2")
+    client2.send(f.router , Hello()); client2.receiveOne(0.seconds)
+    client2.send(f.router, Unsubscribe(1, subsriptionId1))
+    client2.expectMsg(Error(Unsubscribe.tpe, 1, Error.defaultDetails, "wamp.error.no_such_subscription"))
+    
+    client2.send(f.router, Unsubscribe(2, subscriptionId = 999))
+    client2.expectMsg(Error(Unsubscribe.tpe, 2, Error.defaultDetails, "wamp.error.no_such_subscription"))
   }
-  
+
+
   
   // ~~~~~~~~~~~~~~~~~~~
 
-  
-  it should "fail connection on PUBLISH but no session open" in { f =>
-    // TODO https://github.com/angiolep/akka-wamp/issues/22
-    pending
+
+  // TODO https://github.com/angiolep/akka-wamp/issues/22
+  it should "drop message and resume on PUBLISH before open session" in { f =>
     f.router ! Publish(1, topic = "mypp.topic1")
-    expectMsg(???)
+    f.router ! Hello()
+    expectMsgType[Welcome]
+    f.router.underlyingActor.sessions must have size(1)
   }
 
-  
-  it should "reply ERROR on PUBLISH(ack) but no 'publisher' role in session" in { f =>
+  // TODO https://github.com/angiolep/akka-wamp/issues/22
+  it should "reply ERROR on PUBLISH(ack) but did not announce 'publisher' role" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello(details = Dict().addRoles(Roles.callee)))
     client.receiveOne(0.seconds)
@@ -178,7 +189,7 @@ class BrokerSpec extends RouterFixtureSpec {
   }
 
   
-  it should "do nothing on PUBLISH(noack) but no 'publisher' role in session" in { f =>
+  it should "do nothing on PUBLISH(noack) but did not announce 'subscriber' role" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello(details = Dict().addRoles(Roles.callee)))
     client.receiveOne(0.seconds)

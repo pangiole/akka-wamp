@@ -30,22 +30,29 @@ private class Manager extends Actor {
   /**
     * The TCP interface (default is 127.0.0.1) to bind to
     */
-  private val iface = config.getString("iface")
+  val iface = config.getString("iface")
 
   /**
     * The TCP port number (default is 8080) to bind to
     */
-  private val port = config.getInt("port")
+  val port = config.getInt("port")
 
   /**
     * The boolean switch (default is false) to validate against 
     * strict URIs rather than loose URIs
     */
-  private val strictUris = config.getBoolean("validate-strict-uris")
+  val validateStrictUris = config.getBoolean("validate-strict-uris")
 
+  /**
+    * The boolean switch to disconnect those peers that 
+    * send invalid messages.
+    */
+  val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
+
+  
   /** The serialization flows */
   // TODO https://github.com/angiolep/akka-wamp/issues/12
-  private val serializationFlows = new JsonSerializationFlows(strictUris)
+  private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
 
   
   /**
@@ -69,7 +76,7 @@ private class Manager extends Actor {
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val transport = context.actorOf(Transport.props(router, serializationFlows))
+          val transport = context.actorOf(Connection.props(router, serializationFlows))
           transport ! conn
         }
 

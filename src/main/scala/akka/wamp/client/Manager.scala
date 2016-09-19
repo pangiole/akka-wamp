@@ -33,11 +33,17 @@ private class Manager extends Actor {
     * The boolean switch (default is false) to validate against 
     * strict URIs rather than loose URIs
     */
-  private val strictUris = config.getBoolean("validate-strict-uris")
+  private val validateStrictUris = config.getBoolean("validate-strict-uris")
+
+  /**
+    * The boolean switch to disconnect those peers that 
+    * send invalid messages.
+    */
+  private val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
 
   /** The serialization flows */
   // TODO https://github.com/angiolep/akka-wamp/issues/12
-  private val serializationFlows = new JsonSerializationFlows(strictUris)
+  private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
   
   // inlet -> outlet
   private var outlets = Map.empty[ActorRef, ActorRef]

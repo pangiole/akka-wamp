@@ -23,7 +23,7 @@ trait Dealer { this: Router =>
     */
   private[router] def handleRegistrations: Receive = {
     case message @ Register(requestId, options, procedure) =>
-      ifSessionOpen(message) { session =>
+      ifSession(message, sender()) { session =>
         if (session.roles.contains(Roles.callee)) {
           registrations.values.toList.filter(_.procedure == procedure) match {
             case Nil => {
@@ -31,25 +31,25 @@ trait Dealer { this: Router =>
                 * No callees have registered to provide the given procedure yet.
                 */
               val registrationId = scopes('router).nextId(excludes = registrations.toMap.keySet)
-              registrations += (registrationId -> new Registration(registrationId, session.client, procedure))
-              session.client ! Registered(requestId, registrationId)
+              registrations += (registrationId -> new Registration(registrationId, session.peer, procedure))
+              session.peer ! Registered(requestId, registrationId)
             }
             case registration :: Nil => {
-              if (registration.callee != session.client) {
+              if (registration.callee != session.peer) {
                 /**
                   * In case of receiving a REGISTER message from a callee2 
                   * providing the procedure already registered some other callee1, 
                   * this dealer replies ERROR("wamp.error.procedure_already_exists")
                   */
-                session.client ! Error(Register.tpe, requestId, Error.defaultDetails, "wamp.error.procedure_already_exists")
+                session.peer ! Error(Register.tpe, requestId, Error.defaultDetails, "wamp.error.procedure_already_exists")
               }
               else {
                 /**
                   * In case of receiving a REGISTER message from the same callee 
-                  * providing the already registered procedure, dealer should answer with 
-                  * REGISTERED message, containing the existing registration ID.
+                  * providing the already registered procedure, this dealer just
+                  * confirms the existing registration.
                   */
-                session.client ! Registered(requestId, registration.id)
+                session.peer ! Registered(requestId, registration.id)
               }
             }
             case _ => {
@@ -57,19 +57,25 @@ trait Dealer { this: Router =>
             }
           }
         } else {
-          // TODO Lack of specification! What to do? File an issue on GitHub
-          session.client ! Error(Register.tpe, requestId, details = Error.defaultDetails, "akka.wamp.error.no_callee_role")
+          session.peer ! Error(Register.tpe, requestId, error = "akka.wamp.error.no_callee_role")
         }
       }
 
     case message @ Unregister(requestId, registrationId) =>
-      ifSessionOpen(message) { session =>
+      ifSession(message, sender()) { session =>
         registrations.get(registrationId) match {
           case Some(registration) =>
-            if (unregister(session.client, registration)) session.client ! Unregistered(requestId)
-            else () // TODO Lack of specification! What to reply if session.client was NOT the callee?
+            if (unregister(session.peer, registration)) {
+              session.peer ! Unregistered(requestId)
+            }
+            else {
+              // though the given registrationId does exist
+              // it turned out to be for some other client
+              session.peer ! Error(Unregister.tpe, requestId, error = "wamp.error.no_such_registration")
+            }
           case None =>
-            session.client ! Error(Unregister.tpe, requestId, Error.defaultDetails, "wamp.error.no_such_registration")
+            // the the given registrationId does NOT exist
+            session.peer ! Error(Unregister.tpe, requestId, error = "wamp.error.no_such_registration")
         }
       }  
   }

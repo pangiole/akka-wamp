@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.wamp._
 import akka.wamp.messages._
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.duration._
 
 /**
   * It tests the Router running with some custom configuration
@@ -14,24 +15,46 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
     """
       | akka {
       |   wamp {
-      |     serializing {
-      |       validate-strict-uris = true
-      |     }
       |     router {
       |       abort-unknown-realms = true
+      |       validate-strict-uris = true
+      |       disconnect-offending-peers = true
       |     }
       |   }
       | }
     """.stripMargin)
 )) {
 
-  "A router with custom settings" should "reply ABORT if client says HELLO for unknown realm" in { fixture =>
-    fixture.router ! Hello("unknown.realm")
-    expectMsg(Abort(Dict("message" -> "The realm unknown.realm does not exist."), "wamp.error.no_such_realm"))
-    fixture.router.underlyingActor.realms must have size(1)
-    fixture.router.underlyingActor.realms must contain only ("akka.wamp.realm")
-    fixture.router.underlyingActor.sessions mustBe empty
+  "A router with custom settings" should "reply ABORT on HELLO for unknown realm" in { f =>
+    f.router ! Hello("unknown.realm")
+    expectMsg(Abort(Dict("message"->"The realm 'unknown.realm' does not exist."), "wamp.error.no_such_realm"))
+    f.router.underlyingActor.realms must have size(1)
+    f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
+    f.router.underlyingActor.sessions mustBe empty
+  }
+
+
+  // TODO https://github.com/angiolep/akka-wamp/issues/21
+  it should "disconnect on HELLO twice (regardless the realm)" in { f =>
+    f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
+    f.router.underlyingActor.sessions must have size(1)
+    f.router ! Hello("whatever.realm", Dict().addRoles("subscriber"))
+    expectMsg(Wamp.Disconnect)
+    f.router.underlyingActor.sessions  mustBe empty
+  }
+
+  // TODO https://github.com/angiolep/akka-wamp/issues/22
+  it should "disconnect on GOODBYE before open session" in { f =>
+    f.router ! Goodbye()
+    expectMsg(Wamp.Disconnect)
   }
   
-  // TODO test some behaviours involving strict URI validation
+  
+  it should "disconnect on HELLO with no-strict URI" in { f =>
+    pending
+    // TODO Hello constructor validates initial state. Try to move this test to CustomConnectionSpec.
+    f.router ! Hello("loose.URI..realm")
+    expectMsg(Wamp.Disconnect)
+    f.router.underlyingActor.sessions  mustBe empty
+  }
 }
