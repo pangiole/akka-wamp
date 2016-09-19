@@ -1,4 +1,6 @@
-# Akka Wamp [![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] 
+# Akka Wamp 
+[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] [![Gitter][gitter-image]][gitter-url]
+
      
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
 
@@ -10,9 +12,10 @@ libraryDependencies ++= Seq(
 )  
 ```
 
-## Docs [![Docs Status][docs-image]][docs-url] 
+## Docs 
 Please, [read the docs](http://akka-wamp.readthedocs.io) for further details.
 
+[![Docs Status][docs-image]][docs-url] 
 
 ## Client
 Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
@@ -50,8 +53,10 @@ object PubSubApp extends App {
 Coming soon ...
 
  
-## Router [![Download][download-image]][download-url]
+## Router 
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
+
+[![Download][download-image]][download-url]
 
 ## Limitations
 
@@ -80,6 +85,10 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 
 [docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=stable
 [docs-url]: http://akka-wamp.readthedocs.io/en/stable/?badge=stable
+
+[gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
+[gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
+
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
 [download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion
