@@ -1,7 +1,7 @@
 site_name: akka-wamp-master
 site_author: Paolo Angioletti
 repo_name: https://github.com/angiolep/akka-wamp
-theme: readable
+theme: readthedocs  
 pages:
   - Home: 'index.md'
   - Router: 'router.md'
@@ -9,4 +9,5 @@ pages:
     - 'Actor based API': 'client/actor.md'
     - 'Future based API': 'client/future.md'
     - 'Stream based API': 'client/stream.md'
+    - 'Configuration': 'client/config.md'
   - Messages: 'messages.md'  

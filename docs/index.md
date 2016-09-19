@@ -8,7 +8,7 @@ Easy to download as [SBT](http://www.scala-sbt.org/) library dependency.
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.11" % "0.7.0"
+  "com.github.angiolep" % "akka-wamp_2.11" % "0.8.0"
 )  
 ```
 
@@ -56,7 +56,7 @@ Akka Wamp provides you with a router that can be either embedded into your appli
  * Scala 2.11 only (no older Scala)
  * WebSocket transport only (no raw TCP and no SSL/TLS yet) 
  * Provide WAMP Basic Profile only (no Advanced Profile yet)
- * Provide Publish/Subscribe only (no router RPC yet)
+ * Provide Publish/Subscribe only (no routed RPC yet)
  * Provide JSON serialization only (no MsgPack yet)
 
  

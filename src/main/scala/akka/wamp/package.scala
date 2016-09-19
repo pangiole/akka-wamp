@@ -6,7 +6,7 @@ import scala.collection.SortedSet
 import scala.util.Random.{nextDouble => rnd}
 
 /**
-  * == akka-wamp 0.7.0 ==
+  * == akka-wamp 0.8.0 ==
   *
   * [[http://wamp-proto.org WAMP - Web Application Messaging Protocol]] implementation written in Scala with Akka
   */

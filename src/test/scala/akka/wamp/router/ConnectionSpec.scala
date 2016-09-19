@@ -69,7 +69,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \
@@ -83,7 +83,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #2 OPEN
     // \
@@ -101,7 +101,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{},"publisher":{}}}]""")
-    f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.7.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #3 OPEN
     // \

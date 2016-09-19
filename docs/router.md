@@ -7,7 +7,7 @@ Make your SBT build depend on akka-wamp:
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.github.angiolep" %% "akka-wamp" % "0.7.0"
+  "com.github.angiolep" %% "akka-wamp" % "0.8.0"
   // ...
 )
 ```
@@ -34,38 +34,55 @@ Done ;-)
 Download and launch the router as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.7.0.tgz
-tar xvfz akka-wamp-0.7.0.tar.gz
-cd akka-wamp-0.7.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.8.0.tgz
+tar xvfz akka-wamp-0.8.0.tar.gz
+cd akka-wamp-0.8.0
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
 
-## Settings
-Either the embedded or the standalone router can be configured by applying the following settings:
+## Configuration
+Either the embedded or the standalone router can be configured by applying the following configuration:
  
- - ``akka.wamp.router``  
-   
-    - ``protocol``  
-      The protocol the router uses as transport (default is ``ws`` WebSocket)
+```bash
+akka {
+  wamp {
+    router {
+      # The TCP interface to bind to
+      #
+      iface = "127.0.0.1"
+      
+      # The TCP port number (between 0 and 65536) to bind to
+      #
+      port = 8080
+      
+      # The URL path incoming HTTP Upgrade request are
+      # expected to be addressed to
+      #
+      path = "router"
 
-    - ``subprotocol``  
-       The subprotocol the router uses when transport is WebSocket (default is ``wamp.2.json``)
+      # The boolean switch to validate against strict URIs 
+      # rather than loose URIs
+      #
+      validate-strict-uris = false
 
-    - ``iface``  
-      The network interface the router binds to (default is ``127.0.0.1``)
+      # The boolean switch to NOT automatically create 
+      # realms if they don't exist yet.
+      #
+      abort-unknown-realms = false
 
-    - ``port``  
-      The port number the router binds to (default is ``8080``)
-
-    - ``path``  
-      The URL path incoming HTTP Upgrade request are expected to be addressed to (default is ``router``)   
-   
-    - ``validate-strict-uris``  
-      The boolean switch (default is false) to validate against strict URIs rather than loose URIs
-            
-    - ``abort-unknown-realms``  
-      The boolean switch (default is false) to NOT automatically create realms if they don't exist yet
-
+      # The boolean switch to disconnect those peers that send 
+      # offending messages (e.g. not deserializable or causing
+      # session failures)
+      #
+      # By default, offending messages are just dropped and 
+      # the router resumes processing next incoming messages
+      #
+      disconnect-offending-peers = false
+    }
+  }
+}
+```
+      
 Above settings can be overridden by
 
  * providing a TypeSafe Config ``application.conf`` file right in the classpath,

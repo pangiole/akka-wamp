@@ -3,21 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [Unreleased]    
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
   - Client API now provides ``register`` and ``invoke`` operations  
   - Router now able to register procedures and route invocations to clients  
+
+## [0.8.0] (2016-09-19)  
+
+### Added  
 - Validate dictionaries [\#19](https://github.com/angiolep/akka-wamp/issues/19)        
 - Make decision on DeserializeException configurable [\#20](https://github.com/angiolep/akka-wamp/issues/20)  
-- Drop offending messages and resume rather than failing connection by default
-- Overcome lack of specification for second HELLO during lifetime of session [\#21](https://github.com/angiolep/akka-wamp/issues/21)
-- Overcome lack of specification for some session handling scenarios [\#22](https://github.com/angiolep/akka-wamp/issues/22)
+- Lack of specification for repeated HELLOs [\#21](https://github.com/angiolep/akka-wamp/issues/21)
+- Lack of specification specification in case of offending messages [\#22](https://github.com/angiolep/akka-wamp/issues/22)
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)
-- Improve ReadTheDocs
+- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/en/v0.8.0/) 
 
 
 ## [0.7.0] (2016-09-12)
@@ -50,7 +53,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.7.0...HEAD?&diff=split&name=HEAD
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...HEAD?&diff=split&name=HEAD
+[0.8.0]: https://github.com/angiolep/akka-wamp/compare/v0.7.0...v0.8.0?diff=split&name=v0.7.0
 [0.7.0]: https://github.com/angiolep/akka-wamp/compare/v0.6.0...v0.7.0?diff=split&name=v0.7.0
 [0.6.0]: https://github.com/angiolep/akka-wamp/compare/v0.5.1...v0.6.0?diff=split&name=v0.6.0
 [0.5.0]: https://github.com/angiolep/akka-wamp/compare/v0.5.0...v0.5.1?diff=split&name=v0.5.1
