@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
 ```
 
 ## Docs [![Docs Status][docs-image]][docs-url] 
-Please, [read the docs](http://akka-wamp.readthedocs.io/en/v0.8.0/) for further details.
+Please, [read the docs](http://akka-wamp.readthedocs.io) for further details.
 
 
 ## Client
@@ -78,8 +78,8 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
 
-[docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=v0.8.0
-[docs-url]: http://akka-wamp.readthedocs.io/en/v0.8.0/?badge=v0.8.0
+[docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=stable
+[docs-url]: http://akka-wamp.readthedocs.io/en/stable/?badge=stable
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
 [download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion
