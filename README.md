@@ -25,10 +25,10 @@ Connect a transport, open a session, subscribe a topic, receive events, register
 ```scala
 object PubSubApp extends App {
 
+  import akka.wamp._
   import akka.wamp.client._
   val client = Client()
   
-  import scala.concurrent.Future
   import client.executionContext
   
   for {

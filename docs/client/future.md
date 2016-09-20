@@ -8,10 +8,10 @@ Let's connect a transport, open a session, subscribe to a topic and receive even
 ```scala
 object PubSubApp extends App {
 
+  import akka.wamp._
   import akka.wamp.client._
-  val client = Client()
   
-  import scala.concurrent.Future
+  val client = Client()
   import client.executionContext
   
   for {
@@ -212,8 +212,8 @@ import akka.wamp.serialization._
 val publication: Future[Either[Done, Publication]] = session.flatMap(
   _.publish(
     topic = "myapp.topic",
-    ack = true,
-    payload = Some(Payload(List("paolo", 40, true)))
+    payload = Some(Payload(List("paolo", 40, true))),
+    ack = true
   ))
 ```
 
