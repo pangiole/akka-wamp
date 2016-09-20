@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * 
   * @param system is the Akka actor system
   */
-class Client private[client]()(implicit system: ActorSystem) extends Peer {
+class Client private[client]()(implicit val system: ActorSystem) extends Peer {
 
   /**
     * This client actor system name

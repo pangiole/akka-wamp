@@ -39,11 +39,11 @@ trait Publisher { this: Session =>
     * }}}
     *
     * @param topic is the topic to publish to
-    * @param ack is the acknowledge boolean switch (default is ``false``)
     * @param payload is the (option of) payload (default is ``None``)
+    * @param ack is the acknowledge boolean switch (default is ``false``)
     * @return either done or a (future of) publication 
     */
-  def publish(topic: Uri, ack: Boolean = false, payload: Option[Payload] = None): Future[Either[Done, Publication]] =  {
+  def publish(topic: Uri, payload: Option[Payload] = None, ack: Boolean = false): Future[Either[Done, Publication]] =  {
     withPromise[Either[Done, Publication]] { promise =>
       val message = Publish(requestId = nextId(), Dict().setAck(ack), topic, payload)
       pendingPublications += (message.requestId -> promise)
