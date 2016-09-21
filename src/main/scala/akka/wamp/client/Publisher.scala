@@ -58,17 +58,14 @@ trait Publisher { this: Session =>
   }
   
 
-  protected def handlePublicationSuccess: Receive = {
+  protected def handlePublications: Receive = {
     case msg @ Published(requestId, _) =>
       log.debug("<-- {}", msg)
       pendingPublications.get(requestId).map { promise =>
         pendingPublications -= requestId
         promise.success(Right(Publication(msg)))
       }
-  }
-
-
-  protected def handlePublicationError: Receive = {
+      
     case msg @ Error(Publish.tpe, requestId, _, error, _) =>
       log.debug("<-- {}", msg)
       pendingPublications.get(requestId).map { promise =>

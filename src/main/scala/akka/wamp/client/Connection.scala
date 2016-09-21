@@ -17,7 +17,7 @@ import scala.concurrent.{Future, Promise}
   *   val client = Client("myapp")
   *
   *   import scala.concurrent.Future
-  *   import client.executionContext
+  *   implicit val ec = client.executionContext
   *
   *   val conn: Future[Connection] = client
   *     .connect(

@@ -13,7 +13,7 @@ import scala.concurrent._
   */
 trait Subscriber { this: Session =>
 
-  private val pendingSubscriptions: PendingSubscriptions = mutable.Map()
+  private val pendingSubscribers: PendingSubscriptions = mutable.Map()
   
   private val subscriptions: Subscriptions = mutable.Map()
 
@@ -59,36 +59,12 @@ trait Subscriber { this: Session =>
   def subscribe(topic: Uri, options: Dict = Subscribe.defaultOptions)(handler: EventHandler): Future[Subscription] = {
     withPromise[Subscription] { promise =>
       val msg = Subscribe(requestId = nextId(), options, topic)
-      pendingSubscriptions += (msg.requestId -> PendingSubscription(msg, handler, promise))
+      pendingSubscribers += (msg.requestId -> PendingSubscription(msg, handler, promise))
       connection ! msg
     }
   }
 
-  protected def handleSubscriptionSuccess: Receive = {
-    case msg @ Subscribed(requestId, subscriptionId) =>
-      log.debug("<-- {}", msg)
-      pendingSubscriptions.get(requestId).map { pending =>
-          val subscription = Subscription(pending.subscribe.topic, msg)
-          subscriptions += (subscriptionId -> subscription)
-          eventHandlers += (subscriptionId -> pending.handler)
-          pendingSubscriptions -= requestId
-          pending.promise.success(subscription)
-      }
-  }
 
-  protected def handleSubscriptionError: Receive = {
-    case msg @ Error(Subscribe.tpe, requestId, _, error, _) =>
-      log.debug("<-- {}", msg)
-      pendingSubscriptions.get(requestId).map { pending =>
-        pendingSubscriptions -= requestId
-        pending.promise.failure(new SessionException(error))
-      }
-  }
-
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~
-  
-  
   /**
     * Unsubscribe from the given topic
     *
@@ -109,20 +85,38 @@ trait Subscriber { this: Session =>
     }
   }
 
-  protected def handleUnsubscribed: Receive = {
-    case msg @ Unsubscribed(requestId) => 
+  
+  
+
+  protected def handleSubscriptions: Receive = {
+    case msg @ Subscribed(requestId, subscriptionId) =>
+      log.debug("<-- {}", msg)
+      pendingSubscribers.get(requestId).map { pending =>
+          val subscription = Subscription(pending.subscribe.topic, msg)
+          subscriptions += (subscriptionId -> subscription)
+          eventHandlers += (subscriptionId -> pending.handler)
+          pendingSubscribers -= requestId
+          pending.promise.success(subscription)
+      }
+      
+    case msg @ Error(Subscribe.tpe, requestId, _, error, _) =>
+      log.debug("<-- {}", msg)
+      pendingSubscribers.get(requestId).map { pending =>
+        pendingSubscribers -= requestId
+        pending.promise.failure(new SessionException(error))
+      }
+      
+    case msg @ Unsubscribed(requestId) =>
       log.debug("<-- {}", msg)
       pendingUnsubscribes.get(requestId).map {
-        case (Unsubscribe(_, subscriptionId), promise) => 
+        case (Unsubscribe(_, subscriptionId), promise) =>
           subscriptions -= subscriptionId
           eventHandlers -= subscriptionId
           pendingUnsubscribes -= requestId
           promise.success(msg)
       }
-  }
 
-  protected def handleUnsubscribedError: Receive = {
-    case msg @ Error(Subscribe.tpe, requestId, _, error, _) =>
+    case msg @ Error(Unsubscribe.tpe, requestId, _, error, _) =>
       log.debug("<-- {}", msg)
       pendingUnsubscribes.get(requestId).map {
         case (_, promise) =>
@@ -135,7 +129,8 @@ trait Subscriber { this: Session =>
   // ~~~~~~~~~~~~~~~~~~~~~~~
   
   
-  protected def handleEvent: Receive = {
+  
+  protected def handleEvents: Receive = {
     case msg @ Event(subscriptionId, _, _, _) =>
       log.debug("<-- {}", msg)
       eventHandlers.get(subscriptionId) match {
@@ -149,7 +144,9 @@ object Subscriber
 
 
 
-case class Subscription(topic: Uri, subscribed: Subscribed)
+case class Subscription(topic: Uri, subscribed: Subscribed) {
+  // TODO def unsubscribe(): Future[Unsubscribed]
+}
 
 private[client] case class PendingSubscription(subscribe: Subscribe, handler: EventHandler, promise: Promise[Subscription])
 

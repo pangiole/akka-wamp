@@ -15,7 +15,7 @@ import scala.concurrent.{Future, Promise}
   *   val client = Client("myapp")
   *
   *   import scala.concurrent.Future
-  *   import client.executionContext
+  *   implicit val ec = client.executionContext
   *   
   *   val session: Future[Session] = 
   *     client.openSession(
@@ -135,23 +135,16 @@ class Session private[client](val connection: Connection, welcome: Welcome)(impl
   
   
   // TODO def onClose() = { /* when the router sends GOODBYE */ }
-  
-  
+
+
   def handle: Receive = {
     handleGoodbye(session = this) orElse
-      handleSubscriptionSuccess orElse
-      handleSubscriptionError orElse
-      handleUnsubscribed orElse 
-      handleUnsubscribedError orElse
-      handlePublicationSuccess orElse
-      handlePublicationError orElse
-      handleEvent orElse
-      handleRegistrationSuccess orElse
-      handleRegistrationError orElse
-      // TODO handleUnregisterSuccess orElse handleUnregisterError 
-      handleInvocation orElse
+      handleSubscriptions orElse 
+      handlePublications orElse 
+      handleEvents orElse
+      handleRegistrations orElse 
+      handleInvocations orElse
       handleUnexpected
   }
-
 }
 

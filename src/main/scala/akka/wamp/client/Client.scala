@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   *   val client = Client("myapp")
   *
   *   import scala.concurrent.Future
-  *   import client.executionContext
+  *   implicit val ec = client.executionContext
   *
   *   val conn: Future[Connection] = client
   *     .connect(
@@ -110,7 +110,7 @@ class Client private[client]()(implicit val system: ActorSystem) extends Peer {
   *   val client = Client("myapp")
   *   
   *   import scala.concurrent.Future
-  *   import client.executionContext
+  *   implicit val ec = client.executionContext
   *   
   *   val conn: Future[Connection] = client
   *     .connect(
