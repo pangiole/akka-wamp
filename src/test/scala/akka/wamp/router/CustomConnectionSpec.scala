@@ -23,10 +23,12 @@ class CustomConnectionSpec extends ConnectionFixtureSpec {
       |   }
       | }
     """.stripMargin
+
+  // TODO how to test when disconnect-offending-peers ???
+  // client.sendMessage("""[1,"loose.URI..realm",{"roles":{"subscriber":{}}}]""")
   
   
-  "A custom router.Connection" should "???" in { f =>
-    // TODO how to test when disconnect-offending-peers ???
+  "A custom router.Connection" should "disconnect on offending messages" in { f =>
     pending
     withWsClient(f.httpRoute) { client =>
       

@@ -241,8 +241,10 @@ class JsonSerializationSpec extends WordSpec
           case _ => fail
         }
       }
+      
       "succeed for valid PUBLISH bearing streamed payload arguments" in {
         pending
+        // TODO file an issue for StreamedPayloads (consider pull request #3)
       }
 
       
@@ -540,7 +542,10 @@ class JsonSerializationSpec extends WordSpec
       }
 
       "serialize ABORT" in {
-        pending
+        val message = messages.Abort(Dict("message"->s"The realm 'unknown' does not exist."), "wamp.error.no_such_realm")
+        whenReduced(s.serialize(message)) { json =>
+          json mustBe """[3,{"message":"The realm 'unknown' does not exist."},"wamp.error.no_such_realm"]"""
+        }
       }
 
       "serialize ERROR" in {

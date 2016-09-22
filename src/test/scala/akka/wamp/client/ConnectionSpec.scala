@@ -1,7 +1,7 @@
 package akka.wamp.client
 
-import akka.actor.{ActorSystem, PoisonPill}
-import akka.wamp.Dict
+import akka.actor.ActorSystem
+import akka.wamp._
 import com.typesafe.config.ConfigFactory
 
 class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.parseString(
@@ -35,11 +35,11 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
     }
   }
   
-  it should "fail open session when it turns out to be disconnected" in { f =>
+  
+  it should "fail open session when it turns out to have been disconnected from client side" in { f =>
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     pending
     f.withConnection { conn =>
-      /*
       // Client side disconnection 
       whenReady(conn.disconnect()) { _ =>
         val session = conn.openSession()
@@ -48,12 +48,25 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
           e.getMessage mustBe "disconnected"
         }
       }
-      
-      // Server side disconnection
-      // ???
-      */
     }
   }
+
+  
+  it should "fail open session if it turns out to have been disconnected from router side" in { f =>
+    // TODO https://github.com/angiolep/akka-wamp/issues/11
+    pending
+    f.withConnection { conn =>
+      // TODO how to simulate router side disconnection ???
+      /*whenReady(routerRef ! Disconnect)*/ { // _ =>
+        val session = conn.openSession()
+        whenReady(session.failed) { e =>
+          e mustBe ConnectionException
+          e.getMessage mustBe "disconnected"
+        }
+      }
+    }
+  }
+  
   
   it should "fail open session when router aborts" in { f =>
     f.withConnection { conn =>
@@ -64,8 +77,8 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
         case AbortException(abort) =>
           abort.reason mustBe "wamp.error.no_such_realm"
           abort.details mustBe Dict("message" -> "The realm 'unknown.realm' does not exist.")
-        case other =>
-          fail(s"unexpected $other")
+        case e =>
+          fail(s"unexpected $e")
       }
     }
   }
@@ -89,7 +102,18 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
   
   
   it should "fail open multiple sessions on the same connection" in { f =>
-    pending
+    f.withConnection { conn =>
+      whenReady(conn.openSession()) { session1 =>
+        val session2 = conn.openSession()
+        session2.failed.futureValue match {
+          case AbortException(abort) =>
+            abort.reason mustBe "akka.wamp.error.session_already_open"
+            abort.details mustBe Dict()
+          case e =>
+            fail(s"unexpected $e")
+        } 
+      }
+    }
   }
   
   

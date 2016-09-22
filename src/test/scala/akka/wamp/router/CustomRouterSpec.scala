@@ -34,7 +34,6 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
   }
 
 
-  // TODO https://github.com/angiolep/akka-wamp/issues/21
   it should "disconnect on HELLO twice (regardless the realm)" in { f =>
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
     f.router.underlyingActor.sessions must have size(1)
@@ -43,18 +42,8 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
     f.router.underlyingActor.sessions  mustBe empty
   }
 
-  // TODO https://github.com/angiolep/akka-wamp/issues/22
   it should "disconnect on GOODBYE before open session" in { f =>
     f.router ! Goodbye()
     expectMsg(Wamp.Disconnect)
-  }
-  
-  
-  it should "disconnect on HELLO with no-strict URI" in { f =>
-    pending
-    // TODO Hello constructor validates initial state. Try to move this test to CustomConnectionSpec.
-    f.router ! Hello("loose.URI..realm")
-    expectMsg(Wamp.Disconnect)
-    f.router.underlyingActor.sessions  mustBe empty
   }
 }

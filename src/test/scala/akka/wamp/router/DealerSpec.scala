@@ -24,7 +24,7 @@ class DealerSpec extends RouterFixtureSpec {
 
 
 
-  it should "reply ERROR on REGISTER but did not announce 'callee' role" in { f =>
+  it should "reply ERROR on REGISTER if peer did not announce 'callee' role" in { f =>
     val client = TestProbe("client")
     client.send(f.router, Hello(details = Dict().addRoles(Roles.publisher))); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "myapp.procedure"))
@@ -52,7 +52,7 @@ class DealerSpec extends RouterFixtureSpec {
   }
 
 
-  it should "confirm existing registration on repeated REGISTER same procedure" in { f =>
+  it should "confirm existing registration on repeated REGISTER same procedure from same client" in { f =>
     val client = TestProbe("client")
     client.send(f.router , Hello()); client.receiveOne(0.seconds)
     client.send(f.router, Register(1, procedure = "mypp.procedure")); client.receiveOne(0.seconds)
@@ -150,7 +150,7 @@ class DealerSpec extends RouterFixtureSpec {
   }
   
 
-  it should "reply ERROR on CALL but did not announce 'caller' role" in { f =>
+  it should "reply ERROR on CALL if peer did not announce 'caller' role" in { f =>
     pending
 //    val client = TestProbe("client")
 //    client.send(f.router, Hello(details = Dict().addRoles(Roles.publisher))); client.receiveOne(0.seconds)

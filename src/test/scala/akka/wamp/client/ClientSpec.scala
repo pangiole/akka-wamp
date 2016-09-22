@@ -2,7 +2,7 @@ package akka.wamp.client
 
 import org.scalatest.concurrent.ScalaFutures
 
-class ClientSpec extends ClientFixtureSpec  with ScalaFutures {
+class ClientSpec extends ClientFixtureSpec with ScalaFutures {
 
   "The client" should "fail to establish a connection when invalid uri is given" in { f =>
     val conn = f.client.connect("ws!127.0.0.1:9999/invalid")
@@ -37,7 +37,10 @@ class ClientSpec extends ClientFixtureSpec  with ScalaFutures {
     whenReady(f.client.connect(f.url))(_ => assert(true))
   }
   
-  it should "terminate" in { f =>
-    pending
+  
+  it should "succeed terminate" in { f =>
+    whenReady(f.client.terminate()) { terminated =>
+      assert(terminated.existenceConfirmed)
+    }
   }
 }

@@ -21,21 +21,26 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "fail register procedure if it didn't open session with 'callee' role" in { f =>
-    pending
+  it should "fail register procedure if it didn't announce 'callee' role" in { f =>
+    f.withSession(roles = Set("publisher")) { session =>
+      val registration = session.register("myapp.procedure"){_ => ()}
+      whenReady(registration.failed) { ex =>
+        ex mustBe a[SessionException]
+        ex.getMessage mustBe "akka.wamp.error.no_callee_role"
+      }
+    }
   }
 
 
   it should "succeed register procedure and expect its handler to be passed INVOCATIONs in" in { f =>
+    pending
     f.withSession { session1 =>
       val handler = stubFunction[Invocation, Unit]
       val registration = session1.register("myapp.procedure")(handler)
       whenReady(registration) { registration =>
-        registration.requestId mustBe 1
-        registration.registrationId mustBe 1
+        registration.registered.requestId mustBe 1
+        registration.registered.registrationId mustBe 1
 
-        pending
-        
         // the caller shall be another connection actor,
         // otherwise the router wouldn't call the procedure
         /*f.withConnection { conn2 =>
@@ -49,4 +54,5 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
       }
     }
   }
+  
 }

@@ -1,13 +1,13 @@
 package akka.wamp.client
 
-import akka.actor.ActorSystem
+import akka.actor._
 import akka.io.IO
-import akka.testkit.{TestActorRef, TestProbe}
-import akka.wamp.Wamp.{Bind, Bound}
-import akka.wamp.router.Router
-import akka.wamp.{ActorSpec, Scope, Wamp}
-import org.scalatest.{Outcome, ParallelTestExecution}
-import org.scalatest.concurrent.ScalaFutures
+import akka.testkit._
+import akka.wamp.Wamp._
+import akka.wamp._
+import akka.wamp.router._
+import org.scalatest._
+import org.scalatest.concurrent._
 
 import scala.concurrent.duration._
 
@@ -26,15 +26,21 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     def withConnection(testCode: Connection => Unit) = {
       whenReady(client.connect(url)) { conn =>
         testCode(conn)
+        // TODO conn.disconnect()
       }
     }
-    // create a new client/connection/session to test with
-    def withSession(testCode: Session => Unit) = {
+    // create a new connection/session to test with
+    def withSession(roles: Set[Role])(testCode: Session => Unit): Unit = {
       withConnection { conn =>
-        whenReady(conn.openSession()) { session =>
+        whenReady(conn.openSession(roles = roles)) { session =>
           testCode(session)
-        }  
+          session.close()
+        }
       }
+    }
+    // create a new connection/session to test with
+    def withSession(testCode: Session => Unit): Unit = {
+      withSession(Roles.client)(testCode)
     }
   }
   

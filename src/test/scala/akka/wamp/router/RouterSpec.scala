@@ -28,7 +28,7 @@ class RouterSpec extends RouterFixtureSpec {
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
     f.router.underlyingActor.sessions must have size(1)
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("subscriber"))
-    expectMsg(Goodbye(Dict("message"->"Second HELLO message received during the lifetime of the session"), "akka.wamp.error.session_failure"))
+    expectMsg(Abort(reason = "akka.wamp.error.session_already_open"))
     f.router.underlyingActor.sessions mustBe empty
   }
 

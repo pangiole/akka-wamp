@@ -19,8 +19,14 @@ class SubscriberSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "fail subscribe to topic if it didn't open session with 'subscriber' role" in { f =>
-    pending
+  it should "fail subscribe to topic if it didn't announce 'subscriber' role" in { f =>
+    f.withSession(roles = Set("callee")) { session =>
+      val subscription = session.subscribe("myapp.topic")(_ => ())
+      whenReady(subscription.failed) { ex =>
+        ex mustBe a[SessionException]
+        ex.getMessage mustBe "akka.wamp.error.no_subscriber_role"
+      }
+    }
   }
 
 

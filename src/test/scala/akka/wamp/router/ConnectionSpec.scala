@@ -74,19 +74,15 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // SESSION #1 OPEN
     // \
       // --> bad HELLO : 2nd within session lifecycle
-      // <-- GOODBYE
+      // <-- ABORT
       f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-      f.client.expectMessage("""[6,{"message":"Second HELLO message received during the lifetime of the session"},"akka.wamp.error.session_failure"]""")
-    // \ 
-    // SESSION #1 CLOSE
+      f.client.expectMessage("""[3,{},"akka.wamp.error.session_already_open"]""")
     
-    // --> HELLO
-    // <-- WELCOME
-    f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
-
-    // SESSION #2 OPEN
-    // \
+      // --> HELLO
+      // <-- WELCOME
+      f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
+      f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
+  
       // --> bad GOODBYE : invalid reason URI
       //     dropped
       f.client.sendMessage("""[6,{},"invalid..reason"]""")
@@ -95,15 +91,14 @@ class ConnectionSpec extends ConnectionFixtureSpec
       f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
       f.client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
     // \
-    // SESSION #2 CLOSED
+    // SESSION #1 CLOSED
 
-    
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{},"publisher":{}}}]""")
     f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
 
-    // SESSION #3 OPEN
+    // SESSION #2 OPEN
     // \
       // --> bad SUBSCRIBE : invalid topic URI
       //     dropped
@@ -124,7 +119,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
       f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
       f.client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
     // \
-    // SESSION #3 CLOSED
+    // SESSION #2 CLOSED
 
     f.client.expectNoMessage()
   }

@@ -120,10 +120,10 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
            * during the lifetime of the session and the peer must fail 
            * the session if that happens.
            */
-          log.warning("[{}] !!! SessionException: received HELLO when session already open.", self.path.name)
+          log.warning("[{}] !!! SessionException: received HELLO but session already open.", self.path.name)
           closeSession(session)
           if (!disconnectOffendingPeers) {
-            session.peer ! Goodbye(Dict("message"->"Second HELLO message received during the lifetime of the session"), "akka.wamp.error.session_failure")
+            session.peer ! Abort(reason = "akka.wamp.error.session_already_open")
           } else {
             session.peer ! Wamp.Disconnect
           }

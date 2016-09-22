@@ -18,8 +18,14 @@ class PublisherSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "fail publish to topic if it didn't open session with publisher role" in { f =>
-    pending
+  it should "fail publish to topic if it didn't announce 'publisher' role" in { f =>
+    f.withSession(roles = Set("caller")) { session =>
+      val publication = session.publish("myapp.topic", ack=true)
+      whenReady(publication.failed) { ex =>
+        ex mustBe a[SessionException]
+        ex.getMessage mustBe "akka.wamp.error.no_publisher_role"
+      }
+    }
   }
 
 
