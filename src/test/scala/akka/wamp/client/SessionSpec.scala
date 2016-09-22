@@ -4,7 +4,7 @@ import org.scalamock.scalatest.MockFactory
 
 class SessionSpec extends ClientFixtureSpec with MockFactory {
 
-  "A client session" should "reply GOODBYE upon receiving GOODBYE from router" in { f =>
+  "A client session" should "close and reply GOODBYE upon receiving GOODBYE from router" in { f =>
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     pending
     f.withSession { session =>

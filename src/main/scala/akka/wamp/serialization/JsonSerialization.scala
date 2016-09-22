@@ -150,6 +150,10 @@ class JsonSerialization() extends Serialization {
           case Registered.tpe   => make(Registered("REGISTER.Request"|Id, "Registration"|Id))
           case Unregister.tpe   => make(Unregister("Request"|Id, "REGISTER.Registration"|Id))
           case Unregistered.tpe => make(Unregistered("UNREGISTER.Request"|Id))
+          case Call.tpe         => make(Call("Request"|Id, "Options"|Dict, "Procedure"|Uri, "Arguments"|Payload))
+          case Invocation.tpe   => make(Invocation("Request"|Id, "REGISTERED.Registration"|Id, "Details"|Dict, "Arguments"|Payload))
+          case Yield.tpe        => make(Yield("INVOCATION.Request"|Id, "Options"|Dict, "Arguments"|Payload))
+          case Result.tpe       => make(Result("CALL.Request"|Id, "Details"|Dict, "YIELD.Arguments"|Payload))
           case _                => fail("MessageType|Integer")
         }
       }
@@ -192,6 +196,10 @@ class JsonSerialization() extends Serialization {
         case Registered(requestId, registrationId)          => (Registered.tpe :: requestId :: registrationId :: Nil, None)
         case Unregister(requestId, registrationId)          => (Unregister.tpe :: requestId :: registrationId :: Nil, None)
         case Unregistered(requestId)                        => (Unregistered.tpe :: requestId :: Nil, None)
+        case Call(requestId, options, procedure, payload)   => (Call.tpe :: requestId :: options :: procedure :: Nil, payload)
+        case Invocation(reqId, regstrId, options, payload)  => (Invocation.tpe :: reqId :: regstrId :: options :: Nil, payload)
+        case Yield(requestId, options, payload)             => (Yield.tpe :: requestId :: options :: Nil, payload)
+        case Result(requestId, details, payload)            => (Result.tpe :: requestId :: details :: Nil, payload)
       }
 
     payload match {

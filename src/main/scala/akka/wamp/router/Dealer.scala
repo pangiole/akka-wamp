@@ -22,8 +22,8 @@ trait Dealer { this: Router =>
     * REGISTER and UNREGISTER
     */
   private[router] def handleRegistrations: Receive = {
-    case message @ Register(requestId, options, procedure) =>
-      ifSession(message, sender()) { session =>
+    case msg @ Register(requestId, options, procedure) =>
+      ifSession(msg, sender()) { session =>
         if (session.roles.contains(Roles.callee)) {
           registrations.values.toList.filter(_.procedure == procedure) match {
             case Nil => {
@@ -61,8 +61,8 @@ trait Dealer { this: Router =>
         }
       }
 
-    case message @ Unregister(requestId, registrationId) =>
-      ifSession(message, sender()) { session =>
+    case msg @ Unregister(requestId, registrationId) =>
+      ifSession(msg, sender()) { session =>
         registrations.get(registrationId) match {
           case Some(registration) =>
             if (unregister(session.peer, registration)) {
@@ -78,6 +78,24 @@ trait Dealer { this: Router =>
             session.peer ! Error(Unregister.tpe, requestId, error = "wamp.error.no_such_registration")
         }
       }  
+  }
+
+  /**
+    * Handle remote procedure call lifecycle messages such as: 
+    * CALL and YIELD
+    */
+  private[router] def handleCalls: Receive = {
+    case msg @ Invocation(requestId, registrationId, details, payload) =>
+      ifSession(msg, sender()) { session =>
+        
+        // TODO stay DRY with "announced roles" checkings 
+        
+        if (session.roles.contains(Roles.caller)) {
+
+        } else {
+          session.peer ! Error(Call.tpe, requestId, error = "akka.wamp.error.no_callee_role")
+        }
+      }
   }
 
 
