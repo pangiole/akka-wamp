@@ -188,6 +188,7 @@ connection ! Subscribe(requestId = 34, "myapp.tick.topic")
 ### Subscribed
 TBD
 
+
 <a name="Publish"></a>
 
 ### Publish
@@ -257,6 +258,14 @@ def opened: Receive = {
 ```
 
 <a name="Payload"></a>
+
+
+## Caller  and Callee
+
+<a name="Register"></a>
+
+### Register
+TBD
 
 ## Serialization
 

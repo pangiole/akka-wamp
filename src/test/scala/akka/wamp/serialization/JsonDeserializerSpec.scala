@@ -611,7 +611,7 @@ trait JsonPayloadHolderBehaviours {
       val txt = source(json).replace(",...", "]")
       val message = s.deserialize(txt)
       message match {
-        case holder: PayloadHolder =>
+        case holder: PayloadContainer =>
           holder.payload match {
             case None => assert(true)
             case payload => fail(s"Unexpected $payload")
@@ -624,7 +624,7 @@ trait JsonPayloadHolderBehaviours {
       val txt = source(json).replace(",...",""",["paolo",40],{"arg0":"pietro","age":40,"male":true}]""")
       val message = s.deserialize(txt)
       message match {
-        case holder: PayloadHolder =>
+        case holder: PayloadContainer =>
           holder.payload match {
             case Some(p: TextPayload) =>
               whenReduced(p.source) { text =>

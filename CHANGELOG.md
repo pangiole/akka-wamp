@@ -7,8 +7,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
-  - Client API now provides ``register`` and ``invoke`` operations  
-  - Router now able to register procedures and route invocations to clients  
+  - Client API now provides ``register``, ``unregister`` and ``call`` operations  
+  - Router now able to register procedures and route calls to clients  
+- Improve unit tests coverage
+- Improve documentation
 
 ## [0.8.0] (2016-09-19)  
 

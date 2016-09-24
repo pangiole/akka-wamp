@@ -6,6 +6,8 @@ import akka.wamp.client.Client
 import akka.wamp.router._
 import akka.wamp.serialization.Payload
 
+import scala.concurrent.Future
+
 /**
   * Common interface of WAMP messages exchanged by two peers during a session
   */
@@ -13,12 +15,6 @@ sealed trait Message extends AbstractMessage {
   protected val tpe: TypeCode
 }
 
-/**
-  * A message that can hold a payload
-  */
-trait PayloadHolder { this: Message =>
-  def payload: Option[Payload]
-}
 
 
 /**
@@ -161,7 +157,8 @@ final case class Error(
   error: Uri, payload: Option[Payload] = None)
   (implicit validator: Validator) 
   extends Message
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor
 {
   protected val tpe = Error.tpe
   require(TypeCode.isValid(requestType), "invalid Type")
@@ -196,7 +193,8 @@ final case class Publish(
   payload: Option[Payload] = None)
   (implicit validator: Validator) 
   extends Message
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor
 {
   protected val tpe = Publish.tpe
   validator.validate(requestId)
@@ -351,7 +349,8 @@ final case class Event(
   payload: Option[Payload] = None)
   (implicit validator: Validator) 
   extends Message
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor
 {
   protected val tpe = Event.tpe
   validator.validate(subscriptionId)
@@ -488,7 +487,8 @@ final case class Call(
   payload: Option[Payload] = None)
   (implicit validator: Validator) 
   extends Message 
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor 
 {
   protected val tpe = Invocation.tpe
   validator.validate(requestId)
@@ -523,7 +523,8 @@ final case class Invocation(
   payload: Option[Payload] = None)
   (implicit validator: Validator)
   extends Message
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor
 {
   protected val tpe = Invocation.tpe
   validator.validate(requestId)
@@ -555,7 +556,7 @@ final case class Yield(
   payload: Option[Payload] = None)
   (implicit validator: Validator)
   extends Message 
-  with PayloadHolder
+  with PayloadContainer
 {
   protected val tpe = Yield.tpe
   validator.validate(requestId)
@@ -588,7 +589,8 @@ final case class Result(
   payload: Option[Payload] = None)
   (implicit validator: Validator)
   extends Message
-  with PayloadHolder
+  with PayloadContainer
+  with ArgumentExtractor
 {
   protected val tpe = Result.tpe
   validator.validate(requestId)

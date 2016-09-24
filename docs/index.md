@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
 ## Client
 Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
 
-### Publisher/Subscriber
+### Publish Subscribe
 
 ```scala
 object PubSubApp extends App {
@@ -24,7 +24,7 @@ object PubSubApp extends App {
   val client = Client()
   
   import scala.concurrent.Future
-  import client.executionContext
+  implicit val ec = client.executionContext
   
   for {
     session <- client
@@ -44,8 +44,8 @@ object PubSubApp extends App {
 }
 ```
 
-### Callee/Caller
-TBD
+### Remote Procedure Call
+Coming soon ...
 
  
 ## Router

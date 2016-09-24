@@ -20,7 +20,7 @@ Please, [read the docs](http://akka-wamp.readthedocs.io) for further details.
 ## Client
 Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
 
-### Publisher/Subscriber
+### Publish Subscribe
 
 ```scala
 object PubSubApp extends App {
@@ -29,7 +29,7 @@ object PubSubApp extends App {
   import akka.wamp.client._
   val client = Client()
   
-  import client.executionContext
+  implicit val ec = client.executionContext
   
   for {
     session <- client
@@ -49,7 +49,7 @@ object PubSubApp extends App {
 }
 ```
 
-### Callee/Caller
+### Remote Procedure Call
 Coming soon ...
 
  
@@ -83,8 +83,8 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
 
-[docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=stable
-[docs-url]: http://akka-wamp.readthedocs.io/en/stable/?badge=stable
+[docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=latest
+[docs-url]: http://akka-wamp.readthedocs.io/en/stable/?badge=latest
 
 [gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
 [gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
