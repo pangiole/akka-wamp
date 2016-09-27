@@ -1,18 +1,46 @@
 package akka.wamp.client
 
-import akka.wamp.messages.{Event, Invocation}
+import akka.wamp.messages.Invocation
+import akka.wamp.serialization.Payload
 import org.scalamock.scalatest.MockFactory
 
-import scala.concurrent.duration._
+import scala.concurrent._
 
 class CalleeSpec extends ClientFixtureSpec with MockFactory {
 
 
-  "A client callee" should "fail register procedure when it turns out to be closed" in { f =>
+  "A callee" should "fail register procedure when session closed" in { f =>
     f.withSession { session =>
       whenReady(session.close()) { _ =>
-        val registration = session.register("myapp.topic"){_ => ()}
+        val registration = session.register("myapp.topic")(_ => Future.successful(None))
         whenReady(registration.failed) { ex =>
+          ex mustBe a[SessionException]
+          ex.getMessage mustBe "session closed"
+        }
+      }
+    }
+  }
+  
+
+
+  it should "succeed register procedure" in { f =>
+    f.withSession { session1 =>
+      val handler = stubFunction[Invocation, Future[Option[Payload]]]
+      val registration = session1.register("myapp.procedure")(handler)
+      whenReady(registration) { registration =>
+        registration.procedure mustBe "myapp.procedure"
+        registration.registered.requestId mustBe 1
+        registration.registered.registrationId mustBe 1
+      }
+    }
+  }
+
+
+  it should "fail unregister procedure when session closed" in { f =>
+    f.withSession { session =>
+      whenReady(session.close()) { _ =>
+        val unregistered = session.unregister("myapp.procedure")
+        whenReady(unregistered.failed) { ex =>
           ex mustBe a[SessionException]
           ex.getMessage mustBe "session closed"
         }
@@ -21,38 +49,7 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "fail register procedure if it didn't announce 'callee' role" in { f =>
-    f.withSession(roles = Set("publisher")) { session =>
-      val registration = session.register("myapp.procedure"){_ => ()}
-      whenReady(registration.failed) { ex =>
-        ex mustBe a[SessionException]
-        ex.getMessage mustBe "akka.wamp.error.no_callee_role"
-      }
-    }
-  }
-
-
-  it should "succeed register procedure and expect its handler to be passed INVOCATIONs in" in { f =>
+  it should "succeed unregister procedure" in { f =>
     pending
-    f.withSession { session1 =>
-      val handler = stubFunction[Invocation, Unit]
-      val registration = session1.register("myapp.procedure")(handler)
-      whenReady(registration) { registration =>
-        registration.registered.requestId mustBe 1
-        registration.registered.registrationId mustBe 1
-
-        // the caller shall be another connection actor,
-        // otherwise the router wouldn't call the procedure
-        /*f.withConnection { conn2 =>
-          whenReady(conn2.openSession()) { session2 =>
-            val call = session2.call("myapp.procedure")
-            whenReady(call) { _ =>
-              awaitAssert(handler.verify(*).once(), 5 seconds)
-            }
-          }
-        }*/
-      }
-    }
   }
-  
 }

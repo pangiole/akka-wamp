@@ -23,6 +23,7 @@ class RouterSpec extends RouterFixtureSpec {
     )
   }
 
+  
   // TODO https://github.com/angiolep/akka-wamp/issues/21
   it should "fail session on HELLO twice (regardless the realm)" in { f =>
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
@@ -32,13 +33,15 @@ class RouterSpec extends RouterFixtureSpec {
     f.router.underlyingActor.sessions mustBe empty
   }
 
+  
   // TODO https://github.com/angiolep/akka-wamp/issues/22
-  it should "drop message and resume on GOODBYE before open session" in { f =>
+  it should "drop message GOODBYE if it didn't open session" in { f =>
     f.router ! Goodbye()
     f.router ! Hello()
     expectMsgType[Welcome]
     f.router.underlyingActor.sessions must have size(1)
   }
+  
   
   it should "open session and reply WELCOME on HELLO for existing realm" in { f =>
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher"))
@@ -58,8 +61,19 @@ class RouterSpec extends RouterFixtureSpec {
     f.router ! Hello()
     expectMsgType[Welcome]
     f.router.underlyingActor.sessions must have size(1)
+    
+    f.router ! Subscribe(1, topic = "myapp.topic")
+    f.router.underlyingActor.subscriptions must have size(1)
+    expectMsgType[Subscribed]
+    
+    f.router ! Register(2, procedure = "myapp.procedure")
+    f.router.underlyingActor.registrations must have size(1)
+    expectMsgType[Registered]
+    
     f.router ! Goodbye()
     expectMsg(Goodbye(reason = "wamp.error.goodbye_and_out"))
     f.router.underlyingActor.sessions mustBe empty
+    f.router.underlyingActor.subscriptions mustBe empty
+    f.router.underlyingActor.registrations mustBe empty
   }
 }

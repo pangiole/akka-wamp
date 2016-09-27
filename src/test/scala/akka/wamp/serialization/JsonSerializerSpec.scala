@@ -71,7 +71,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[8,32,341284,{},"wamp.error.no_such_subscription"]"""
     }
 
-    val message2 = Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload(List("paolo", 40, true))))
+    val message2 = Error(Subscribe.tpe, 341284, Error.defaultDetails, "wamp.error.no_such_subscription", Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe s"""[8,32,341284,{},"wamp.error.no_such_subscription",["paolo",40,true]]"""
     }
@@ -89,7 +89,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[16,341284,{},"myapp.topic"]"""
     }
 
-    val message2 = Publish(341284, options = Dict(), "myapp.topic", Some(Payload(List("paolo", 40, true))))
+    val message2 = Publish(341284, options = Dict(), "myapp.topic", Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe """[16,341284,{},"myapp.topic",["paolo",40,true]]"""
     }
@@ -146,7 +146,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[36,713845233,5512315,{}]"""
     }
 
-    val message2 = Event(713845233, 5512315, Dict(), Some(Payload(List("paolo", 40, true))))
+    val message2 = Event(713845233, 5512315, Dict(), Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe s"""[36,713845233,5512315,{},["paolo",40,true]]"""
     }
@@ -191,7 +191,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[48,341284,{},"myapp.procedure"]"""
     }
 
-    val message2 = Call(341284, options = Dict(), "myapp.procedure", Some(Payload(List("paolo", 40, true))))
+    val message2 = Call(341284, options = Dict(), "myapp.procedure", Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe """[48,341284,{},"myapp.procedure",["paolo",40,true]]"""
     }
@@ -214,7 +214,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[68,9,431,{}]"""
     }
 
-    val message2 = Invocation(9, 431, details = Dict(), Some(Payload(List("paolo", 40, true))))
+    val message2 = Invocation(9, 431, details = Dict(), Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe """[68,9,431,{},["paolo",40,true]]"""
     }
@@ -236,7 +236,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[70,9,{}]"""
     }
 
-    val message2 = Yield(9, options = Dict(), Some(Payload(List("paolo", 40, true))))
+    val message2 = Yield(9, options = Dict(), Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe """[70,9,{},["paolo",40,true]]"""
     }
@@ -258,7 +258,7 @@ class JsonSerializerSpec extends FlatSpec
       json mustBe """[50,9,{}]"""
     }
 
-    val message2 = Result(9, details = Dict(), Some(Payload(List("paolo", 40, true))))
+    val message2 = Result(9, details = Dict(), Some(Payload("paolo", 40, true)))
     whenReduced(s.serialize(message2)) { json =>
       json mustBe """[50,9,{},["paolo",40,true]]"""
     }

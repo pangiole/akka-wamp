@@ -3,7 +3,7 @@ package akka.wamp.client
 import akka.actor.{Actor, ActorLogging, Status}
 import akka.wamp.{Validator, Wamp}
 
-import scala.concurrent.Promise
+import scala.concurrent.{ExecutionContext, Promise}
 
 
 /**
@@ -13,7 +13,8 @@ import scala.concurrent.Promise
   *
   * @param promise is the promise of connection to fulfill
   */
-private[client] class ConnectionActor(promise: Promise[Connection]) extends Actor with ActorLogging {
+private[client] 
+class ClientActor(promise: Promise[Connection]) extends Actor with ActorLogging {
 
   /**
     * The connection
@@ -33,6 +34,9 @@ private[client] class ConnectionActor(promise: Promise[Connection]) extends Acto
 
   /** WAMP types Validator */
   private implicit val validator = new Validator(strictUris)
+
+  /** Akka actor system dispatcher */
+  private implicit val executionContext: ExecutionContext = context.system.dispatcher
 
   /**
     * This actor receive partial function

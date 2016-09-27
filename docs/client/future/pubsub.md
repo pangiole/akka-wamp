@@ -11,8 +11,7 @@ import akka.wamp.message._
 
 val subscription: Future[Subscription] = session.flatMap(
   _.subscribe(
-    topic = "myapp.topic",
-    options = Dict()) { 
+    topic = "myapp.topic") { 
     event =>
       log.info(s"${event.publicationId}")
       for(p <- event.payload; args <- p.arguments) 
@@ -23,12 +22,16 @@ val subscription: Future[Subscription] = session.flatMap(
 A (future of) session can be mapped to a (future of) subscription by just invoking the ``subscribe`` method. It is a curried method with two parameter lists.
 
 ```scala
-def subscribe(topic: Uri, options: Dict)(handler: EventHandler)
+def subscribe(topic: Uri)(handler: EventHandler)
 ```
 
-The first parameter list accepts ``topic`` and ``options`` arguments as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accept a callback handler function of type ``EventHandler`` which gets invoked to process each event from the topic. 
+The first parameter list accepts ``topic`` as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accept a callback function of type ``EventHandler`` which gets invoked to process each event from the topic. 
 
-The ``event`` object provides a (option of) ``payload`` which in turn provides both (future of) ``arguments`` and ``argumentsKw``. Receiving arguments is better explained in the [Payload](./payload) section.  
+```scala
+type EventHandler = (Event) => Unit
+```
+
+The event handler is a function that transforms an event object into the unit value (roughly like ``void``). The event object comes with an (option of) input ``payload`` bearing application arguments. Receiving arguments is documented in the [Payload Handling](./payload) section.  
 
 ### Multiple handlers
 ```
@@ -106,7 +109,7 @@ import akka.wamp.serialization._
 val publication: Future[Either[Done, Publication]] = session.flatMap(
   _.publish(
     topic = "myapp.topic",
-    payload = Some(Payload(List("paolo", 40, true))),
+    payload = Some(Payload("paolo", 40, true)),
     ack = true
   ))
 ```

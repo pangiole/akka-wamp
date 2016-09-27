@@ -130,7 +130,7 @@ You can open only one session per connection. Therefore, if you wish to open a s
 You can shortcut connection establishment and session opening in one single concise statement by invoking ``openSession()`` on the client rather than on the connection:
 
 ```scala
-val session1: Future[Session] = client
+val session: Future[Session] = client
   .openSession(
     url = "ws://some.host.net:8080/ws",
     subprotocol = "wamp.2.json",

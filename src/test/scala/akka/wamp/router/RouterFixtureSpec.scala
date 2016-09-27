@@ -19,15 +19,16 @@ class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   
   implicit val validator = new Validator(strictUris)
   
-  case class FixtureParam(router: TestActorRef[Router], listener: TestProbe, url: String)
+  case class FixtureParam(router: TestActorRef[Router], client: TestProbe)
 
   override def withFixture(test: OneArgTest) = {
     val listener = TestProbe()
     val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
     try {
       IO(Wamp) ! Bind(router)
-      val bound = listener.expectMsgType[Bound](16 seconds)
-      val theFixture = FixtureParam(router, listener, bound.url)
+      listener.expectMsgType[Bound](16 seconds)
+      val client = TestProbe("client")
+      val theFixture = FixtureParam(router, client)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {

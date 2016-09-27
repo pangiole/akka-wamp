@@ -5,8 +5,8 @@ import akka.wamp.Scope
 trait SequentialIdGenerators {
   
   val scopes = Map(
-    'global -> new Scope.Session {},
-    'router -> new Scope.Session {},
-    'session -> new Scope.Session {}
+    'global -> new Scope.SessionScope {},
+    'router -> new Scope.SessionScope {},
+    'session -> new Scope.SessionScope {}
   )
 }

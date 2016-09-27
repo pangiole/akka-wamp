@@ -15,8 +15,6 @@ sealed trait Message extends AbstractMessage {
   protected val tpe: TypeCode
 }
 
-
-
 /**
   * Sent by a client to initiate opening of a session to a router
   * attaching to a Realm.
@@ -47,10 +45,10 @@ final case class Hello(
   (implicit validator: Validator) 
   extends Message 
 {
-  protected val tpe = Hello.tpe
+  val tpe = Hello.tpe
   validator.validate(realm)
   validator.validate(details)
-  validator.validateRoles(details)
+  validator.validateClientRoles(details)
 }
 final object Hello {
   val tpe = 1
@@ -75,7 +73,7 @@ final case class Welcome(
   (implicit validator: Validator) 
   extends Message 
 {
-  protected val tpe = Welcome.tpe
+  val tpe = Welcome.tpe
   validator.validate(sessionId)
   validator.validate(details)
 }
@@ -97,7 +95,7 @@ final case class Abort(
   (implicit validator: Validator) 
   extends Message 
 {
-  protected val tpe = Abort.tpe
+  val tpe = Abort.tpe
   validator.validate(details)
   validator.validate(reason)
 }
@@ -124,7 +122,7 @@ final case class Goodbye(
   (implicit validator: Validator) 
   extends Message 
 {
-  protected val tpe = Goodbye.tpe
+  val tpe = Goodbye.tpe
   validator.validate(details)
   validator.validate(reason)
 }
@@ -160,7 +158,7 @@ final case class Error(
   with PayloadContainer
   with ArgumentExtractor
 {
-  protected val tpe = Error.tpe
+  val tpe = Error.tpe
   require(TypeCode.isValid(requestType), "invalid Type")
   validator.validate(requestId)
   validator.validate(details)
@@ -171,6 +169,14 @@ final object Error {
   val defaultDetails = Dict()
 }
 
+
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//    P U B L I S H   a n d   S U B S C R I B E 
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
   * Sent by a publisher to a broker to publish an event.
@@ -196,7 +202,7 @@ final case class Publish(
   with PayloadContainer
   with ArgumentExtractor
 {
-  protected val tpe = Publish.tpe
+  val tpe = Publish.tpe
   validator.validate(requestId)
   validator.validate(options)
   validator.validate(topic)
@@ -217,9 +223,9 @@ final case class Published(
   requestId: Id, 
   publicationId: Id)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Published.tpe
+  val tpe = Published.tpe
   validator.validate(requestId)
   validator.validate(publicationId)
 }
@@ -245,9 +251,9 @@ final case class Subscribe(
   options: Dict = Subscribe.defaultOptions, 
   topic: Uri)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Subscribe.tpe
+  val tpe = Subscribe.tpe
   validator.validate(requestId)
   validator.validate(options)
   validator.validate(topic)
@@ -272,9 +278,9 @@ final case class Subscribed(
   requestId: Id, 
   subscriptionId: Id)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Subscribed.tpe
+  val tpe = Subscribed.tpe
   validator.validate(requestId)
   validator.validate(subscriptionId)
 }
@@ -295,9 +301,9 @@ final case class Unsubscribe(
   requestId: Id, 
   subscriptionId: Id)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Unsubscribe.tpe
+  val tpe = Unsubscribe.tpe
   validator.validate(requestId)
   validator.validate(subscriptionId)
 }
@@ -319,9 +325,9 @@ final object Unsubscribe {
 final case class Unsubscribed(
   requestId: Id)
   (implicit validator: Validator)
-  extends Message 
+  extends Message
 {
-  protected val tpe = Unsubscribed.tpe
+  val tpe = Unsubscribed.tpe
   validator.validate(requestId)
 }
 final object Unsubscribed {
@@ -352,7 +358,7 @@ final case class Event(
   with PayloadContainer
   with ArgumentExtractor
 {
-  protected val tpe = Event.tpe
+  val tpe = Event.tpe
   validator.validate(subscriptionId)
   validator.validate(publicationId)
   validator.validate(details)
@@ -361,6 +367,15 @@ final object Event {
   val tpe = 36
   val defaultOptions = Dict()
 }
+
+
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//    R E M O T E   P R O C E D U R E   C A L L s
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 /**
@@ -379,9 +394,9 @@ final case class Register(
   options: Dict = Register.defaultOptions, 
   procedure: Uri)
   (implicit validator: Validator)
-  extends Message 
+  extends Message
 {
-  protected val tpe = Register.tpe
+  val tpe = Register.tpe
   validator.validate(requestId)
   validator.validate(options)
   validator.validate(procedure)
@@ -406,9 +421,9 @@ final case class Registered(
   requestId: Id,
   registrationId: Id)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Registered.tpe
+  val tpe = Registered.tpe
   validator.validate(requestId)
   validator.validate(registrationId)
 }
@@ -432,9 +447,9 @@ final case class Unregister(
   requestId: Id, 
   registrationId: Id)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
 {
-  protected val tpe = Unregister.tpe
+  val tpe = Unregister.tpe
   validator.validate(requestId)
   validator.validate(registrationId)
 }
@@ -456,14 +471,15 @@ final object Unregister {
 final case class Unregistered(
   requestId: Id)
   (implicit validator: Validator)
-  extends Message 
+  extends Message
 {
-  protected val tpe = Unregistered.tpe
+  val tpe = Unregistered.tpe
   validator.validate(requestId)
 }
 final object Unregistered {
   val tpe = 67
 }
+
 
 
 /**
@@ -478,7 +494,7 @@ final object Unregistered {
   * @param requestId is a random, ephemeral identifier chosen by the caller and used to correlate the dealer's response with the request
   * @param options is a dictionary that allows to provide additional call request options in an extensible way 
   * @param procedure is the URI of the procedure to be called 
-  * @param payload is either the original list of positional call arguments or dictionary of keyword arguments (each of arbitrary type)
+  * @param payload is either a list of positional call arguments or dictionary of keyword call arguments (each of arbitrary type)
   */
 final case class Call(
   requestId: Id, 
@@ -486,11 +502,11 @@ final case class Call(
   procedure: Uri, 
   payload: Option[Payload] = None)
   (implicit validator: Validator) 
-  extends Message 
+  extends Message
   with PayloadContainer
   with ArgumentExtractor 
 {
-  protected val tpe = Invocation.tpe
+  val tpe = Call.tpe
   validator.validate(requestId)
   validator.validate(options)
   validator.validate(procedure)
@@ -511,12 +527,12 @@ final object Call {
   * [INVOCATION, Request|id, REGISTERED.Registration|id, Details|dict, CALL.Arguments|list, CALL.ArgumentsKw|dict]
   * ```
   *
-  * @param requestId is a random, ephemeral identifier chosen by the Dealer and used to correlate the _Callee's_ response with the request.
-  * @param registrationId is the registration identifier under which the procedure was registered at the Dealer.
-  * @param details is a dictionary that allows to provide additional invocation request details in an extensible way 
-  * @param payload is either the original list of positional call arguments or dictionary of keyword arguments as provided by the Caller.
+  * @param requestId is a random, ephemeral identifier chosen by the dealer and used to correlate the callee's response with the request.
+  * @param registrationId is the registration identifier under which the procedure was registered at the dealer.
+  * @param details is a dictionary that allows to provide additional invocation request details in an extensible way.
+  * @param payload is either the original list of positional call arguments or dictionary of keyword arguments as provided by the caller.
   */
-final case class Invocation(
+final case class Invocation (
   requestId: Id, 
   registrationId: Id, 
   details: Dict = Invocation.defaultDetails, 
@@ -526,7 +542,7 @@ final case class Invocation(
   with PayloadContainer
   with ArgumentExtractor
 {
-  protected val tpe = Invocation.tpe
+  val tpe = Invocation.tpe
   validator.validate(requestId)
   validator.validate(registrationId)
   validator.validate(details)
@@ -555,10 +571,10 @@ final case class Yield(
   options: Dict = Yield.defaultOptions,
   payload: Option[Payload] = None)
   (implicit validator: Validator)
-  extends Message 
+  extends Message
   with PayloadContainer
 {
-  protected val tpe = Yield.tpe
+  val tpe = Yield.tpe
   validator.validate(requestId)
   validator.validate(options)
 }
@@ -568,10 +584,8 @@ final object Yield {
 }
 
 
-
-
 /**
-  * Actual yield from an endpoint sent by a callee to dealer
+  * Result of a call as returned by dealer to caller
   *
   * ```
   * [RESULT, CALL.Request|id, Details|dict]
@@ -585,18 +599,18 @@ final object Yield {
   */
 final case class Result(
   requestId: Id,
-  details: Dict = Result.defaultOptions,
+  details: Dict = Result.defaultDetails,
   payload: Option[Payload] = None)
   (implicit validator: Validator)
   extends Message
   with PayloadContainer
   with ArgumentExtractor
 {
-  protected val tpe = Result.tpe
+  val tpe = Result.tpe
   validator.validate(requestId)
   validator.validate(details)
 }
 final object Result {
   val tpe = 50
-  val defaultOptions = Dict()
+  val defaultDetails = Dict()
 }

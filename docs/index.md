@@ -35,8 +35,7 @@ object PubSubApp extends App {
         roles = Set("subscriber"))
     subscription <- session
       .subscribe(
-        topic = "myapp.topic",
-        options = Dict()) {
+        topic = "myapp.topic") {
         event =>
           event.payload.map(_.arguments.map(println))
         }

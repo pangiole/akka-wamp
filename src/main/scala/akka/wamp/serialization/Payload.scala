@@ -42,8 +42,8 @@ object Payload {
     * @param args is the in-memory arguments as list
     * @return an eager payload
     */
-  def apply(args: List[Any]) = new Payload.Eager {
-    override val memArgs: List[Any] = args
+  def apply(args: Any*) = new Payload.Eager {
+    override val memArgs: List[Any] = args.toList
   }
 
   /**

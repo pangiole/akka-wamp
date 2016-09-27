@@ -52,13 +52,12 @@ trait Subscriber { this: Session =>
     * }}}
     *
     * @param topic is the topic the subscriber wants to subscribe to
-    * @param options is the option dictionary (default is empty)
     * @param handler is the handler executed on events
     * @return the (future of) subscription 
     */
-  def subscribe(topic: Uri, options: Dict = Subscribe.defaultOptions)(handler: EventHandler): Future[Subscription] = {
+  def subscribe(topic: Uri)(handler: EventHandler): Future[Subscription] = {
     withPromise[Subscription] { promise =>
-      val msg = Subscribe(requestId = nextId(), options, topic)
+      val msg = Subscribe(requestId = nextId(), Subscribe.defaultOptions, topic)
       pendingSubscribers += (msg.requestId -> PendingSubscription(msg, handler, promise))
       connection ! msg
     }
@@ -72,16 +71,16 @@ trait Subscriber { this: Session =>
     * @return a (future of) unsubscribed
     */
   def unsubscribe(topic: Uri): Future[Unsubscribed] = {
-    subscriptions.find { case (_, subscription) =>  subscription.topic == topic } match {
-      case Some((subscriptionId, _)) => {
-        withPromise[Unsubscribed] { promise =>
+    withPromise[Unsubscribed] { promise =>
+      subscriptions.find { case (_, subscription) =>  subscription.topic == topic } match {
+        case Some((subscriptionId, _)) => {
           val msg = Unsubscribe(requestId = nextId(), subscriptionId)
           pendingUnsubscribes += (msg.requestId -> (msg, promise))
           connection ! msg
         }
+        case None =>
+          Future.failed[Unsubscribed](new SessionException("akka.wamp.error.no_such_topic"))
       }
-      case None =>
-        Future.failed[Unsubscribed](new SessionException("akka.wamp.error.no_such_topic"))
     }
   }
 

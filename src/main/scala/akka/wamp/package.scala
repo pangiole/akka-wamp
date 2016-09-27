@@ -61,6 +61,10 @@ package object wamp {
     * Subscriptions, Registrations and Requests
     */
   type Id = Long
+  
+  type RequestId = Long
+  
+  type RegistrationId = Long
 
 
   final object Id {
@@ -102,17 +106,5 @@ package object wamp {
     def setAck(bool: Boolean = true): Dict = {
       dict + ("acknowledge" -> bool)
     }
-
-    def roles: Set[String] = {
-      if (dict.isDefinedAt("roles")) {
-        dict("roles") match {
-          case rs: Map[_, _] => rs.keySet.map(_.asInstanceOf[String])
-          case _ => Set()
-        }
-      } else {
-        Set()
-      }
-    }
   }
-  
 }

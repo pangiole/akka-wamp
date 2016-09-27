@@ -11,9 +11,9 @@ import akka.wamp.messages._
 import scala.collection.mutable
 
 /**
-  * The Router is a [[Peer]] playing the [[Roles.broker]] and [[Roles.dealer]] 
-  * which is responsible for generic call and [[Event]] routing but do NOT run 
-  * any application code a Client would.
+  * The router is a peer playing the broker and dealer which is 
+  * responsible for generic call and event routing but do NOT run 
+  * any application code a client would.
   * 
   */
 final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef]) 
@@ -41,11 +41,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     */
   val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
 
-  
-  val defaultIfSessionIsClosed: (AbstractMessage, ActorRef) => Unit = { (msg, peer) =>
-    log.warning("SessionException: received message {} but NO session open.", msg)
-    if (disconnectOffendingPeers) peer ! Wamp.Disconnect
-  }
   
   
   /** WAMP types validator */
@@ -79,7 +74,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   override def receive =
     handleConnections orElse handleSessions orElse 
       handleSubscriptions orElse handlePublications orElse
-        handleRegistrations //orElse handleCalls or Else handleYields
+        handleRegistrations orElse handleCalls
 
   /**
     * Handle transports lifecycle signals and events such as: 
@@ -98,11 +93,10 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     case signal @ Wamp.Disconnected =>
       val peer = sender()
       log.debug("[{}]     Wamp.Disconnected [{}]", self.path.name, peer.path.name)
-      ifSession(signal, sender())(
-        isOpen = { session =>
-          closeSession(session)
-        }
-      )
+      sessions.values.find(_.peer == peer) match {
+        case Some(session) => closeSession(session)
+        case None => ()
+      }
       listener.map(_ ! signal)
   }
   
@@ -113,8 +107,9 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
     */
   private def handleSessions: Receive = {
     case message @ Hello(realm, details) => {
-      ifSession(message, sender())(
-        isOpen = { session =>
+      val peer = sender()
+      sessions.values.find(_.peer == peer) match {
+        case Some(session) => {
           /*
            * It is a protocol error to receive a second "HELLO" message 
            * during the lifetime of the session and the peer must fail 
@@ -122,15 +117,15 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
            */
           log.warning("[{}] !!! SessionException: received HELLO but session already open.", self.path.name)
           closeSession(session)
-          if (!disconnectOffendingPeers) {
-            session.peer ! Abort(reason = "akka.wamp.error.session_already_open")
-          } else {
+          if (disconnectOffendingPeers) {
             session.peer ! Wamp.Disconnect
+          } else {
+            session.peer ! Abort(reason = "akka.wamp.error.session_already_open")
           }
-        },
-        isClosed = { (_, peer) =>
+        }
+        case None => {
           if (realms.contains(realm)) {
-            val session = addNewSession(peer, details, realm)
+            val session = createNewSession(peer, details, realm)
             peer ! Welcome(session.id, welcomeDetails)
           }
           else {
@@ -143,37 +138,56 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
               peer ! Abort(Dict("message"->s"The realm '$realm' does not exist."), "wamp.error.no_such_realm")
             }
             else {
-              val session = addNewSession(peer, details, createRealm(realm))
-              peer ! Welcome(session.id, welcomeDetails) 
-            } 
+              val session = createNewSession(peer, details, createRealm(realm))
+              peer ! Welcome(session.id, welcomeDetails)
+            }
           }
         }
-      )
+      }
     }
       
     // ignore ABORT messages from transport
     case Abort => ()
 
-    case message @ Goodbye(details, reason) => {
-      ifSession(message, sender()) { session =>
+    case msg @ Goodbye(details, reason) => {
+      withSession(msg, sender(), role = None) { session =>
         closeSession(session)
-        session.peer ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
-        // DO NOT disconnect
+        session.peer ! Goodbye(reason = "wamp.error.goodbye_and_out")
       }
     }
   }
 
 
   private[router] 
-  def ifSession(message: AbstractMessage, peer: ActorRef)
-               (isOpen: (Session) => Unit, isClosed: (AbstractMessage, ActorRef) => Unit = defaultIfSessionIsClosed): Unit = {
+  def withSession(msg: Message, peer: ActorRef, role: Option[Role])(fn: (Session) => Unit): Unit = 
+  {
     sessions.values.find(_.peer == peer) match {
-      case Some(session) => isOpen(session)
-      case None => isClosed(message, peer)
+      case Some(session) => {
+        if (!role.isDefined) {
+          fn(session)
+        } 
+        else {
+          if (session.roles.contains(role.get)) {
+            fn(session)
+          } 
+          else {
+            if (disconnectOffendingPeers) {
+              peer ! Wamp.Disconnect
+            }
+          }
+        }
+      }
+      case None => {
+        log.warning("SessionException: received message {} but NO session open.", msg)
+        if (disconnectOffendingPeers) {
+          peer ! Wamp.Disconnect
+        }
+      }
     }
   }
 
-  private def addNewSession(client: ActorRef, details: Dict, realm: Uri) = {
+  private 
+  def createNewSession(client: ActorRef, details: Dict, realm: Uri) = {
     val id = scopes('global).nextId(excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
     val session = new Session(id, client, roles, realm)
@@ -183,7 +197,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   
   private def closeSession(session: Session) = {
     subscriptions.foreach { case (_, subscription) => unsubscribe(session.peer, subscription) }
-    // TODO unregister procedures on close session
+    registrations.foreach { case (_, registration) => unregister(session.peer, registration) }
     sessions -= session.id
   }
   

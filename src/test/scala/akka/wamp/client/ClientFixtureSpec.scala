@@ -46,9 +46,9 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   
   override def withFixture(test: OneArgTest) = {
     val scopes = Map(
-      'global -> new Scope.Session {},
-      'router -> new Scope.Session {},
-      'session -> new Scope.Session {}
+      'global -> new Scope.SessionScope {},
+      'router -> new Scope.SessionScope {},
+      'session -> new Scope.SessionScope {}
     )
     val listener = TestProbe()
     val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))

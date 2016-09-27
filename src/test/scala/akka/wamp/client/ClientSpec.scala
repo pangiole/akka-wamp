@@ -4,7 +4,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 class ClientSpec extends ClientFixtureSpec with ScalaFutures {
 
-  "The client" should "fail to establish a connection when invalid uri is given" in { f =>
+  "A client" should "fail to establish a connection when invalid uri is given" in { f =>
     val conn = f.client.connect("ws!127.0.0.1:9999/invalid")
     whenReady(conn.failed) { e =>
       e mustBe a [ConnectionException]

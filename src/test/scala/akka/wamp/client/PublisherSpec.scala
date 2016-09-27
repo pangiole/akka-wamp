@@ -5,10 +5,10 @@ import org.scalamock.scalatest.MockFactory
 
 class PublisherSpec extends ClientFixtureSpec with MockFactory {
 
-  "A client callee" should "fail publish to topic if it turns out to be closed" in { f =>
+  "A publisher" should "fail publish to topic when session closed" in { f =>
     f.withSession { session =>
       whenReady(session.close()) { _ =>
-        val publication = session.publish("myapp.topic", ack = true)
+        val publication = session.publish("myapp.topic")
         whenReady(publication.failed) { ex =>
           ex mustBe a[SessionException]
           ex.getMessage mustBe "session closed"
@@ -16,18 +16,7 @@ class PublisherSpec extends ClientFixtureSpec with MockFactory {
       }
     }
   }
-
-
-  it should "fail publish to topic if it didn't announce 'publisher' role" in { f =>
-    f.withSession(roles = Set("caller")) { session =>
-      val publication = session.publish("myapp.topic", ack=true)
-      whenReady(publication.failed) { ex =>
-        ex mustBe a[SessionException]
-        ex.getMessage mustBe "akka.wamp.error.no_publisher_role"
-      }
-    }
-  }
-
+  
 
   it should "succeed publish(noack) to topic" in { f =>
     f.withSession { session =>
@@ -40,7 +29,7 @@ class PublisherSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "succeed publish(ack) to topic and expect to receive PUBLISHED" in { f =>
+  it should "succeed publish(ack) to topic and return publication" in { f =>
     f.withSession { session =>
       val publication = session.publish("myapp.topic", ack=true)
       whenReady(publication) { publication =>
@@ -49,19 +38,6 @@ class PublisherSpec extends ClientFixtureSpec with MockFactory {
           'requestId(1),
           'publicationId(2)
         )
-      }
-    }
-  }
-
-
-  it should "fail subscribe on topic if it turns out to be closed" in { f =>
-    f.withSession { session =>
-      whenReady(session.close()) { _ =>
-        val subscription = session.subscribe("myapp.topic"){_ => ()}
-        whenReady(subscription.failed) { ex =>
-          ex mustBe a[SessionException]
-          ex.getMessage mustBe "session closed"
-        }
       }
     }
   }

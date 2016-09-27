@@ -56,7 +56,8 @@ class JsonDeserializerSpec extends FlatSpec
       """[1,"myapp.realm",{"roles":null}]"""",
       """[1,"myapp.realm",{"roles":{}}]"""",
       """[1,"myapp.realm",{"roles":{"invalid":{}}}]"""",
-      """[1,"invalid..realm",{"roles":{"publisher":{}}}]""""
+      """[1,"invalid..realm",{"roles":{"publisher":{}}}]"""",
+      """[1,"invalid..realm",{"roles":{"publisher":{"should.not.be","here"}}}]""""
     ).foreach { text =>
       a[DeserializeException] mustBe thrownBy(s.deserialize(source(text)))
     }

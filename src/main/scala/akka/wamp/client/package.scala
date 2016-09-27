@@ -1,11 +1,11 @@
 package akka.wamp
 
 import akka.Done
-import akka.wamp.client.Client
 import akka.wamp.messages._
+import akka.wamp.serialization.Payload
 
 import scala.collection.mutable
-import scala.concurrent.Promise
+import scala.concurrent._
 
 /**
   * This package provides objects, classes and traits you can use to
@@ -48,35 +48,13 @@ package object client {
   type EventHandlers = mutable.Map[/*Subscription*/Id, EventHandler]
 
   
+
+  
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-  
-  /**
-    * Pending REGISTER messages are those waiting for 
-    * a reply from the dealer (REGISTERED or ERROR)
-    */
-  type PendingRegistrations = mutable.Map[/*Request*/Id, PendingRegistration]
-
-  /**
-    * Subscriptions are those confirmed with SUBSCRIBED
-    */
-  type Registrations = mutable.Map[/*Registration*/Id, Registration]
-
-  /**
-    * Pending UNREGISTER messages are those waiting for 
-    * a reply from the broker (UNREGISTERED or ERROR)
-    */
-  type PendingUnregisters = mutable.Map[/*Request*/Id, (Unregister, Promise[Unregistered])]
-
 
   /**
     * Type synonym for an invocation handler
     */
-  type InvocationHandler = Invocation => Unit
-
-  /**
-    * Type synonym for registered invocation handlers
-    */
-  type InvocationHandlers = mutable.Map[/*Registration*/Id, InvocationHandler]
-
+  type InvocationHandler = Invocation => Future[Option[Payload]]
+ 
 }

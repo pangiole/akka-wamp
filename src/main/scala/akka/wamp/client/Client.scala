@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * 
   * @param system is the Akka actor system
   */
-class Client private[client]()(implicit val system: ActorSystem) extends Peer {
+class Client private[client]()(implicit system: ActorSystem) extends Peer {
 
   /**
     * This client actor system name
@@ -57,8 +57,8 @@ class Client private[client]()(implicit val system: ActorSystem) extends Peer {
     subprotocol: String = Client.defaultSubprotocol): Future[Connection] = 
   {
     val promise = Promise[Connection]
-    val client = system.actorOf(Props(new ConnectionActor(promise)))
-    IO(Wamp) ! Wamp.Connect(client, url, subprotocol)
+    val clientRef = system.actorOf(Props(new ClientActor(promise)))
+    IO(Wamp) ! Wamp.Connect(clientRef, url, subprotocol)
     promise.future
   }
 

@@ -15,7 +15,7 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
     | }
   """.stripMargin))) {
 
-  "A connection" should "fail open session when invalid realm is given" in { f =>
+  "A client connection" should "fail open session when invalid realm is given" in { f =>
     f.withConnection { conn =>
       val session = conn.openSession("invalid..realm")
       whenReady(session.failed) { ex =>
@@ -30,7 +30,7 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
       val session = conn.openSession("akka.wamp.realm", roles = Set("invalid"))
       whenReady(session.failed) { ex =>
         ex mustBe a[ConnectionException]
-        ex.getMessage must startWith("invalid roles in Set(invalid)")
+        ex.getMessage must startWith("invalid roles in Map(roles -> Map(invalid -> Map()))")
       }
     }
   }

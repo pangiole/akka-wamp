@@ -13,13 +13,13 @@ import scala.concurrent.{Future, Promise}
   */
 trait Callee { this: Session =>
   
-  private val pendingRegisters: PendingRegistrations = mutable.Map()
+  import Callee._
+  
+  private val pendingRegistrations: mutable.Map[RequestId, PendingRegistration] = mutable.Map()
 
-  private val registrations: Registrations = mutable.Map()
-
-  private val pendingUnregisters: PendingUnregisters = mutable.Map()
-
-  private val invocationHandlers: InvocationHandlers = mutable.Map()
+  private val registrations: mutable.Map[RegistrationId, Registration] = mutable.Map()
+  
+  private val pendingUnregistrations: mutable.Map[RequestId, PendingUnregistration] = mutable.Map()
 
   
   /**
@@ -56,14 +56,13 @@ trait Callee { this: Session =>
     * }}}
     *
     * @param procedure is the procedure the callee wants to register
-    * @param options is a dictionary that allows to provide additional registration request details in a extensible way
     * @param handler is the handler executed on invocations
     * @return the (future of) registration
     */
-  def register(procedure: Uri, options: Dict = Register.defaultOptions)(handler: InvocationHandler): Future[Registration] = {
+  def register(procedure: Uri)(handler: InvocationHandler): Future[Registration] = {
     withPromise[Registration] { promise =>
-      val msg = Register(requestId = nextId(), options, procedure)
-      pendingRegisters += (msg.requestId -> PendingRegistration(msg, handler, promise))
+      val msg = Register(requestId = nextId(), Register.defaultOptions, procedure)
+      pendingRegistrations += (msg.requestId -> new PendingRegistration(msg, handler, promise))
       connection ! msg
     }
   }
@@ -72,37 +71,33 @@ trait Callee { this: Session =>
   private[client] def handleRegistrations: Receive = {
     case msg @ Registered(requestId, registrationId) =>
       log.debug("<-- {}", msg)
-      pendingRegisters.get(requestId).map { case pending =>
-        val registration = Registration(pending.register.procedure, msg)
+      pendingRegistrations.get(requestId).map { case pending =>
+        val registration = new Registration(pending.msg.procedure, pending.handler, msg)
         registrations += (registrationId -> registration)
-        invocationHandlers += (msg.registrationId -> pending.handler)
-        pendingRegisters -= requestId
+        pendingRegistrations -= requestId
         pending.promise.success(registration)
       }
       
     case msg @ Error(Register.tpe, requestId, _, error, _) =>
       log.debug("<-- {}", msg)
-      pendingRegisters.get(requestId).map { pending =>
-        pendingRegisters -= requestId
+      pendingRegistrations.get(requestId).map { pending =>
+        pendingRegistrations -= requestId
         pending.promise.failure(new SessionException(error))
       }
       
     case msg @ Unregistered(requestId) =>
       log.debug("<-- {}", msg)
-      pendingUnregisters.get(requestId).map {
-        case (Unregister(_, registrationId), promise) =>
-          registrations -= registrationId
-          invocationHandlers -= registrationId
-          pendingUnregisters -= requestId
-          promise.success(msg)
+      pendingUnregistrations.get(requestId).map { pending =>
+          registrations -= pending.msg.registrationId
+          pendingUnregistrations -= requestId
+          pending.promise.success(msg)
       }
 
     case msg @ Error(Unregister.tpe, requestId, _, error, _) =>
       log.debug("<-- {}", msg)
-      pendingUnregisters.get(requestId).map {
-        case (_, promise) =>
-          pendingUnregisters -= requestId
-          promise.failure(new SessionException(error))
+      pendingUnregistrations.get(requestId).map { pending =>
+          pendingUnregistrations -= requestId
+          pending.promise.failure(new SessionException(error))
       }
   }
   
@@ -117,36 +112,42 @@ trait Callee { this: Session =>
     * @return a (future of) unregistered
     */
   def unregister(procedure: Uri): Future[Unregistered] = {
-    registrations.find { case (_, registration) =>  registration.procedure == procedure } match {
-      case Some((registrationId, _)) => {
-        withPromise[Unregistered] { promise =>
+    withPromise[Unregistered] { promise =>
+      registrations.find { case (_, registration) =>  registration.procedure == procedure } match {
+        case Some((registrationId, _)) => {
           val msg = Unregister(requestId = nextId(), registrationId)
-          pendingUnregisters += (msg.requestId -> (msg, promise))
+          pendingUnregistrations += (msg.requestId -> new PendingUnregistration(msg, promise))
           connection ! msg
         }
+        case None =>
+          Future.failed[Unregistered](new SessionException("akka.wamp.error.no_such_procedure"))
       }
-      case None =>
-        Future.failed[Unregistered](new SessionException("akka.wamp.error.no_such_procedure"))
     }
   }
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~
 
+  
   protected def handleInvocations: Receive = {
-    case msg @ Invocation(_, registrationId, _, _) =>
+    case msg @ Invocation(requestId, registrationId, _, _) =>
       log.debug("<-- {}", msg)
-      invocationHandlers.get(registrationId) match {
-        case Some(handler) => handler(msg)
-        case None => log.warn("!!! invocation handler not found for registrationId {}", registrationId)
+      registrations.get(registrationId) match {
+        case Some(registration) => 
+          val payload = registration.handler(msg)
+          payload.map { p => connection ! Yield(requestId, payload = p) }
+          
+        case None => 
+          log.warn("!!! invocation handler not found for registrationId {}", registrationId)
       }
   }
 }
 
 
-
-case class Registration(procedure: Uri, registered: Registered) {
-  // TODO def unregister(): Future[Unregisterd]
+object Callee {
+  
+  private class PendingRegistration(val msg: Register, val handler: InvocationHandler, val promise: Promise[Registration])
+  
+  private class PendingUnregistration(val msg: Unregister, val promise: Promise[Unregistered])
 }
 
-private[client] case class PendingRegistration(register: Register, handler: InvocationHandler, promise: Promise[Registration])

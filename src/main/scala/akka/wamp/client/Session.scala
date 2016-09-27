@@ -5,7 +5,7 @@ import akka.wamp._
 import akka.wamp.messages._
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
   * WAMP sessions are established over a WAMP connection.
@@ -48,9 +48,14 @@ import scala.concurrent.{Future, Promise}
   * @param welcome is the WELCOME message
   * @param validator is WAMP types validator
   */
-class Session private[client](val connection: Connection, welcome: Welcome)(implicit protected val validator: Validator) 
-  extends SessionLike with Subscriber with Publisher with Callee
-    with Scope.Session 
+class Session private[client](val connection: Connection, welcome: Welcome)
+                             (implicit val validator: Validator, val executionContext: ExecutionContext) 
+  extends SessionLike 
+    with Subscriber 
+    with Publisher 
+    with Callee
+    with Caller
+    with Scope.SessionScope 
 {
   import connection.{handleGoodbye, handleUnexpected}
   
@@ -144,6 +149,7 @@ class Session private[client](val connection: Connection, welcome: Welcome)(impl
       handleEvents orElse
       handleRegistrations orElse 
       handleInvocations orElse
+      handleResults orElse
       handleUnexpected
   }
 }

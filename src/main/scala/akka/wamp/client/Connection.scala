@@ -7,7 +7,7 @@ import akka.wamp._
 import akka.wamp.messages._
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
   * WAMP connections are established by clients to a router.
@@ -35,9 +35,12 @@ import scala.concurrent.{Future, Promise}
   *
   * @param client is the client actor reference
   * @param router is the router representative actor reference
+  * @param executionContext is the Akka actor system dispatcher
   * @param validator is the WAMP types validator
   */
-class Connection private[client](client: ActorRef, router: ActorRef)(implicit validator: Validator) {
+class Connection private[client](client: ActorRef, router: ActorRef)
+                                (implicit executionContext: ExecutionContext, validator: Validator) 
+{
   private val log = LoggerFactory.getLogger(classOf[Connection])
 
   /**
