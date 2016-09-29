@@ -1,8 +1,7 @@
 site_name: akka-wamp-0.8.0
 site_author: Paolo Angioletti
 repo_name: https://github.com/angiolep/akka-wamp
-theme: cinder
-#theme: readthedocs
+theme: readthedocs
 pages:
   - Home: 'index.md'
   - Router: 'router.md'
