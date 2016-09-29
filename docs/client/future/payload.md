@@ -1,7 +1,7 @@
 # Payload Handling
 WAMP messages, formatted as textual JSON or binary MsgPack, are transmitted by an underlying transport like WebSocket or RawTCP. Messages are all made of few headers and an optional payload. 
 
-```text
+```
 frame2                  frame1                             
 .-------------.        .-------------,---------.    
 | payload ... |  -->   | ... payload | headers |  -->  
@@ -17,7 +17,7 @@ The payload contains application data either as a list or as a dictionary of arg
 
 Akka Wamp provides efficient deserializers, implemented using streaming technologies, which do not eagerly parse the contents of incoming payloads but rather return lazy structures to defer parsing to the very last moment.  That lazy structures in question are implemented internally as ``LazyTextPayload`` and ``LazyBinaryPayload`` types.
 
-```text
+```
 ,-------------.  holds     ,-----------.
 |PayloadHolder|---------->>|  Payload  |
 `-------------'            `-----+-----'

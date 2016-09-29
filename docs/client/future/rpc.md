@@ -38,7 +38,7 @@ The WAMP protocol defines a routed Remote Procedure Call (RPC) mechanism which r
 
 A client, the callee, announces to the dealer router that it provides a certain procedure, identified by a procedure name.  Other clients, callers, can then call the procedure, with the dealer router invoking the procedure on the callee, receiving the procedure's result, and then forwarding this result back to the callers. Routed RPC differ from traditional client-server RPC in that the dealer router serves as an intermediary between the callers and the callee.
 
-```text
+```
    ,------.          ,------.               ,------.
    |Caller|          |Dealer|               |Callee|
    `--+---'          `--+---'               `--+---'   

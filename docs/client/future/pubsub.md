@@ -34,7 +34,7 @@ object PubSubApp extends App {
 
 The WAMP protocol defines a Publish and Subscribe (PubSub) communication pattern where a client, the subscriber, informs the broker router that it wants to receive events on a topic (i.e., it subscribes to a topic). Another client, a publisher, can then publish events to this topic, and the broker router distributes events to all subscriber.
 
-```text
+```
   ,---------.          ,------.             ,----------.
   |Publisher|          |Broker|             |Subscriber|
   `----+----'          `--+---'             `----+-----'
