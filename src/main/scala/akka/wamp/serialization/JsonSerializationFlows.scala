@@ -35,7 +35,8 @@ class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeer
     Flow[wamp.Message].
       map {
         case message: wamp.Message =>
-          TextMessage(json.serialize(message))
+          val text = json.serialize(message)
+          TextMessage(text)
       }
 
 

@@ -1,5 +1,5 @@
 # Akka Wamp 
-[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] [![Gitter][gitter-image]][gitter-url]
+[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] [![Docs Status][docs-image]][docs-url] [![Gitter][gitter-image]][gitter-url] 
 
      
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
@@ -12,57 +12,66 @@ libraryDependencies ++= Seq(
 )  
 ```
 
-## Docs 
-Please, [read the docs](http://akka-wamp.readthedocs.io) for further details.
-
-[![Docs Status][docs-image]][docs-url] 
-
-## Client
-Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
-
-### Publish Subscribe
+## Client API
+Connect to a router, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
 
 ```scala
 object PubSubApp extends App {
 
-  import akka.wamp._
   import akka.wamp.client._
   val client = Client()
-  
+
   implicit val ec = client.executionContext
-  
-  for {
-    session <- client
-      .openSession(
-        url = "ws://localhost:8080/router",
-        subprotocol = "wamp.2.json",
-        realm = "akka.wamp.realm",
-        roles = Set("subscriber"))
-    subscription <- session
-      .subscribe(
-        topic = "myapp.topic") {
-        event =>
-          event.payload.map(_.arguments.map(println))
-        }
+
+  val publication = 
+    for {
+      session <- client
+        .openSession(
+          url = "ws://localhost:8080/router",
+          subprotocol = "wamp.2.json",
+          realm = "akka.wamp.realm",
+          roles = Set("subscriber"))
+      subscription <- session
+        .subscribe(
+          topic = "myapp.topic1")(
+          event =>
+            event.data.map(println)
+        )
+      publication <- session
+        .publish(
+          topic = "myapp.topic2",
+          ack = false,
+          kwdata = Map("name"->"paolo", "age"->40)
+        )
     } yield ()
 }
 ```
 
-### Remote Procedure Call
-Coming soon ...
+### Major features
+
+[![Docs Status][docs-image]][docs-url] 
+
+* Proper connection and [Session Handling](https://angiolep.github.io/projects/akka-wamp/client/future/session)
+* Simple and concise [Publish Subscribe](https://angiolep.github.io/projects/akka-wamp/client/future/pubsub)
+* Simple and concise routed [Remote Procedure Call](https://angiolep.github.io/projects/akka-wamp/client/future/rpc)
+* Lazy [Payload Handling](https://angiolep.github.io/projects/akka-wamp/client/future/payload) with Streaming support
+
+Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/future)
 
  
-## Router 
+## Router
+ 
+[![Download][download-image]][download-url]
+ 
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
 
-[![Download][download-image]][download-url]
+
 
 ## Limitations
 
- * Scala 2.11 only (no older Scala)
+ * Scala 2.11 only (no older Scala and no Java yet)
  * WebSocket transport only (no raw TCP and no SSL/TLS yet) 
  * Provide WAMP Basic Profile only (no Advanced Profile yet)
- * Provide Publish/Subscribe only (no routed RPC yet)
  * Provide JSON serialization only (no MsgPack yet)
 
 ## Changelog

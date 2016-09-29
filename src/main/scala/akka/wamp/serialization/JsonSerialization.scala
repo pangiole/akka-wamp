@@ -40,41 +40,37 @@ class JsonSerialization() extends Serialization {
 
     def fail(token: String) = throw new DeserializeException(s"Expected $token but ${parser.getCurrentToken} found")
 
-    // lazy payload
-    class JsonTextPayload(val source: String) extends TextPayload {
-      lazy override val arguments: Future[List[Any]] = Future {
+    /**
+      * It parse JSON payload lazily
+      */
+    class JsonTextLazyPayload(val unparsed: String) extends TextLazyPayload {
+      
+      override def isEmpty(): Boolean = unparsed.isEmpty
+      
+      lazy override val parsed: Future[ParsedContent] = Future {
+        // """...[null,"paolo",40,true],{"height":1.65,"1":"pietro"}]"""
+        var args = mutable.ListBuffer.empty[Any]
+        val kwargs = mutable.HashMap.empty[String, Any]
         if (parser.getCurrentToken() == START_ARRAY) {
-          val buffer = mutable.ListBuffer.empty[Any]
           while (parser.nextToken() != END_ARRAY) {
             val value = mapper.readValue(parser, classOf[Object])
-            buffer += value
+            args += (if (value == null) None else value)
           }
-          if (parser.nextToken() != START_OBJECT) {
-            parser.close()
-            //inputStream.close()
-          }
-          buffer.toList
-        }
-        else fail("Arguments|list")
-      }
-
-      lazy override val argumentsKw: Future[Dict] = {
-        arguments.map { args =>
-          if (parser.getCurrentToken() == START_OBJECT) {
-            val buffer = mutable.Map.empty[String, Any]
+          // TODO test with malformed JSON """[null,"paolo",40,true !"""
+          if (parser.nextToken() == START_OBJECT) {
             while (parser.nextToken() != END_OBJECT) {
               val name = parser.getCurrentName
               parser.nextToken() // move next
               val value = mapper.readValue(parser, classOf[Object])
-              buffer += (name -> value)
+              kwargs += (name -> value)
             }
-            parser.close()
-            //inputStream.close()
-            val map1 = args.zipWithIndex.map { case (a, i) => s"arg$i" -> a }.toMap
-            map1 ++ buffer.toMap
+            // TODO test with malformed JSON """[null,"paolo",40,true],{"height":1.65,1 !}"""
           }
-          else fail("ArgumentsKw|dict")
+          parser.close()
+          //inputStream.close()
         }
+        else fail("Arguments|list")
+        ParsedContent(args.toList, kwargs.toMap)
       }
     }
 
@@ -83,7 +79,7 @@ class JsonSerialization() extends Serialization {
         mapper.readValue(parser, classOf[Map[String, Map[_, _]]])
       }
 
-      def getValueAsPayload(source: String): JsonTextPayload = {
+      def getValueAsPayload(source: String): JsonTextLazyPayload = {
         // Up to this point, the Jackson Streaming Parser must have read 
         // (and buffered) a certain number of characters from the input 
         // Akka Stream Source without consuming them yet.
@@ -104,7 +100,7 @@ class JsonSerialization() extends Serialization {
         val offset = parser.getCurrentLocation.getByteOffset
         val remaining = source.drop(offset.toInt + buffered.length)
 
-        new JsonTextPayload("[" + buffered + remaining)
+        new JsonTextLazyPayload("[" + buffered + remaining)
       }
     }
 
@@ -125,9 +121,9 @@ class JsonSerialization() extends Serialization {
         if (parser.nextToken() == VALUE_NUMBER_INT) parser.getValueAsInt
         else fail(s"$field|int")
 
-      def |(p: Payload.type): Option[Payload] =
-        if (parser.nextToken() == START_ARRAY) Some(parser.getValueAsPayload(source))
-        else None
+      def |(p: Payload.type): Payload =
+        if (parser.nextToken() == START_ARRAY) parser.getValueAsPayload(source)
+        else new JsonTextLazyPayload("")
     }
 
     if (parser.nextToken() == START_ARRAY) {
@@ -178,44 +174,49 @@ class JsonSerialization() extends Serialization {
       }
     }
 
-    val (elems, payload) = 
+    val elems = 
       message match {
-        case Hello(realm, details)                          => (Hello.tpe :: realm :: details :: Nil, None)
-        case Welcome(sessionId, details)                    => (Welcome.tpe :: sessionId :: details :: Nil, None)
-        case Goodbye(details, reason)                       => (Goodbye.tpe :: details :: reason :: Nil, None)
-        case Abort(details, reason)                         => (Abort.tpe :: details :: reason :: Nil, None)
-        case Error(reqType, reqId, details, error, payload) => (Error.tpe :: reqType :: reqId :: details :: error :: Nil, payload)
-        case Publish(requestId, options, topic, payload)    => (Publish.tpe :: requestId :: options :: topic :: Nil, payload)
-        case Published(requestId, publicationId)            => (Published.tpe :: requestId :: publicationId :: Nil, None)
-        case Subscribe(requestId, options, topic)           => (Subscribe.tpe :: requestId :: options :: topic :: Nil, None)
-        case Subscribed(requestId, subscriptionId)          => (Subscribed.tpe :: requestId :: subscriptionId :: Nil, None)
-        case Unsubscribe(requestId, subscriptionId)         => (Unsubscribe.tpe :: requestId :: subscriptionId :: Nil, None)
-        case Unsubscribed(requestId)                        => (Unsubscribed.tpe :: requestId :: Nil, None)
-        case Event(subId, pubId, details, payload)          => (Event.tpe :: subId :: pubId :: details :: Nil, payload)
-        case Register(requestId, options, procedure)        => (Register.tpe :: requestId :: options :: procedure :: Nil, None)
-        case Registered(requestId, registrationId)          => (Registered.tpe :: requestId :: registrationId :: Nil, None)
-        case Unregister(requestId, registrationId)          => (Unregister.tpe :: requestId :: registrationId :: Nil, None)
-        case Unregistered(requestId)                        => (Unregistered.tpe :: requestId :: Nil, None)
-        case Call(requestId, options, procedure, payload)   => (Call.tpe :: requestId :: options :: procedure :: Nil, payload)
-        case Invocation(reqId, regstrId, options, payload)  => (Invocation.tpe :: reqId :: regstrId :: options :: Nil, payload)
-        case Yield(requestId, options, payload)             => (Yield.tpe :: requestId :: options :: Nil, payload)
-        case Result(requestId, details, payload)            => (Result.tpe :: requestId :: details :: Nil, payload)
+        case Hello(realm, details)                          => Hello.tpe :: realm :: details :: None :: Nil
+        case Welcome(sessionId, details)                    => Welcome.tpe :: sessionId :: details :: None :: Nil
+        case Goodbye(details, reason)                       => Goodbye.tpe :: details :: reason :: None :: Nil
+        case Abort(details, reason)                         => Abort.tpe :: details :: reason :: None :: Nil
+        case Error(reqType, reqId, details, error, payload) => Error.tpe :: reqType :: reqId :: details :: error :: Some(payload) :: Nil
+        case Publish(requestId, options, topic, payload)    => Publish.tpe :: requestId :: options :: topic :: Some(payload) :: Nil
+        case Published(requestId, publicationId)            => Published.tpe :: requestId :: publicationId :: None :: Nil
+        case Subscribe(requestId, options, topic)           => Subscribe.tpe :: requestId :: options :: topic :: None :: Nil
+        case Subscribed(requestId, subscriptionId)          => Subscribed.tpe :: requestId :: subscriptionId :: None :: Nil
+        case Unsubscribe(requestId, subscriptionId)         => Unsubscribe.tpe :: requestId :: subscriptionId :: None :: Nil
+        case Unsubscribed(requestId)                        => Unsubscribed.tpe :: requestId :: None :: Nil
+        case Event(subId, pubId, details, payload)          => Event.tpe :: subId :: pubId :: details :: Some(payload) :: Nil
+        case Register(requestId, options, procedure)        => Register.tpe :: requestId :: options :: procedure :: None :: Nil
+        case Registered(requestId, registrationId)          => Registered.tpe :: requestId :: registrationId :: None :: Nil
+        case Unregister(requestId, registrationId)          => Unregister.tpe :: requestId :: registrationId :: None :: Nil
+        case Unregistered(requestId)                        => Unregistered.tpe :: requestId :: None :: Nil
+        case Call(requestId, options, procedure, payload)   => Call.tpe :: requestId :: options :: procedure :: Some(payload) :: Nil
+        case Invocation(reqId, regstrId, options, payload)  => Invocation.tpe :: reqId :: regstrId :: options :: Some(payload) :: Nil
+        case Yield(requestId, options, payload)             => Yield.tpe :: requestId :: options :: Some(payload) :: Nil
+        case Result(requestId, details, payload)            => Result.tpe :: requestId :: details :: Some(payload) :: Nil
       }
-
+    
+    val (fields, payload) = (elems.dropRight(1), elems.last) 
     payload match {
-      case None => 
-        elems.map(toJson).mkString("[", ",", "]")
+      case None =>  
+        fields.map(toJson).mkString("[", ",", "]")
         
-      case Some(p: TextPayload) => 
-        elems.map(toJson).mkString("[", ",", ",").concat(p.source).concat("]")
+      case Some(p: TextLazyPayload) if (p.isEmpty) =>
+        fields.map(toJson).mkString("[", ",", "]")
+
+      case Some(p: TextLazyPayload) =>
+        fields.map(toJson).mkString("[", ",", ",").concat(p.unparsed).concat("]")
         
-      case Some(p: BinaryPayload) => 
+      case Some(p: BinaryLazyPayload) => 
         throw new IllegalStateException("Cannot serialize binary payload to JSON")
         
-      case Some(p: Payload.Eager) =>
+      case Some(p: EagerPayload) =>
         val all = 
-          if (p.memArgsKw.isEmpty) elems ::: p.memArgs :: Nil
-          else elems ::: p.memArgs :: p.memArgsKw :: Nil
+          if (p.isEmpty) fields  
+          else if (p.content.kwargs.isEmpty) fields ::: p.content.args :: Nil
+          else fields ::: p.content.args :: p.content.kwargs :: Nil
 
         all.map(toJson).mkString("[", ",", "]")
     }

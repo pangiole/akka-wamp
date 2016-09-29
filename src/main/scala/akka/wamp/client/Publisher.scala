@@ -19,31 +19,68 @@ trait Publisher { this: Session =>
   private val pendingPublications: PendingPublications = mutable.Map()
 
   /**
-    * Publish an event to the given topic with the given (option of) payload
-    *
-    * {{{
-    *    ,---------.          ,------.          ,----------.
-    *   |Publisher|          |Broker|          |Subscriber|
-    *   `----+----'          `--+---'          `----+-----'
-    *        |     PUBLISH      |                   |
-    *        |------------------>                   |
-    *        |                  |                   |
-    *        |PUBLISHED or ERROR|                   |
-    *        |<------------------                   |
-    *        |                  |                   |
-    *        |                  |       EVENT       |
-    *        |                  | ------------------>
-    *   ,----+----.          ,--+---.          ,----+-----.
-    *   |Publisher|          |Broker|          |Subscriber|
-    *   `---------'          `------'          `----------'
-    * }}}
+    * Publish to a topic
     *
     * @param topic is the topic to publish to
-    * @param payload is the (option of) payload (default is ``None``)
-    * @param ack is the acknowledge boolean switch (default is ``false``)
-    * @return either done or a (future of) publication 
+    * @return (a future of) either done or publication 
     */
-  def publish(topic: Uri, payload: Option[Payload] = None, ack: Boolean = false): Future[Either[Done, Publication]] =  {
+  def publish(topic: Uri): Future[Either[Done, Publication]] =  {
+    publish(topic, ack=false, Payload())
+  }
+  
+  /**
+    * Publish to a topic
+    *
+    * @param topic is the topic to publish to
+    * @param ack is the acknowledge boolean switch
+    * @return (a future of) either done or publication 
+    */
+  def publish(topic: Uri, ack: Boolean): Future[Either[Done, Publication]] =  {
+    publish(topic, ack, Payload())
+  }
+  
+  /**
+    * Publish to a topic
+    *
+    * @param topic is the topic to publish to
+    * @param data is the data list of arbitrary types to supply 
+    * @param ack is the acknowledge boolean switch
+    * @return (a future of) either done or publication 
+    */
+  def publish(topic: Uri, ack: Boolean, data: List[Any]): Future[Either[Done, Publication]] =  {
+    publish(topic, ack, Payload(data))    
+  }
+
+  
+  /**
+    * Publish to a topic
+    *
+    * @param topic is the topic to publish to
+    * @param kwdata is the data list of arbitrary types to supply 
+    * @param ack is the acknowledge boolean switch
+    * @return (a future of) either done or publication 
+    */
+  def publish(topic: Uri, ack: Boolean, kwdata: Map[String, Any]): Future[Either[Done, Publication]] =  {
+    publish(topic, ack, Payload(kwdata))
+  }
+
+
+  /**
+    * Publish to a topic
+    *
+    * @param topic is the topic to publish to
+    * @param data is the data list of arbitrary types to supply
+    * @param kwdata is the data list of arbitrary types to supply
+    * @param ack is the acknowledge boolean switch
+    * @return (a future of) either done or publication
+    */
+  def publish(topic: Uri, ack: Boolean, data: List[Any], kwdata: Map[String, Any]): Future[Either[Done, Publication]] =  {
+    publish(topic, ack, Payload(data, kwdata))
+  }
+  
+  
+  /** Publish to a topic */
+  private def publish(topic: Uri, ack: Boolean, payload: Payload): Future[Either[Done, Publication]] =  {
     withPromise[Either[Done, Publication]] { promise =>
       val message = Publish(requestId = nextId(), Dict().setAck(ack), topic, payload)
       pendingPublications += (message.requestId -> promise)

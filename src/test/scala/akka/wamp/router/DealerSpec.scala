@@ -268,8 +268,8 @@ class DealerSpec extends RouterFixtureSpec {
     client2.send(f.router, Hello(details = Dict().addRoles("callee")))
     client2.expectMsgType[Welcome]
     
-    val payload = Payload(44.23,"paolo",null,true)
-    client2.send(f.router, Yield(888, payload = Some(payload)))
-    client1.expectMsg(Result(444, payload = Some(payload)))
+    val payload = Payload(List(44.23,"paolo",null,true))
+    client2.send(f.router, Yield(888, payload = payload))
+    client1.expectMsg(Result(444, payload = payload))
   }
 }

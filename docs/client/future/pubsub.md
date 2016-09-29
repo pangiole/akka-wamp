@@ -1,7 +1,68 @@
 # Publish and Subscribe
-TBD
+
+```scala
+object PubSubApp extends App {
+
+  import akka.wamp.client._
+  val client = Client()
+
+  implicit val ec = client.executionContext
+
+  val publication = 
+    for {
+      session <- client
+        .openSession(
+          url = "ws://localhost:8080/router",
+          subprotocol = "wamp.2.json",
+          realm = "akka.wamp.realm",
+          roles = Set("subscriber"))
+      subscription <- session
+        .subscribe(
+          topic = "myapp.topic1")(
+          event =>
+            event.data.map(println)
+        )
+      publication <- session
+        .publish(
+          topic = "myapp.topic2",
+          ack = false,
+          kwdata = Map("name"->"paolo", "age"->40)
+        )
+    } yield ()
+}
+```
+
+The WAMP protocol defines a Publish and Subscribe (PubSub) communication pattern where a client, the subscriber, informs the broker router that it wants to receive events on a topic (i.e., it subscribes to a topic). Another client, a publisher, can then publish events to this topic, and the broker router distributes events to all subscriber.
+
+```text
+  ,---------.          ,------.             ,----------.
+  |Publisher|          |Broker|             |Subscriber|
+  `----+----'          `--+---'             `----+-----'
+       |                  |                      |
+       |                  |            SUBSCRIBE |
+       |                  <<---------------------|
+       |                  |                      |
+       |                  | SUBSCRIBED           |
+       |                  |--------------------->>
+       |                  |                      |
+       |                  |                      |
+       | PUBLISH          |                      |
+       |----------------->>                      |
+       |                  |                      |
+       |        PUBLISHED |                      |
+       <<-----------------|                      |
+       |                  |                      |
+       |                  |  EVENT               |
+       |                  |--------------------->>
+       |                  |                      |
+  ,----+----.          ,--+---.             ,----+-----.
+  |Publisher|          |Broker|             |Subscriber|
+  `---------'          `------'             `----------'
+```
 
 ## Subscribe topics
+Once you got a subscriber session as documented in the [Session Handling](../future/session) section, you can finally subscribe to a topic with its event handler:
+
 ```scala
 import akka.wamp._
 import akka.wamp.message._
@@ -14,54 +75,71 @@ val subscription: Future[Subscription] = session.flatMap(
     topic = "myapp.topic") { 
     event =>
       log.info(s"${event.publicationId}")
-      for(p <- event.payload; args <- p.arguments) 
-        println(args)
+      event.data.map(println)
     })
 ```
 
 A (future of) session can be mapped to a (future of) subscription by just invoking the ``subscribe`` method. It is a curried method with two parameter lists.
 
 ```scala
+// as defined by Akka Wamp
+
 def subscribe(topic: Uri)(handler: EventHandler)
 ```
 
-The first parameter list accepts ``topic`` as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accept a callback function of type ``EventHandler`` which gets invoked to process each event from the topic. 
+The first parameter list accepts ``topic`` as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accepts a callback function of type ``EventHandler`` which gets invoked to process each event from the topic. 
+
+### Event handlers
 
 ```scala
+// as defined by Akka Wamp
 type EventHandler = (Event) => Unit
 ```
 
-The event handler is a function that transforms an event object into the unit value (roughly like ``void``). The event object comes with an (option of) input ``payload`` bearing application arguments. Receiving arguments is documented in the [Payload Handling](./payload) section.  
+The event handler is a function with side-effects that transforms an event to ``unit`` (like ``void`` for Java). The event comes with an input payload whose content can be lazily parsed as input data. 
+
+```scala
+// your event handler
+val handler: EventHandler = { event =>
+  event.data.map { data =>
+    println(data)
+  }
+}
+```
+
+Receiving application data is documented in the [Payload Handling](./payload) section.  
 
 ### Multiple handlers
-```
+
+```scala
 val handler1: EventHandler = { event =>
-  for(p <- event.payload; args <- p.arguments)
-    println(s"(1) <-- $args")
+  event.data.map { data =>
+    println(s"(1) <-- $data")
+  }
 }
+val handler2: EventHandler = { event =>
+  event.data.map { data =>
+    println(s"(2) <-- $data")
+  }
+}
+
+// let's subscribe them to the same topic! 
 
 val subscription1 = session.flatMap(
   _.subscribe(
     topic = "myapp.topic")(
     handler1))
-   
-// let's subscribe to the same topic ... again! 
- 
-val handler2: EventHandler = { event =>
-  for(p <- event.payload; args <- p.arguments)
-    println(s"(2) <-- $args")     
-}
-   
+
 val subscription2 = session.flatMap(
   _.subscribe(
     topic = "myapp.topic")(
     handler2))
 ```
 
-You can subscribe many times to the same topic passing the same or different event handlers. As per protocol specification, the correspondent subscriptions held by the router will share the same subscription identifier. Therefore, the Akka Wamp client subscriber: 
+You can subscribe many times to the same topic passing the same or different event handlers. As per WAMP protocol specification, the correspondent subscriptions held by the router will share the same subscription identifier. Therefore, your Akka Wamp client subscriber will: 
 
-* adds your event handlers in a set linked to the same subscription identifier,
-* invokes all of them when an EVENT with that subscription identifier is received.
+* add your event handlers in the same set linked to the same subscription identifier,
+* invoke all of them anytime an event with that subscription identifier is received.
 
 
 ### Recover
@@ -109,13 +187,12 @@ import akka.wamp.serialization._
 val publication: Future[Either[Done, Publication]] = session.flatMap(
   _.publish(
     topic = "myapp.topic",
-    payload = Some(Payload("paolo", 40, true)),
+    payload = Payload("paolo", 40, true),
     ack = true
   ))
 ```
 
-A (future of) session can be mapped to a (future of) either done or publication by just invoking the ``publish`` method which accepts ``topic``, ``ack`` and (option of) ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor.
-
+A (future of) session can be mapped to a (future of) either done or publication by just invoking the ``publish`` method which accepts ``topic``, ``ack`` and a ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor. Sending arguments is documented in the [Payload Handling](./payload) section.  
 
 
 ### Acknowledge

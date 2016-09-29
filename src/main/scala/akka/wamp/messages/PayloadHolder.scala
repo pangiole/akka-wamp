@@ -5,11 +5,10 @@ import akka.wamp.serialization.Payload
 /**
   * A message that contains a payload
   */
-trait PayloadContainer { this: Message =>
+trait PayloadHolder { this: Message =>
   
   /**
-    * 
     * @return the payload of this message
     */
-  def payload: Option[Payload]
+  def payload: Payload
 }

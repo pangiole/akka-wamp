@@ -1,35 +1,9 @@
 package akka.wamp.serialization
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.wamp._
 import akka.wamp.messages._
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent._
-import scala.concurrent.duration._
-
-class JsonDeserializerSpec extends FlatSpec
-  with MustMatchers
-  with TryValues
-  with OptionValues
-  with EitherValues
-  with ScalaFutures
-  with JsonPayloadHolderBehaviours
-  with ParallelTestExecution
-  with BeforeAndAfterAll {
-
-  implicit val system = ActorSystem("test")
-  implicit val materializer = ActorMaterializer()
-
-  override protected def afterAll(): Unit = {
-    materializer.shutdown()
-    system.terminate()
-    Await.ready(system.whenTerminated, 10.seconds)
-  }
-
-  implicit val validator = new Validator(strictUris = false)
+class JsonDeserializerSpec extends DeserializerSpec {
 
   val s = new JsonSerialization
 
@@ -200,7 +174,7 @@ class JsonDeserializerSpec extends FlatSpec
         msg.requestId mustBe 9007199254740992L
         msg.options mustBe Dict("acknowledge" -> true)
         msg.topic mustBe "myapp.topic"
-        msg.payload mustBe None
+        msg.payload mustBe empty
       case msg =>
         fail(s"Unexpected $msg")
     }
@@ -576,78 +550,5 @@ class JsonDeserializerSpec extends FlatSpec
         fail(s"unexpected $msg")
     }
   }
-
-  "An Error object message" should behave like jsonPayloadHolder(s,"""[8,34,9007199254740992,{},"wamp.error.no_such_subscription",...""")
-  
-  "A Publish object message" should behave like jsonPayloadHolder(s,"""[16,9007199254740992,{"acknowledge":true},"myapp.topic",...""")
-  
-  "An Event object message" should behave like jsonPayloadHolder(s,"""[36,1,1,{},...""")
-  
-  "An Invocation object message" should behave like jsonPayloadHolder(s,"""[68,1,1,{},...""")
-
-  "A Call object message" should behave like jsonPayloadHolder(s,"""[48,1,{},"myapp.procedure",...""")
-  
-  "A Yield object message" should behave like jsonPayloadHolder(s,"""[70,1,{},...""")
-  
-  "A Result object message" should behave like jsonPayloadHolder(s,"""[50,1,{},...""")
 }
 
-
-
-trait JsonPayloadHolderBehaviours {
-
-  this: JsonDeserializerSpec =>
-
-  def source[A](x: A): A = identity(x)
-
-  private def whenReduced(source: String)(testCode: (String) => Unit): Unit = {
-    // whenReady(source.runReduce(_ + _)) { text =>
-    testCode(source)
-    // }
-  }
-
-  def jsonPayloadHolder(s: JsonSerialization, json: String) = {
-
-    it should "hold empty payload" in {
-      val txt = source(json).replace(",...", "]")
-      val message = s.deserialize(txt)
-      message match {
-        case holder: PayloadContainer =>
-          holder.payload match {
-            case None => assert(true)
-            case payload => fail(s"Unexpected $payload")
-          }
-        case msg => fail(s"Unexpected $msg")
-      }
-    }
-
-    it should "hold strict payload arguments" in {
-      val txt = source(json).replace(",...",""",["paolo",40],{"arg0":"pietro","age":40,"male":true}]""")
-      val message = s.deserialize(txt)
-      message match {
-        case holder: PayloadContainer =>
-          holder.payload match {
-            case Some(p: TextPayload) =>
-              whenReduced(p.source) { text =>
-                text mustBe """["paolo",40],{"arg0":"pietro","age":40,"male":true}]"""
-              }
-              whenReady(p.arguments) { args =>
-                args mustBe List("paolo", 40)
-              }
-              whenReady(p.argumentsKw) { args =>
-                args mustBe Dict("arg0" -> "pietro", "arg1" -> 40, "age" -> 40, "male" -> true)
-              }
-            case p =>
-              fail(s"Unexpected $p")
-          }
-        case msg =>
-          fail(s"Unexpected $msg")
-      }
-    }
-    
-    it should "hold streamed payload arguments" in {
-      pending
-      // TODO file an issue for StreamedPayloads (consider pull request #3)
-    }
-  }
-}

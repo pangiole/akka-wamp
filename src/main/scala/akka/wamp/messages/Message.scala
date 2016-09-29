@@ -4,9 +4,9 @@ import akka.wamp.Wamp._
 import akka.wamp._
 import akka.wamp.client.Client
 import akka.wamp.router._
-import akka.wamp.serialization.Payload
+import akka.wamp.serialization.{Payload, ParsedContent}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Common interface of WAMP messages exchanged by two peers during a session
@@ -152,11 +152,11 @@ final case class Error(
   requestType: Int, 
   requestId: Id, 
   details: Dict = Error.defaultDetails, 
-  error: Uri, payload: Option[Payload] = None)
+  error: Uri, 
+  payload: Payload = Payload.defaultPayload)
   (implicit validator: Validator) 
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor
+  with PayloadHolder
 {
   val tpe = Error.tpe
   require(TypeCode.isValid(requestType), "invalid Type")
@@ -196,11 +196,10 @@ final case class Publish(
   requestId: Id, 
   options: Dict = Publish.defaultOptions, 
   topic: Uri, 
-  payload: Option[Payload] = None)
+  payload: Payload = Payload.defaultPayload)
   (implicit validator: Validator) 
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor
+  with PayloadHolder
 {
   val tpe = Publish.tpe
   validator.validate(requestId)
@@ -352,16 +351,27 @@ final case class Event(
   subscriptionId: Id, 
   publicationId: Id, 
   details: Dict = Event.defaultOptions, 
-  payload: Option[Payload] = None)
-  (implicit validator: Validator) 
+  payload: Payload = Payload.defaultPayload)
+  (implicit validator: Validator, executionContent: ExecutionContext) 
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor
+  with PayloadHolder
 {
   val tpe = Event.tpe
   validator.validate(subscriptionId)
   validator.validate(publicationId)
   validator.validate(details)
+
+  /**
+    * @see [[Payload.parsed]]
+    * @return the data lazily parsed from the list of arbitrary values within the incoming payload
+    */
+  def data: Future[List[Any]] = payload.parsed.map(_.args)
+  
+  /**
+    * @see [[Payload.parsed]]
+    * @return the data lazily parsed from the dictionary of arbitrary values within the incoming payload
+    */
+  def kwdata: Future[Map[String, _]] = payload.parsed.map(_.kwargs)
 }
 final object Event {
   val tpe = 36
@@ -500,11 +510,10 @@ final case class Call(
   requestId: Id, 
   options: Dict = Call.defaultOptions, 
   procedure: Uri, 
-  payload: Option[Payload] = None)
+  payload: Payload = Payload.defaultPayload)
   (implicit validator: Validator) 
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor 
+  with PayloadHolder 
 {
   val tpe = Call.tpe
   validator.validate(requestId)
@@ -536,16 +545,27 @@ final case class Invocation (
   requestId: Id, 
   registrationId: Id, 
   details: Dict = Invocation.defaultDetails, 
-  payload: Option[Payload] = None)
-  (implicit validator: Validator)
+  payload: Payload = Payload.defaultPayload)
+  (implicit validator: Validator, executionContext: ExecutionContext)
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor
+  with PayloadHolder
 {
   val tpe = Invocation.tpe
   validator.validate(requestId)
   validator.validate(registrationId)
   validator.validate(details)
+
+  /**
+    * @see [[Payload.parsed]]
+    * @return the arguments lazily parsed from the list of arbitrary values within the incoming payload
+    */
+  def args: Future[List[Any]] = payload.parsed.map(_.args)
+
+  /**
+    * @see [[Payload.parsed]]
+    * @return the arguments lazily parsed from the list of arbitrary values within the incoming payload
+    */
+  def kwargs: Future[Map[String, Any]] = payload.parsed.map(_.kwargs)
 }
 final object Invocation {
   val tpe = 68
@@ -569,10 +589,10 @@ final object Invocation {
 final case class Yield(
   requestId: Id,
   options: Dict = Yield.defaultOptions,
-  payload: Option[Payload] = None)
+  payload: Payload = Payload.defaultPayload)
   (implicit validator: Validator)
   extends Message
-  with PayloadContainer
+  with PayloadHolder
 {
   val tpe = Yield.tpe
   validator.validate(requestId)
@@ -600,15 +620,26 @@ final object Yield {
 final case class Result(
   requestId: Id,
   details: Dict = Result.defaultDetails,
-  payload: Option[Payload] = None)
-  (implicit validator: Validator)
+  payload: Payload = Payload.defaultPayload)
+  (implicit validator: Validator, ec: ExecutionContext)
   extends Message
-  with PayloadContainer
-  with ArgumentExtractor
+  with PayloadHolder
 {
   val tpe = Result.tpe
   validator.validate(requestId)
   validator.validate(details)
+
+  /**
+    * @see [[Payload.parsed]]
+    * @return the data lazily parsed from the list of arbitrary values within the incoming payload
+    */
+  def data: Future[List[Any]] = payload.parsed.map(_.args)
+
+  /**
+    * @see [[Payload.parsed]]
+    * @return the data lazily parsed from the dictionary of arbitrary values within the incoming payload
+    */
+  def kwdata: Future[Map[String, _]] = payload.parsed.map(_.kwargs)
 }
 final object Result {
   val tpe = 50

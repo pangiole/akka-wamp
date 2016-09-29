@@ -11,42 +11,52 @@ libraryDependencies ++= Seq(
   "com.github.angiolep" % "akka-wamp_2.11" % "0.8.0"
 )  
 ```
+## Client API
+Connect to a router, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
 
-## Client
-Connect a transport, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
-
-### Publish Subscribe
 
 ```scala
 object PubSubApp extends App {
 
   import akka.wamp.client._
   val client = Client()
-  
-  import scala.concurrent.Future
+
   implicit val ec = client.executionContext
-  
-  for {
-    session <- client
-      .openSession(
-        url = "ws://localhost:8080/router",
-        subprotocol = "wamp.2.json",
-        realm = "akka.wamp.realm",
-        roles = Set("subscriber"))
-    subscription <- session
-      .subscribe(
-        topic = "myapp.topic") {
-        event =>
-          event.payload.map(_.arguments.map(println))
-        }
+
+  val publication = 
+    for {
+      session <- client
+        .openSession(
+          url = "ws://localhost:8080/router",
+          subprotocol = "wamp.2.json",
+          realm = "akka.wamp.realm",
+          roles = Set("subscriber"))
+      subscription <- session
+        .subscribe(
+          topic = "myapp.topic1")(
+          event =>
+            event.data.map(println)
+        )
+      publication <- session
+        .publish(
+          topic = "myapp.topic2",
+          ack = false,
+          kwdata = Map("name"->"paolo", "age"->40)
+        )
     } yield ()
 }
 ```
 
-### Remote Procedure Call
-Coming soon ...
+### Major features
 
- 
+* Proper connection and [Session Handling](client/future/session)
+* Simple and concise [Publish Subscribe](client/future/pubsub)
+* Simple and concise routed [Remote Procedure Call](client/future/rpc)
+* Lazy [Payload Handling](client/future/payload) with Streaming support
+
+Please, read the docs for [further details](client/future)
+
+
 ## Router
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
 

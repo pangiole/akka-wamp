@@ -1,4 +1,8 @@
-## Connections and Sessions
+# Messages
+TBD 
+
+## Session Handling
+
 ```
    ,------.                                    ,------.
    | Peer |                                    | Peer |
@@ -66,8 +70,9 @@ IO(Wamp) ! Connect(client, url = "ws://router.host.net:8080/path/to/ws")
 IO(Wamp) ! Connect(client, subprotocol = "wamp.2.mgspack")
 ```
 
+<a name="Hello"></a>
 
-### <a name="Hello"></a>Hello
+### Hello
 It is the message you send to the transport to request a new session being opened with the given realm attached plus additional details. It can be constructed passing the following parameters:
 
 * ``realm``  
@@ -161,7 +166,13 @@ def opened: Receive = {
 
 > NOTE: there's an open [issue#242]((https://github.com/wamp-proto/wamp-proto/issues/242) on GitHub about the ``Goodbye`` message to warn you that some remote routers could decide to disconnect the transport in addition to close the session. If that happens the you'll be forced to reconnect.
 
-# Subscriber and Publisher
+<a name="Error"></a>
+
+### Error
+TBD
+
+
+## Publish Subscribe
 
 <a name="Subscribe"></a>
 
@@ -220,11 +231,6 @@ connection ! Publish(nextId(), "myapp.topic1", Some(mixed))
 connection ! Publish(89, "myapp.topic3", options = Dict().withAcknowledge(true))
 ```
 
-<a name="Error"></a>
-
-### Error
-TBD
-
 
 <a name="Event"></a>
 
@@ -257,52 +263,31 @@ def opened: Receive = {
 }
 ```
 
-<a name="Payload"></a>
 
 
-## Caller  and Callee
+## Remote Procedure Calls
 
 <a name="Register"></a>
 
 ### Register
 TBD
 
-## Serialization
+<a name="Call"></a>
 
-### Payload
-An (option of) Payload is carried by either [Error](#error), [Publish](#publish) or [Event](#event) messages. Akka Wamp provides easy ways to both create and handle payloads.
+### Call
+TBD
 
-You can create some outgoing payload for the [Publish](#publish) message by invoking the following factory method
+<a name="Invoke"></a>
 
-```scala
-object Payload {
-  def apply(arguments: Any*): Payload
-}
-```
+### Invoke
+TBD
 
-which means you can pass in any number of arguments in any type you like. For example:
+<a name="Yield"></a>
 
-```scala
-val payload = Payload("paolo", 40, true)
-connection ! Publish(nextId(), Some(payload)
-// serializes to [... , ["paolo", 40, true]]
-```
+### Yield
+TBD
 
-You can even pass any number of key-value pairs alongside with any (or no) value. For example:
+<a name="Result"></a>
 
-```scala
-val payload = Payload("paolo", 40, "height"->1.65, true)
-// serializes to [... , ["paolo", 40, true], {"height"->1.65}]
-```
-
-Akka Wamp will take care of serializing the arguments you pass in the right way.
-
-You can handle some incoming payload carried by either [Error](#error) or [Event](#event) messages and turn it into a list or into a dictionary as follows:
-
-```scala
-val args: List[Any] = for (p <- message.payload) p.asList
-  
-// OR turn it into dictionary
-  
-val args: Map[String, Any] = for (p <- message.payload) p.asDict
-```
+### Result
+TBD

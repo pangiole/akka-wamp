@@ -135,7 +135,9 @@ trait Callee { this: Session =>
       registrations.get(registrationId) match {
         case Some(registration) => 
           val payload = registration.handler(msg)
-          payload.map { p => connection ! Yield(requestId, payload = p) }
+          payload.map { p => 
+            connection ! Yield(requestId, payload = p) 
+          }
           
         case None => 
           log.warn("!!! invocation handler not found for registrationId {}", registrationId)

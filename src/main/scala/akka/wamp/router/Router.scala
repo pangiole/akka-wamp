@@ -45,6 +45,10 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
   
   /** WAMP types validator */
   protected implicit val validator = new Validator(validateStrictUris)
+  
+  /** Akka Execution Content */
+  protected implicit val executionContext = context.system.dispatcher
+  
 
   /** Details of WELCOME message replied by this router */
   private val welcomeDetails = Dict()

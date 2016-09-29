@@ -9,7 +9,7 @@ pages:
   - Client:
     - 'Actor based API': 'client/actor.md'
     - 'Future based API':
-      - 'For the impatients': 'client/future/overview.md'
+      - 'Overview': 'client/future/overview.md'
       - 'Session Handling': 'client/future/session.md'
       - 'Publish and Subscribe': 'client/future/pubsub.md'
       - 'Remote Procedure Calls': 'client/future/rpc.md'

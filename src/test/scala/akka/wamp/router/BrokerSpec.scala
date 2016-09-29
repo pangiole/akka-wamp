@@ -152,18 +152,19 @@ class BrokerSpec extends RouterFixtureSpec {
     f.router.underlyingActor.subscriptions  mustBe empty
   }
 
-
+  // Error(34,1,Map(),wamp.error.no_such_subscription,Payload.Empty())
+  // Error(34,1,Map(),wamp.error.no_such_subscription,Payload.Empty())
   it should "reply ERROR on UNSUBSCRIBE unknown subscription" in { f =>
     val client1 = TestProbe("client1")
     client1.send(f.router, Hello()) 
     client1.receiveOne(0.seconds)
     client1.send(f.router, Subscribe(1, topic = "mypp.topic"))
-    val subsriptionId1 = client1.receiveOne(0.seconds).asInstanceOf[Subscribed].subscriptionId
+    val subscriptionId1 = client1.expectMsgType[Subscribed].subscriptionId
     
     val client2 = TestProbe("client2")
     client2.send(f.router , Hello())
-    client2.receiveOne(0.seconds)
-    client2.send(f.router, Unsubscribe(1, subsriptionId1))
+    client2.expectMsgType[Welcome]
+    client2.send(f.router, Unsubscribe(1, subscriptionId1))
     client2.expectMsg(Error(Unsubscribe.tpe, 1, Error.defaultDetails, "wamp.error.no_such_subscription"))
     
     client2.send(f.router, Unsubscribe(2, subscriptionId = 999))
@@ -218,11 +219,11 @@ class BrokerSpec extends RouterFixtureSpec {
     client1.send(f.router, Subscribe(1, topic = "mypp.topic1")); client1.receiveOne(1.second)
     client2.send(f.router, Subscribe(1, topic = "mypp.topic1"));client2.receiveOne(0.seconds)
     
-    val payload = Payload(44.23,"paolo",null,true)
-    client3.send(f.router, Publish(1, Dict("acknowledge" -> true), "mypp.topic1", Some(payload)))
+    val payload = Payload(List(44.23, "paolo", null, true))
+    client3.send(f.router, Publish(1, Dict("acknowledge" -> true), "mypp.topic1", payload))
     
-    client1.expectMsg(Event(1, 4, Dict(), Some(payload)))
-    client2.expectMsg(Event(1, 4, Dict(), Some(payload)))
+    client1.expectMsg(Event(1, 4, Dict(), payload))
+    client2.expectMsg(Event(1, 4, Dict(), payload))
     client3.expectMsg(Published(1, 4))
     client3.expectNoMsg()
 

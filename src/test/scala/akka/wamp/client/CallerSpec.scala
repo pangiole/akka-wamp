@@ -25,8 +25,8 @@ class CallerSpec extends ClientFixtureSpec with MockFactory {
 
   it should "succeed call procedure and expect result" in { f =>
     f.withSession { session1 =>
-      val handler = stubFunction[Invocation, Future[Option[Payload]]]
-      val payload = Future.successful(Some(Payload("paolo", 40, true)))
+      val handler = stubFunction[Invocation, Future[Payload]]
+      val payload = Future.successful(Payload(List("paolo", 40, true)))
       handler.when(*).returns(payload)
       val registration = session1.register("myapp.procedure")(handler)
       whenReady(registration) { registration =>

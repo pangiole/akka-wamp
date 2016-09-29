@@ -9,7 +9,9 @@ import scala.concurrent._
 
 /**
   * This package provides objects, classes and traits you can use to
-  * write a WAMP Client
+  * write a WAMP Client.
+  * 
+  *
   */
 package object client {
 
@@ -55,6 +57,6 @@ package object client {
   /**
     * Type synonym for an invocation handler
     */
-  type InvocationHandler = Invocation => Future[Option[Payload]]
+  type InvocationHandler = Invocation => Future[Payload]
  
 }
