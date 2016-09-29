@@ -8,7 +8,7 @@ Easy to download as [SBT](http://www.scala-sbt.org/) library dependency.
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.11" % "0.8.0"
+  "com.github.angiolep" % "akka-wamp_2.11" % "0.9.0"
 )  
 ```
 
@@ -92,7 +92,7 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
 
 [docs-image]: https://readthedocs.org/projects/akka-wamp/badge/?version=latest
-[docs-url]: http://akka-wamp.readthedocs.io/en/stable/?badge=latest
+[docs-url]: http://akka-wamp.readthedocs.io/en/latest/?badge=latest
 
 [gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
 [gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
