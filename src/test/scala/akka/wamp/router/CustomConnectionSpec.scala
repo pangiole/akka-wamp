@@ -44,7 +44,7 @@ class CustomConnectionSpec extends ConnectionFixtureSpec {
       client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"publisher":{}}}]""")
 
       // <-- WELCOME
-      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
+      client.expectMessage("""[2,1,{"agent":"akka-wamp-0.9.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #1 OPEN
 
@@ -62,7 +62,7 @@ class CustomConnectionSpec extends ConnectionFixtureSpec {
       client.sendMessage("""[1,"akka.wamp.realm",{"roles":{"subscriber":{}}}]""")
 
       // <-- WELCOME
-      client.expectMessage("""[2,2,{"agent":"akka-wamp-0.8.0","roles":{"broker":{},"dealer":{}}}]""")
+      client.expectMessage("""[2,2,{"agent":"akka-wamp-0.9.0","roles":{"broker":{},"dealer":{}}}]""")
 
       // SESSION #2 OPEN
       

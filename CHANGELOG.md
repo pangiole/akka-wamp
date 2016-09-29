@@ -3,7 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]    
+## [Unreleased]
+    
+## [0.9.0] _ 2016-09-29    
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
@@ -23,7 +25,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)
-- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/en/v0.8.0/) 
+- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/) 
 
 
 ## [0.7.0] _ 2016-09-12
@@ -56,7 +58,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...HEAD?&diff=split&name=HEAD
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.9.0...HEAD?&diff=split&name=HEAD
+[0.9.0]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...v0.9.0?diff=split&name=v0.8.0
 [0.8.0]: https://github.com/angiolep/akka-wamp/compare/v0.7.0...v0.8.0?diff=split&name=v0.7.0
 [0.7.0]: https://github.com/angiolep/akka-wamp/compare/v0.6.0...v0.7.0?diff=split&name=v0.7.0
 [0.6.0]: https://github.com/angiolep/akka-wamp/compare/v0.5.1...v0.6.0?diff=split&name=v0.6.0
