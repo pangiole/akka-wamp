@@ -58,6 +58,8 @@ Please, read the docs for [further details](https://angiolep.github.io/projects/
 
 ## Router
  
+[![Download][download-image]][download-url]
+ 
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
 
 
