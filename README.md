@@ -47,16 +47,15 @@ object PubSubApp extends App {
 }
 ```
 
-### Major features
+## Read the docs
 
+Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/index.html)
+ 
 * Proper connection and [Session Handling](https://angiolep.github.io/projects/akka-wamp/client/future/session)
 * Simple and concise [Publish Subscribe](https://angiolep.github.io/projects/akka-wamp/client/future/pubsub)
 * Simple and concise routed [Remote Procedure Call](https://angiolep.github.io/projects/akka-wamp/client/future/rpc)
 * Lazy [Payload Handling](https://angiolep.github.io/projects/akka-wamp/client/future/payload) with Streaming support
 
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/future)
-
- 
 ## Router
  
 Akka Wamp provides you with a router that can be either embedded into your application or launched as standalone server process.
