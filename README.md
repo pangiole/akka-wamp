@@ -49,8 +49,6 @@ object PubSubApp extends App {
 
 ### Major features
 
-[![Docs Status][docs-image]][docs-url] 
-
 * Proper connection and [Session Handling](https://angiolep.github.io/projects/akka-wamp/client/future/session)
 * Simple and concise [Publish Subscribe](https://angiolep.github.io/projects/akka-wamp/client/future/pubsub)
 * Simple and concise routed [Remote Procedure Call](https://angiolep.github.io/projects/akka-wamp/client/future/rpc)
