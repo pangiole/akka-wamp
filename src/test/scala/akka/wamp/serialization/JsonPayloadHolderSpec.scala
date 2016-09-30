@@ -9,19 +9,19 @@ class JsonPayloadHolderSpec
   
   val s = new JsonSerialization
 
-  "An Error object message" should behave like jsonPayloadHolder(s,"""[8,34,9007199254740992,{},"wamp.error.no_such_subscription",...""")
+  "An Error object message" should behave like jsonPayloadHolder(s,"""[8,34,9007199254740992,{},"wamp.error.no_such_subscription"""")
 
-  "A Publish object message" should behave like jsonPayloadHolder(s,"""[16,9007199254740992,{"acknowledge":true},"myapp.topic",...""")
+  "A Publish object message" should behave like jsonPayloadHolder(s,"""[16,9007199254740992,{"acknowledge":true},"myapp.topic"""")
 
-  "An Event object message" should behave like jsonPayloadHolder(s,"""[36,1,1,{},...""")
+  "An Event object message" should behave like jsonPayloadHolder(s,"""[36,1,1,{}""")
 
-  "An Invocation object message" should behave like jsonPayloadHolder(s,"""[68,1,1,{},...""")
+  "An Invocation object message" should behave like jsonPayloadHolder(s,"""[68,1,1,{}""")
 
-  "A Call object message" should behave like jsonPayloadHolder(s,"""[48,1,{},"myapp.procedure",...""")
+  "A Call object message" should behave like jsonPayloadHolder(s,"""[48,1,{},"myapp.procedure"""")
 
-  "A Yield object message" should behave like jsonPayloadHolder(s,"""[70,1,{},...""")
+  "A Yield object message" should behave like jsonPayloadHolder(s,"""[70,1,{}""")
 
-  "A Result object message" should behave like jsonPayloadHolder(s,"""[50,1,{},...""")
+  "A Result object message" should behave like jsonPayloadHolder(s,"""[50,1,{}""")
 }
 
 
@@ -37,7 +37,7 @@ trait JsonPayloadHolderBehaviours { this: JsonPayloadHolderSpec =>
   def jsonPayloadHolder(s: JsonSerialization, json: String) = {
 
     it should "hold empty payload" in {
-      val txt = source(json).replace(",...", "]")
+      val txt = source(json).concat(source("]"))
       val message = s.deserialize(txt)
       message match {
         case holder: PayloadHolder => assert(true)
@@ -47,7 +47,7 @@ trait JsonPayloadHolderBehaviours { this: JsonPayloadHolderSpec =>
 
     it should "hold payload parsed applying default Jackson data types binding" in {
       //                                         0    1   2           3    4        5    6          7 
-      val txt = source(json).replace(",...",""",[null,123,12345678890,1.45,"string",true,["elem1"],{"key1":"value1"}]]""")
+      val txt = source(json).concat(source(""",[null,123,12345678890,1.45,"string",true,["elem1"],{"key1":"value1"}]]"""))
       val message = s.deserialize(txt)
       message match {
         case holder: PayloadHolder =>
@@ -68,7 +68,7 @@ trait JsonPayloadHolderBehaviours { this: JsonPayloadHolderSpec =>
 
     
     /*it should "hold unparsed and parsed (as dictionary) text payload" in {
-      val txt = source(json).replace(",...",""",[null,"paolo",40,true],{"height":1.63,"1":"pietro"}]""")
+      val txt = source(json).concat(source(""",[null,"paolo",40,true],{"height":1.63,"1":"pietro"}]"""))
       val message = s.deserialize(txt)
       message match {
         case holder: PayloadHolder =>

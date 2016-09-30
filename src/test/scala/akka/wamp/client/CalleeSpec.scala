@@ -5,6 +5,7 @@ import akka.wamp.serialization.Payload
 import org.scalamock.scalatest.MockFactory
 
 import scala.concurrent._
+import scala.concurrent.duration._
 
 class CalleeSpec extends ClientFixtureSpec with MockFactory {
 
@@ -24,14 +25,26 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
   
 
 
-  it should "succeed register procedure" in { f =>
+  it should "succeed register procedure and expect invocations" in { f =>
     f.withSession { session1 =>
       val handler = stubFunction[Invocation, Future[Payload]]
+      val payload = Future.successful(Payload(/*List("paolo", 40, true)*/))
+      handler.when(*).returns(payload)
       val registration = session1.register("myapp.procedure")(handler)
       whenReady(registration) { registration =>
         registration.procedure mustBe "myapp.procedure"
         registration.registered.requestId mustBe 1
         registration.registered.registrationId mustBe 1
+
+        // the caller could be another connection actor
+        f.withConnection { conn2 =>
+          whenReady(conn2.openSession()) { session2 =>
+            val result = session2.call("myapp.procedure")
+            whenReady(result) { _ =>
+              awaitAssert(handler.verify(*).once().returning(payload), 5 seconds)
+            }
+          }
+        }
       }
     }
   }

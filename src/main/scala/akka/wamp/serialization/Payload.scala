@@ -1,5 +1,6 @@
 package akka.wamp.serialization
 
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -30,12 +31,6 @@ trait Payload {
     * @return (future of) parsed content as dictionary of arbitrary types
     */
   def parsed: Future[ParsedContent] = Future.successful(ParsedContent(List(), Map()))
-  
-  /**
-    * 
-    * @return if this payload is empty
-    */
-  def isEmpty: Boolean
 }
 
 
@@ -95,8 +90,6 @@ class EagerPayload private[serialization](val content: ParsedContent) extends Pa
 
   override def parsed: Future[ParsedContent] = Future.successful(content)
 
-  override val isEmpty: Boolean = content.isEmpty
-
   override def toString: String = s"EagerPayload($content)"
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[EagerPayload]
@@ -123,7 +116,7 @@ sealed trait LazyPayload[+T] extends Payload {
   /**
     * @return unparsed content as stream source
     */
-  def unparsed(): T // TODO Source[T]
+  def unparsed(): Source[T, _]
 
   override def toString: String = "LazyPayload(...)"
 }

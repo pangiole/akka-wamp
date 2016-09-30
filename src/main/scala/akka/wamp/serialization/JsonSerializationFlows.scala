@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{ws => websocket}
 import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{Materializer, Supervision}
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.wamp.Validator
 import akka.wamp.{messages => wamp}
 import org.slf4j.LoggerFactory
@@ -48,12 +48,14 @@ class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeer
     Flow[websocket.Message]
       .map {
         case TextMessage.Strict(text) =>
-          json.deserialize(text)
+          json.deserialize(Source.single(text))
 
         case TextMessage.Streamed(source) =>
-          throw new DeserializeException("Streaming not supported yet.")
+          json.deserialize(source)
 
-        case m: BinaryMessage =>
+        case bm: BinaryMessage =>
+          // ignore binary messages but drain content to avoid the stream being clogged
+          bm.dataStream.runWith(Sink.ignore)
           throw new DeserializeException("Cannot deserialize binary message as JSON message was expected instead!")
       }
       .withAttributes(supervisionStrategy {

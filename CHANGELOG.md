@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+
+### Added
+- Improve Payload Handling and Streaming support
+- Implement deserialization of streamed text messages [\#27](https://github.com/angiolep/akka-wamp/issues/27)
+
+### Fixed
+- Both router and client don't validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
+
     
 ## [0.9.0] _ 2016-09-29    
 
@@ -11,8 +19,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
   - Client API now provides ``register``, ``unregister`` and ``call`` operations  
   - Router now able to register procedures and route calls to clients  
-- Improve payload handling
-- Improve unit tests coverage
+- Improve Payload Handling and Streaming support
+- Improve tests
 - Improve documentation
 
 ## [0.8.0] _ 2016-09-19  
@@ -20,8 +28,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Added  
 - Validate dictionaries [\#19](https://github.com/angiolep/akka-wamp/issues/19)        
 - Make decision on DeserializeException configurable [\#20](https://github.com/angiolep/akka-wamp/issues/20)  
-- Try to fix lack of specification for repeated HELLOs [\#21](https://github.com/angiolep/akka-wamp/issues/21)
-- Try to fix lack of specification specification in case of offending messages [\#22](https://github.com/angiolep/akka-wamp/issues/22)
+
+### Fixed
+- Lack of specification for repeated HELLOs [\#21](https://github.com/angiolep/akka-wamp/issues/21)
+- Lack of specification specification in case of offending messages [\#22](https://github.com/angiolep/akka-wamp/issues/22)
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)
