@@ -19,7 +19,7 @@ class SubscriberSpec extends ClientFixtureSpec with MockFactory {
   }
 
 
-  it should "succeed subscribe to topic and expect its handler to be passed events" in { f =>
+  it should "succeed subscribe to topic and expect events" in { f =>
     f.withSession { session1 =>
       val handler = stubFunction[Event, Unit]
       val subscription = session1.subscribe("myapp.topic")(handler)
@@ -32,7 +32,7 @@ class SubscriberSpec extends ClientFixtureSpec with MockFactory {
         // otherwise the router wouldn't publish the event
         f.withConnection { conn2 =>
           whenReady(conn2.openSession()) { session2 =>
-            val publication = session2.publish("myapp.topic", ack=true)
+            val publication = session2.publish("myapp.topic", ack=true/*, data = List("paolo", 40, true)*/)
             whenReady(publication) { _ =>
               awaitAssert(handler.verify(*).once(), 5 seconds)
             }

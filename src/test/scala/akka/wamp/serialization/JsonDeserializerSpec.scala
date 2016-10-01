@@ -174,7 +174,6 @@ class JsonDeserializerSpec extends DeserializerSpec {
         msg.requestId mustBe 9007199254740992L
         msg.options mustBe Dict("acknowledge" -> true)
         msg.topic mustBe "myapp.topic"
-        msg.payload mustBe empty
       case msg =>
         fail(s"Unexpected $msg")
     }
