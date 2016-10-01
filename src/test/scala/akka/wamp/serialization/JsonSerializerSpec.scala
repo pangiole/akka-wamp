@@ -283,16 +283,12 @@ class JsonSerializerSpec extends FlatSpec
     }
   }
   
-  /*def whenReduced(source: Source[String, _])(testCode: (String) => Unit): Unit = {
+  def whenReduced(source: Source[String, _])(testCode: (String) => Unit): Unit = {
     whenReady(source.runReduce(_ + _)) { text =>
       testCode(text)
     }
-  }*/
-
-  def whenReduced(txt: String)(testCode: (String) => Unit): Unit = {
-    testCode(txt)
   }
-  
+
   
   val args = List("paolo", 40, 1234567890, 34.56, List("array"), Map("key"->"value"), true, false, None)
   

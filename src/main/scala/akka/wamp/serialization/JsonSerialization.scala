@@ -52,7 +52,6 @@ class JsonSerialization() extends Serialization {
       * It lazily parse JSON payload
       */
     class JsonTextLazyPayload(val unparsed: Source[String, _]) extends TextLazyPayload {
-      
       lazy override val parsed: Future[ParsedContent] = Future {
         // """...[null,"paolo",40,true],{"height":1.65,"1":"pietro"}]"""
         var args = mutable.ListBuffer.empty[Any]
@@ -108,7 +107,8 @@ class JsonSerialization() extends Serialization {
         // Hence, we need to push those buffered chars back to the 
         // Akka Stream unparsed source (prepending them)
         new JsonTextLazyPayload(
-          // Create a new source with the buffered chars prependend
+          // Create a new source with 
+          // the buffered chars prepended
           // and the unparsed source as tail
           Source.single("[" + buffered).concat(unparsed)
         )
@@ -174,10 +174,8 @@ class JsonSerialization() extends Serialization {
     else fail("START_ARRAY")
   }
 
-
-  def serialize(message: Message)(implicit mat: Materializer): String = {
-    log.trace("Serializing {}", message)
-
+  
+  override def serialize(message: Message): Source[String, _] = {
     def toJson(elem: Any): String = {
       elem match {
         case Some(v) => toJson(v)
@@ -214,18 +212,14 @@ class JsonSerialization() extends Serialization {
         case Result(requestId, details, payload)            => Result.tpe :: requestId :: details :: Some(payload) :: Nil
       }
 
-    def single(text: String): String = text // TODO Source.single(text)
     
     val (fields, payload) = (elems.dropRight(1), elems.last) 
     payload match {
-      case None =>  
-        single(fields.map(toJson).mkString("[", ",", "]"))
+      case None =>
+        Source.single(fields.map(toJson).mkString("[", ",", "]"))
 
       case Some(p: TextLazyPayload) =>
-        import scala.concurrent.duration._
-        val unparsed = scala.concurrent.Await.result[String](p.unparsed.runReduce(_ + _), 5 seconds)
-        single(fields.map(toJson).mkString("[", ",", ",")).concat(unparsed).concat(single("]"))
-        // TODO single(fields.map(toJson).mkString("[", ",", ",")).concat(p.unparsed).concat(Source.single("]"))
+        Source.single(fields.map(toJson).mkString("[", ",", ",")).concat(p.unparsed).concat(Source.single("]"))
         
       case Some(p: BinaryLazyPayload) => 
         throw new IllegalStateException("Cannot serialize binary payload to JSON")
@@ -241,8 +235,7 @@ class JsonSerialization() extends Serialization {
           else {
             fields ::: p.content.args :: p.content.kwargs :: Nil
           }
-
-        single(fieldsAndPayload.map(toJson).mkString("[", ",", "]"))
+        Source.single(fieldsAndPayload.map(toJson).mkString("[", ",", "]"))
     }
   }
 }
