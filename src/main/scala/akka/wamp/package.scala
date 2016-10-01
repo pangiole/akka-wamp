@@ -2,7 +2,6 @@ package akka
 
 import akka.wamp.messages._
 
-import scala.collection.SortedSet
 import scala.util.Random.{nextDouble => rnd}
 
 /**
@@ -51,7 +50,9 @@ package object wamp {
       Unsubscribe.tpe, Unsubscribed.tpe,
       Event.tpe,
       Register.tpe, Registered.tpe,
-      Unregister.tpe, Unregistered.tpe
+      Unregister.tpe, Unregistered.tpe,
+      Call.tpe, Invocation.tpe,
+      Yield.tpe, Result.tpe
     )
     def isValid(typeCode: TypeCode): Boolean = all.contains(typeCode)
   }
