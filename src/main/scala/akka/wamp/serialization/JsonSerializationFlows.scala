@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{ws => websocket}
 import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{Materializer, Supervision}
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.wamp.Validator
 import akka.wamp.{messages => wamp}
 import org.slf4j.LoggerFactory
@@ -15,17 +15,20 @@ import org.slf4j.LoggerFactory
   * 
   * @param validateStrictUri is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
   * @param disconnectOffendingPeers is the boolean switch to disconnect those clients that send invalid messages
-  * @param materializer is the Akka Stream materializer
+  * @param mat is the Akka Stream materializer
   */
-class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeers: Boolean)(implicit materializer: Materializer) 
+class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeers: Boolean)(implicit mat: Materializer) 
   extends SerializationFlows 
 {
   val log = LoggerFactory.getLogger(classOf[SerializationFlows])
   
-  val json = new JsonSerialization()
+  val serialization = new JsonSerialization()
 
   /** The WAMP types validator */
   implicit val validator = new Validator(validateStrictUri)
+  
+  /** The actor system dispatcher */
+  implicit val ec = mat.executionContext
 
 
   /**
@@ -33,10 +36,10 @@ class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeer
     */
   val serialize: Flow[wamp.Message, websocket.Message, NotUsed] =
     Flow[wamp.Message].
-      map {
+      mapAsync(1) {
         case message: wamp.Message =>
-          val text = json.serialize(message)
-          TextMessage(text)
+          val textStream = serialization.serialize(message)
+          textStream.runReduce(_ + _).map(txt => TextMessage(txt))
       }
 
 
@@ -48,12 +51,14 @@ class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeer
     Flow[websocket.Message]
       .map {
         case TextMessage.Strict(text) =>
-          json.deserialize(text)
+          serialization.deserialize(Source.single(text))
 
         case TextMessage.Streamed(source) =>
-          throw new DeserializeException("Streaming not supported yet.")
+          serialization.deserialize(source)
 
-        case m: BinaryMessage =>
+        case bm: BinaryMessage =>
+          // ignore binary messages but drain content to avoid the stream being clogged
+          bm.dataStream.runWith(Sink.ignore)
           throw new DeserializeException("Cannot deserialize binary message as JSON message was expected instead!")
       }
       .withAttributes(supervisionStrategy {

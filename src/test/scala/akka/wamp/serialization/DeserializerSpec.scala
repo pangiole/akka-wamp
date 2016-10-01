@@ -1,12 +1,13 @@
 package akka.wamp.serialization
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.wamp.Validator
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, ParallelTestExecution, _}
+import akka.actor._
+import akka.stream._
+import akka.stream.scaladsl._
+import akka.wamp._
+import org.scalatest._
+import org.scalatest.concurrent._
 
-import scala.concurrent.Await
+import scala.concurrent._
 import scala.concurrent.duration._
 
 class DeserializerSpec extends FlatSpec
@@ -29,5 +30,5 @@ class DeserializerSpec extends FlatSpec
     Await.ready(system.whenTerminated, 10 seconds)
   }
 
-  def source[A](x: A): A = identity(x)
+  def source[T](x: T): Source[T, _] = Source.single(x)
 }

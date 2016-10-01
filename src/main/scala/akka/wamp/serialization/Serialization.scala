@@ -1,17 +1,18 @@
 package akka.wamp.serialization
 
-import akka.stream.Materializer
+import akka.stream._
+import akka.stream.scaladsl._
 import akka.wamp.Validator
 import akka.wamp.messages._
 
 trait Serialization {
   
   type T
-  
-  def serialize(message: Message): T
+
+  def serialize(message: Message): Source[T, _]
   
   @throws(classOf[DeserializeException])
-  def deserialize(source: T)(implicit validator: Validator, materializer: Materializer): Message
+  def deserialize(source: Source[T, _])(implicit validator: Validator, mat: Materializer): Message
 }
 
 

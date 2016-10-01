@@ -1,9 +1,11 @@
 package akka.wamp.serialization
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
 
-import akka.stream.Materializer
+import akka.stream._
+import akka.stream.scaladsl._
+import akka.util.ByteString
 import akka.wamp._
 import akka.wamp.messages._
 import com.fasterxml.jackson.core.JsonToken._
@@ -21,36 +23,40 @@ class JsonSerialization() extends Serialization {
 
   private val log = LoggerFactory.getLogger(classOf[JsonSerialization])
 
-  private val UTF8 = Charset.forName("UTF-8")
-
+  private val parserFactory = new JsonFactory()
+  private val mapper = new ObjectMapper()
+  mapper.registerModule(DefaultScalaModule)
+  
+  
   @throws(classOf[DeserializeException])
-  override def deserialize(source: String)(implicit validator: Validator, materializer: Materializer): Message = {
+  override def deserialize(source: Source[String, _])(implicit validator: Validator, materializer: Materializer): Message = {
     implicit val ec = materializer.executionContext
-    log.trace("Deserializing {}", source)
 
-    val factory = new JsonFactory()
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
+    // We have to convert the Akka Stream Source given as input argument 
+    // to an old fashioned java.io.InputStream because 
+    // Jackson Streaming Parser requires it to read chars from. 
 
-    // lazy evaluation of input argument
-    def make(factory: => Message) = try { factory } catch { case ex: Throwable => throw new DeserializeException(ex.getMessage, ex)}
+    val inputStream = source.
+      map(ByteString(_)).
+      runWith(StreamConverters.asInputStream())
+    
+    // Create the Jackson Streaming Parser
+    val parser = parserFactory.createParser(inputStream)
 
-    val inputStream = new ByteArrayInputStream(source.getBytes(UTF8))
-    val parser = factory.createParser(inputStream)
-
+    // Lazily create a Message
+    def make(maker: => Message) = try { maker } catch { case ex: Throwable => throw new DeserializeException(ex.getMessage, ex)}
+    
     def fail(token: String) = throw new DeserializeException(s"Expected $token but ${parser.getCurrentToken} found")
 
     /**
-      * It parse JSON payload lazily
+      * It lazily parse JSON payload
       */
-    class JsonTextLazyPayload(val unparsed: String) extends TextLazyPayload {
-      
-      override def isEmpty(): Boolean = unparsed.isEmpty
-      
+    class JsonTextLazyPayload(val unparsed: Source[String, _]) extends TextLazyPayload {
       lazy override val parsed: Future[ParsedContent] = Future {
         // """...[null,"paolo",40,true],{"height":1.65,"1":"pietro"}]"""
         var args = mutable.ListBuffer.empty[Any]
         val kwargs = mutable.HashMap.empty[String, Any]
+        // TODO better to use Jackson Mapper here rather than Jackson Streaming Parser (which should have been closed)
         if (parser.getCurrentToken() == START_ARRAY) {
           while (parser.nextToken() != END_ARRAY) {
             val value = mapper.readValue(parser, classOf[Object])
@@ -79,28 +85,33 @@ class JsonSerialization() extends Serialization {
         mapper.readValue(parser, classOf[Map[String, Map[_, _]]])
       }
 
-      def getValueAsPayload(source: String): JsonTextLazyPayload = {
+      def getValueAsPayload(source: Source[String, _]): JsonTextLazyPayload = {
+        // Get the chars count actually read and consumed by the 
+        // Jackson Streaming Parser and drop those from the input
+        // Akka Stream source
+        val offset = parser.getCurrentLocation.getByteOffset
+        val unparsed = source.drop(offset)
+        
         // Up to this point, the Jackson Streaming Parser must have read 
-        // (and buffered) a certain number of characters from the input 
-        // Akka Stream Source without consuming them yet.
+        // (and buffered) a certain number of characters from its old
+        // fashioned java.io.InputStream without consuming them yet.
         //
-        // Therefore, we need to push those buffered chars back and prepend
-        // them to the Akka Stream Source originally given as input 
         val buffered = {
           val out = new ByteArrayOutputStream()
           val released = parser.releaseBuffered(out)
           val byteArray = out.toByteArray
           assert(byteArray.length == released)
-          new String(byteArray, UTF8)
+          new String(byteArray, Charset.forName("UTF-8"))
         }
 
-        // Get the chars number actually read and consumed by the 
-        // Jackson Streaming Parser and drop those from the input
-        // Akka Stream source
-        val offset = parser.getCurrentLocation.getByteOffset
-        val remaining = source.drop(offset.toInt + buffered.length)
-
-        new JsonTextLazyPayload("[" + buffered + remaining)
+        // Hence, we need to push those buffered chars back to the 
+        // Akka Stream unparsed source (prepending them)
+        new JsonTextLazyPayload(
+          // Create a new source with 
+          // the buffered chars prepended
+          // and the unparsed source as tail
+          Source.single("[" + buffered).concat(unparsed)
+        )
       }
     }
 
@@ -122,8 +133,13 @@ class JsonSerialization() extends Serialization {
         else fail(s"$field|int")
 
       def |(p: Payload.type): Payload =
-        if (parser.nextToken() == START_ARRAY) parser.getValueAsPayload(source)
-        else new JsonTextLazyPayload("")
+        if (parser.nextToken() == START_ARRAY) {
+          parser.getValueAsPayload(source)
+        }
+        else {
+          // WARN: DO NOT return neither Source.empty nor Source.single("") 
+          new JsonTextLazyPayload(Source.single("[]"))
+        }
     }
 
     if (parser.nextToken() == START_ARRAY) {
@@ -158,10 +174,8 @@ class JsonSerialization() extends Serialization {
     else fail("START_ARRAY")
   }
 
-
-  def serialize(message: Message): String = {
-    log.trace("Serializing {}", message)
-
+  
+  override def serialize(message: Message): Source[String, _] = {
     def toJson(elem: Any): String = {
       elem match {
         case Some(v) => toJson(v)
@@ -197,28 +211,31 @@ class JsonSerialization() extends Serialization {
         case Yield(requestId, options, payload)             => Yield.tpe :: requestId :: options :: Some(payload) :: Nil
         case Result(requestId, details, payload)            => Result.tpe :: requestId :: details :: Some(payload) :: Nil
       }
+
     
     val (fields, payload) = (elems.dropRight(1), elems.last) 
     payload match {
-      case None =>  
-        fields.map(toJson).mkString("[", ",", "]")
-        
-      case Some(p: TextLazyPayload) if (p.isEmpty) =>
-        fields.map(toJson).mkString("[", ",", "]")
+      case None =>
+        Source.single(fields.map(toJson).mkString("[", ",", "]"))
 
       case Some(p: TextLazyPayload) =>
-        fields.map(toJson).mkString("[", ",", ",").concat(p.unparsed).concat("]")
+        Source.single(fields.map(toJson).mkString("[", ",", ",")).concat(p.unparsed).concat(Source.single("]"))
         
       case Some(p: BinaryLazyPayload) => 
         throw new IllegalStateException("Cannot serialize binary payload to JSON")
         
       case Some(p: EagerPayload) =>
-        val all = 
-          if (p.isEmpty) fields  
-          else if (p.content.kwargs.isEmpty) fields ::: p.content.args :: Nil
-          else fields ::: p.content.args :: p.content.kwargs :: Nil
-
-        all.map(toJson).mkString("[", ",", "]")
+        val fieldsAndPayload = 
+          if (p.content.args.isEmpty && p.content.kwargs.isEmpty) {
+            fields
+          }  
+          else if (p.content.kwargs.isEmpty) {
+            fields ::: p.content.args :: Nil
+          }
+          else {
+            fields ::: p.content.args :: p.content.kwargs :: Nil
+          }
+        Source.single(fieldsAndPayload.map(toJson).mkString("[", ",", "]"))
     }
   }
 }

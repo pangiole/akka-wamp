@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.ws.{Message => WebSocketMessage, _}
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.wamp._
-import akka.wamp.messages.Message
+import akka.wamp.messages.{Message => WampMessage}
 import akka.wamp.serialization._
 
 import scala.concurrent.Future
@@ -54,15 +54,15 @@ private class Manager extends Actor {
   override def receive: Receive = {
     case cmd @ Wamp.Connect(client, uri, subprotocol) => {
       try {
-        val outgoingSource: Source[Message, ActorRef] =
-          Source.actorRef[Message](0, OverflowStrategies.DropBuffer)
+        val outgoingSource: Source[WampMessage, ActorRef] =
+          Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
 
         val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
           Http(context.system)
             .webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
 
-        val incomingSink: Sink[Message, akka.NotUsed] =
-          Sink.actorRef[Message](client, onCompleteMessage = Wamp.Disconnected)
+        val incomingSink: Sink[WampMessage, akka.NotUsed] =
+          Sink.actorRef[WampMessage](client, onCompleteMessage = Wamp.Disconnected)
 
         if (subprotocol != "wamp.2.json") 
           throw new IllegalArgumentException(s"$subprotocol is not supported") 
@@ -96,7 +96,7 @@ private class Manager extends Actor {
     // TODO https://github.com/angiolep/akka-wamp/issues/29
     // case cmd @ Wamp.Disconnect
       
-    case msg: Message => {
+    case msg: WampMessage => {
       outlets.get(sender()).foreach(client => client ! msg)
     }
   }
