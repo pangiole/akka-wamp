@@ -46,9 +46,9 @@ class JsonSerializerSpec extends FlatSpec
 
   
   it should "serialize Welcome object messages" in {
-    val message = Welcome(1233242, Dict().setAgent("akka-wamp-0.9.0").addRoles(Roles.broker))
+    val message = Welcome(1233242, Dict().setAgent("akka-wamp-0.10.0").addRoles(Roles.broker))
     whenReduced(s.serialize(message)) { json =>
-      json mustBe """[2,1233242,{"agent":"akka-wamp-0.9.0","roles":{"broker":{}}}]"""
+      json mustBe """[2,1233242,{"agent":"akka-wamp-0.10.0","roles":{"broker":{}}}]"""
     }
   }
 

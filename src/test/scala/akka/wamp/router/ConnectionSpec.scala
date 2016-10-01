@@ -69,7 +69,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.9.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \
@@ -81,7 +81,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
       // --> HELLO
       // <-- WELCOME
       f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-      f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.9.0","roles":{"broker":{},"dealer":{}}}]""")
+      f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
   
       // --> bad GOODBYE : invalid reason URI
       //     dropped
@@ -96,7 +96,7 @@ class ConnectionSpec extends ConnectionFixtureSpec
     // --> HELLO
     // <-- WELCOME
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{},"publisher":{}}}]""")
-    f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.9.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #2 OPEN
     // \

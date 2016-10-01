@@ -88,7 +88,7 @@ class ConnectionSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory
       whenReady(conn1.openSession()) { session =>
         session.id mustBe 1
         session.details mustBe Map(
-          "agent" -> "akka-wamp-0.9.0",
+          "agent" -> "akka-wamp-0.10.0",
           "roles" -> Map("broker" -> Map(), "dealer" -> Map())
         )
       }

@@ -52,7 +52,7 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
 
   /** Details of WELCOME message replied by this router */
   private val welcomeDetails = Dict()
-    .setAgent("akka-wamp-0.9.0")
+    .setAgent("akka-wamp-0.10.0")
     .addRoles(Roles.router)
   
   /**
