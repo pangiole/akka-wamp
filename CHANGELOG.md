@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-... 
+
+### Fixed
+- Default JSON deserializer shall bind ``null`` to ``None``
 
 ## [0.10.0] _ 2016-10-01
 
@@ -13,7 +15,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Implement deserialization of streamed text messages [\#27](https://github.com/angiolep/akka-wamp/issues/27)
 
 ### Fixed
-- Both router and client don't validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
+- Both router and client shall validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
 
     
 ## [0.9.0] _ 2016-09-29    
@@ -33,8 +35,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Make decision on DeserializeException configurable [\#20](https://github.com/angiolep/akka-wamp/issues/20)  
 
 ### Fixed
-- Lack of specification for repeated HELLOs [\#21](https://github.com/angiolep/akka-wamp/issues/21)
-- Lack of specification specification in case of offending messages [\#22](https://github.com/angiolep/akka-wamp/issues/22)
+- Repeated HELLOs are to be considered protocol error [\#21](https://github.com/angiolep/akka-wamp/issues/21)
+- Offending messages are to be considered protocol errors [\#22](https://github.com/angiolep/akka-wamp/issues/22)
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)

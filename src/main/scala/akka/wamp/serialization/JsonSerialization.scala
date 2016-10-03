@@ -52,6 +52,9 @@ class JsonSerialization() extends Serialization {
       * It lazily parse JSON payload
       */
     class JsonTextLazyPayload(val unparsed: Source[String, _]) extends TextLazyPayload {
+      
+      def valueOf(v: Any) = (if (v == null) None else v)
+      
       lazy override val parsed: Future[ParsedContent] = Future {
         // """...[null,"paolo",40,true],{"height":1.65,"1":"pietro"}]"""
         var args = mutable.ListBuffer.empty[Any]
@@ -59,16 +62,16 @@ class JsonSerialization() extends Serialization {
         // TODO better to use Jackson Mapper here rather than Jackson Streaming Parser (which should have been closed)
         if (parser.getCurrentToken() == START_ARRAY) {
           while (parser.nextToken() != END_ARRAY) {
-            val value = mapper.readValue(parser, classOf[Object])
-            args += (if (value == null) None else value)
+            val v = mapper.readValue(parser, classOf[Object])
+            args += valueOf(v)
           }
           // TODO test with malformed JSON """[null,"paolo",40,true !"""
           if (parser.nextToken() == START_OBJECT) {
             while (parser.nextToken() != END_OBJECT) {
               val name = parser.getCurrentName
               parser.nextToken() // move next
-              val value = mapper.readValue(parser, classOf[Object])
-              kwargs += (name -> value)
+              val v = mapper.readValue(parser, classOf[Object])
+              kwargs += (name -> valueOf(v))
             }
             // TODO test with malformed JSON """[null,"paolo",40,true],{"height":1.65,1 !}"""
           }
