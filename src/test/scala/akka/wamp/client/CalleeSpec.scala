@@ -1,6 +1,6 @@
 package akka.wamp.client
 
-import akka.wamp.messages.Invocation
+import akka.wamp.messages.{Event, Invocation}
 import akka.wamp.serialization.Payload
 import org.scalamock.scalatest.MockFactory
 
@@ -64,6 +64,14 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
 
 
   it should "succeed unregister procedure" in { f =>
-    pending
+    f.withSession { session =>
+      val handler = stubFunction[Invocation, Future[Payload]]
+      val registration = session.register("myapp.procedure")(handler)
+      whenReady(registration) { registration =>
+        whenReady(registration.unregister()) { unregistered =>
+          assert(true)
+        }
+      }
+    }
   }
 }

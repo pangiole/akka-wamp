@@ -76,12 +76,8 @@ trait JsonPayloadHolderBehaviours { this: JsonPayloadHolderSpec =>
           fail(s"Unexpected $msg")
       }
     }
-
     
-    it should "hold huge unparsed text payload as Akka Stream Source" in {
-      pending
-      // TODO file an issue for huge unparsed text payload (consider pull request #3)
-    }
+    // TODO it should "hold huge unparsed text payload as Akka Stream Source" 
   }
 }
 

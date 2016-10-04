@@ -139,10 +139,15 @@ session.onFailure {
 ```scala
 import akka.wamp.messages._
 
-val unregisterd: Future[Unregisterd] = session.flatMap(
-    _.unregister("myapp.procedure.sum")
-  )
+val registration: Future[Registration] = ...
+
+val unregistered: Future[Unregistered] = registration.flatMap(
+  _.unregister()
+)
 ```
+
+Just call the ``unregister()`` method on the registration you want to terminate.
+ 
 
 
 ### Recover

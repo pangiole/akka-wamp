@@ -15,29 +15,6 @@ import scala.concurrent._
   */
 package object client {
 
-  /**
-    * Pending SUBSCRIBE messages are those waiting for 
-    * a reply from the broker (SUBSCRIBED or ERROR)
-    */
-  type PendingSubscriptions = mutable.Map[/*Request*/Id, PendingSubscription]
- 
-  /**
-    * Subscriptions are those confirmed with SUBSCRIBED
-    */
-  type Subscriptions = mutable.Map[/*Subscription*/Id, Subscription]
-
-  /**
-    * Pending UNSUBSCRIBE messages are those waiting for 
-    * a reply from the broker (UNSUBSCRIBED or ERROR)
-    */
-  type PendingUnsubscribes = mutable.Map[/*Request*/Id, (Unsubscribe, Promise[Unsubscribed])]
-
-  /**
-    * Pending PUBLISH messages are those sent with ACK 
-    * and waiting for a reply from the broker (PUBLISHED or ERROR)
-    */
-  type PendingPublications = mutable.Map[Id, Promise[Either[Done, Publication]]]
-
   
   /**
     * Type synonym for an event handler

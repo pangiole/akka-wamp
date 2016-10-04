@@ -7,7 +7,7 @@ import akka.wamp.messages._
 import akka.wamp.serialization._
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 /**
   * Publisher is a client which publishes events to topics
@@ -16,7 +16,7 @@ import scala.concurrent.Future
 trait Publisher { this: Session =>
 
   /** The event publications map */
-  private val pendingPublications: PendingPublications = mutable.Map()
+  private val pendingPublications: mutable.Map[PublicationId, Promise[Either[Done, Publication]]] = mutable.Map()
 
   /**
     * Publish to a topic
@@ -100,7 +100,7 @@ trait Publisher { this: Session =>
       log.debug("<-- {}", msg)
       pendingPublications.get(requestId).map { promise =>
         pendingPublications -= requestId
-        promise.success(Right(Publication(msg)))
+        promise.success(Right(new Publication(msg)))
       }
       
     case msg @ Error(Publish.tpe, requestId, _, error, _) =>
@@ -112,4 +112,11 @@ trait Publisher { this: Session =>
   }
 }
 
-case class Publication(published: Published)
+object Publisher
+
+/**
+  * A publication
+  * 
+  * @param published 
+  */
+class Publication private[client] (val published: Published)

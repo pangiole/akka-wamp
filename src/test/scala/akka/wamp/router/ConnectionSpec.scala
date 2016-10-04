@@ -46,22 +46,42 @@ class ConnectionSpec extends ConnectionFixtureSpec
     
     // TODO --> bad messages 
     
+    // TODO  --> bad ABORT : no HELLO to reply to
+    
     // --> bad GOODBYE : no session
+    // --> drop
     f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
     
-    // TODO --> bad SUBSCRIBE : no session
-    // TODO --> bad PUBLISH : no session
-    // TODO --> bad REGISTER : no session
-    // TODO --> bad CALL : no session
+    // --> bad SUBSCRIBE : no session
+    // --> drop
+    f.client.sendMessage("""[32,1,{},"myapp.TOPIC-"]""")
+
+    // TODO  --> bad UNSUBSCRIBE : no session
+    
+    // --> bad PUBLISH : no session
+    // --> drop
+    f.client.sendMessage("""[16,2,{"acknowledge":true},"myapp.TOPIC-"]""")
+    
+    // --> bad REGISTER : no session
+    // --> drop
+    f.client.sendMessage("""[64,3,{},"myapp.procedure1"]""")
+
+    // TODO  --> bad UNREGISTER : no session
+    
+    // TODO  --> bad YIELD : no session
+    
+    // --> bad CALL : no session
+    // --> drop
+    f.client.sendMessage("""[48,4,{},"myapp.procedure"]""")
     
     // --> bad HELLO : invalid realm URI
     //     dropped
     f.client.sendMessage("""[1,"invalid..realm",{"roles":{"subscriber":{}}}]""")
-
+    
     // --> bad HELLO : invalid key
     //     dropped
     f.client.sendMessage("""[1,"myapp.realm",{"INVALID KEY":null}]""")
-
+    
     // --> bad HELLO : invalid role
     //     dropped
     f.client.sendMessage("""[1,"myapp.realm",{"roles":{"invalid role":{}}}]""")
@@ -77,12 +97,16 @@ class ConnectionSpec extends ConnectionFixtureSpec
       // <-- ABORT
       f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
       f.client.expectMessage("""[3,{},"akka.wamp.error.session_already_open"]""")
+    // \
+    // SESSION #1 CLOSED
     
-      // --> HELLO
-      // <-- WELCOME
-      f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
-      f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
-  
+    // --> HELLO
+    // <-- WELCOME
+    f.client.sendMessage("""[1,"myapp.realm",{"roles":{"publisher":{}}}]""")
+    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
+
+    // SESSION #2 OPEN
+    // \
       // --> bad GOODBYE : invalid reason URI
       //     dropped
       f.client.sendMessage("""[6,{},"invalid..reason"]""")
@@ -91,22 +115,24 @@ class ConnectionSpec extends ConnectionFixtureSpec
       f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
       f.client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
     // \
-    // SESSION #1 CLOSED
+    // SESSION #2 CLOSED
 
     // --> HELLO
     // <-- WELCOME
-    f.client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{},"publisher":{}}}]""")
+    f.client.sendMessage("""[1,"myapp.realm",{"roles":{"subscriber":{},"publisher":{},"callee":{}}}]""")
     f.client.expectMessage("""[2,3,{"agent":"akka-wamp-0.10.0","roles":{"broker":{},"dealer":{}}}]""")
 
-    // SESSION #2 OPEN
+    // SESSION #3 OPEN
     // \
       // --> bad SUBSCRIBE : invalid topic URI
       //     dropped
       f.client.sendMessage("""[32,1,{},"invalid..topic'"]""")
+      
       // --> SUBSCRIBE
       // <-- SUBSCRIBED
       f.client.sendMessage("""[32,1,{},"myapp.TOPIC-"]""")
       f.client.expectMessage("""[33,1,1]""")
+      
       // --> bad PUBLISH : invalid topic URI
       //     dropped
       f.client.sendMessage("""[16,2,{"acknowledge":true},"invalid..topic"]""")
@@ -114,12 +140,29 @@ class ConnectionSpec extends ConnectionFixtureSpec
       // <-- PUBLISHED
       f.client.sendMessage("""[16,2,{"acknowledge":true},"myapp.TOPIC-"]""")
       f.client.expectMessage("""[17,2,4]""")
+
+      // --> bad REGISTER : invalid procedure URI
+      //     dropped
+      f.client.sendMessage("""[64,3,{},"invalid..procedure"]""")
+      // --> REGISTER
+      // <-- REGISTERED
+      f.client.sendMessage("""[64,3,{},"myapp.PROCEDURE-"]""")
+      f.client.expectMessage("""[65,3,2]""")
+
+      // --> bad CALL : invalid procedure URI
+      //     dropped
+//      f.client.sendMessage("""[48,4,{},"invalid..procedure"]""")
+      // --> CALL
+      // <-- RESULT
+//      f.client.sendMessage("""[48,4,{},"myapp.PROCEDURE-"]""")
+      // TODO f.client.expectMessage("""[50,4]""")
+      
       // --> GOODBYE
       // <-- GOODBYE
       f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
       f.client.expectMessage("""[6,{},"wamp.error.goodbye_and_out"]""")
     // \
-    // SESSION #2 CLOSED
+    // SESSION #3 CLOSED
 
     f.client.expectNoMessage()
   }

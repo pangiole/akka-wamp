@@ -72,7 +72,7 @@ trait Callee { this: Session =>
     case msg @ Registered(requestId, registrationId) =>
       log.debug("<-- {}", msg)
       pendingRegistrations.get(requestId).map { case pending =>
-        val registration = new Registration(pending.msg.procedure, pending.handler, msg)
+        val registration = new Registration(this, pending.msg.procedure, pending.handler, msg)
         registrations += (registrationId -> registration)
         pendingRegistrations -= requestId
         pending.promise.success(registration)
@@ -153,3 +153,25 @@ object Callee {
   private class PendingUnregistration(val msg: Unregister, val promise: Promise[Unregistered])
 }
 
+
+/**
+  * A registration
+  * 
+  * @param callee is the callee which have registered the procedure
+  * @param procedure is the registered procedure URI
+  * @param handler is the invocation handler
+  * @param registered is the message replied back from the router
+  */
+class Registration private[client] (
+  callee: Callee,
+  val procedure: Uri, 
+  val handler: InvocationHandler, 
+  val registered: Registered) {
+
+  /**
+    * Unregister this registration
+    * 
+    * @return a (future of) unregistered message
+    */
+  def unregister(): Future[Unregistered] = callee.unregister(procedure)
+}

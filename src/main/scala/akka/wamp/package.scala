@@ -12,9 +12,9 @@ import scala.util.Random.{nextDouble => rnd}
 package object wamp {
 
   /**
-    * A Peer could be either a Client or a [[Router]]
-    *  - it must implement one [[Role]], and
-    *  - may implement more [[Role]]s.
+    * A peer could be either a client or a router
+    *  - it must implement one role, and
+    *  - may implement more roles.
     */
   type Role = String
 
@@ -64,6 +64,10 @@ package object wamp {
   type Id = Long
   
   type RequestId = Long
+  
+  type SubscriptionId = Long
+  
+  type PublicationId = Long
   
   type RegistrationId = Long
 

@@ -12,12 +12,13 @@ import scala.concurrent._
   * expects to receive events
   */
 trait Subscriber { this: Session =>
+  import Subscriber._
 
-  private val pendingSubscribers: PendingSubscriptions = mutable.Map()
+  private val pendingSubscribers: mutable.Map[RequestId, PendingSubscription] = mutable.Map()
   
-  private val subscriptions: Subscriptions = mutable.Map()
+  private val subscriptions: mutable.Map[SubscriptionId, Subscription] = mutable.Map()
 
-  private val pendingUnsubscribes: PendingUnsubscribes = mutable.Map()
+  private val pendingUnsubscribes: mutable.Map[RequestId, (Unsubscribe, Promise[Unsubscribed])] = mutable.Map()
   
   private val eventHandlers: EventHandlers = mutable.Map()
   
@@ -58,7 +59,7 @@ trait Subscriber { this: Session =>
   def subscribe(topic: Uri)(handler: EventHandler): Future[Subscription] = {
     withPromise[Subscription] { promise =>
       val msg = Subscribe(requestId = nextId(), Subscribe.defaultOptions, topic)
-      pendingSubscribers += (msg.requestId -> PendingSubscription(msg, handler, promise))
+      pendingSubscribers += (msg.requestId -> new PendingSubscription(msg, handler, promise))
       connection ! msg
     }
   }
@@ -139,18 +140,34 @@ trait Subscriber { this: Session =>
   }
 }
 
-object Subscriber
+object Subscriber {
+  /**
+    * A pending subscription
+    * 
+    * @param subscribe
+    * @param handler
+    * @param promise
+    */
+  class PendingSubscription(
+    val subscribe: Subscribe, 
+    val handler: EventHandler, 
+    val promise: Promise[Subscription]
+  )
+}
 
-
-
-class Subscription(subscriber: Subscriber, val topic: Uri, val subscribed: Subscribed) {
+/**
+  * A subscription
+  *
+  * @param subscriber is the subscriber which has subscribed the topic
+  * @param topic is the subscribed topic URI
+  * @param subscribed is the message from replied back from the router
+  */
+class Subscription private[client] (subscriber: Subscriber, val topic: Uri, val subscribed: Subscribed) {
   /**
     * Unsubscribe this subscription
-    * 
+    *
     * @return a (future of) unsubscribed
     */
   def unsubscribe(): Future[Unsubscribed] = subscriber.unsubscribe(topic)
 }
-
-private[client] case class PendingSubscription(subscribe: Subscribe, handler: EventHandler, promise: Promise[Subscription])
 

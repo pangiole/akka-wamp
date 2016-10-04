@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Added
+- Unregister can be called on registration directly
+- Unsubscribed can be called on subscription directly
+
 ### Fixed
 - Default JSON deserializer shall bind ``null`` to ``None``
 
