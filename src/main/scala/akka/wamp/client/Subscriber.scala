@@ -91,7 +91,7 @@ trait Subscriber { this: Session =>
     case msg @ Subscribed(requestId, subscriptionId) =>
       log.debug("<-- {}", msg)
       pendingSubscribers.get(requestId).map { pending =>
-          val subscription = Subscription(pending.subscribe.topic, msg)
+          val subscription = new Subscription(this, pending.subscribe.topic, msg)
           subscriptions += (subscriptionId -> subscription)
           eventHandlers += (subscriptionId -> pending.handler)
           pendingSubscribers -= requestId
@@ -143,8 +143,13 @@ object Subscriber
 
 
 
-case class Subscription(topic: Uri, subscribed: Subscribed) {
-  // TODO def unsubscribe(): Future[Unsubscribed]
+class Subscription(subscriber: Subscriber, val topic: Uri, val subscribed: Subscribed) {
+  /**
+    * Unsubscribe this subscription
+    * 
+    * @return a (future of) unsubscribed
+    */
+  def unsubscribe(): Future[Unsubscribed] = subscriber.unsubscribe(topic)
 }
 
 private[client] case class PendingSubscription(subscribe: Subscribe, handler: EventHandler, promise: Promise[Subscription])

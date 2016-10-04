@@ -57,6 +57,14 @@ class SubscriberSpec extends ClientFixtureSpec with MockFactory {
 
 
   it should "succeed unsubscribe from topic" in { f =>
-    pending
+    f.withSession { session =>
+      val handler = stubFunction[Event, Unit]
+      val subscription = session.subscribe("myapp.topic")(handler)
+      whenReady(subscription) { subscription =>
+        whenReady(subscription.unsubscribe()) { unsubscribed =>
+          assert(true)
+        }
+      }
+    }
   }
 }

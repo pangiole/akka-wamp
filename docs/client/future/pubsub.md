@@ -170,10 +170,15 @@ session.onFailure {
 ```scala
 import akka.wamp.messages._
 
-val unsubscribed: Future[Unsubscribed] = session.flatMap(
-    _.unsubscribe("myapp.topic")
-  )
+val subscription: Future[Subscription] = ...
+
+val unsubscribed: Future[Unsubscribed] = subscription.flatMap(
+  _.unsubscribe()
+)
 ```
+
+Just call the ``unsubscribe()`` method on the subscription you want to terminate.
+ 
 
 ### Multiple handlers
 TBD
