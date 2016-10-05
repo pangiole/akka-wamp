@@ -52,7 +52,8 @@ private class Manager extends Actor {
     * Handle CONNECT and DISCONNECT commands
     */
   override def receive: Receive = {
-    case cmd @ Wamp.Connect(client, uri, subprotocol) => {
+    case cmd @ Wamp.Connect(uri, subprotocol) => {
+      val client = sender()
       try {
         val outgoingSource: Source[WampMessage, ActorRef] =
           Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
@@ -84,12 +85,12 @@ private class Manager extends Actor {
           if (upgrade.response.status == SwitchingProtocols) {
             client ! Wamp.Connected(outgoingActor)
           } else {
-            client ! Wamp.ConnectionFailed(new Exception(upgrade.response.toString))
+            client ! Wamp.CommandFailed(cmd, new Exception(upgrade.response.toString))
           }
         }
       } catch {
         case ex: Throwable =>
-          client ! Wamp.ConnectionFailed(ex)
+          client ! Wamp.CommandFailed(cmd, ex)
       }
     }
 

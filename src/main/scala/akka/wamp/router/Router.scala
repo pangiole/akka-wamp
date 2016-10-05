@@ -16,7 +16,7 @@ import scala.collection.mutable
   * any application code a client would.
   * 
   */
-final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef]) 
+final class Router(val scopes: Map[Symbol, Scope]) 
   extends Peer with Broker with Dealer
   with Actor with ActorLogging  
 {
@@ -81,18 +81,14 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         handleRegistrations orElse handleCalls
 
   /**
-    * Handle transports lifecycle signals and events such as: 
-    * BOUND, CONNECTED, DISCONNECTED and UNBOUND
+    * Handle transports lifecycle signals such as DISCONNECTED
     */
   private def handleConnections: Receive = {
-    case signal @ Wamp.Bound(url) =>
-      log.info("[{}]    Successfully bound on {}", self.path.name, url)
-      listener.map(_ ! signal)
 
-    case signal @ Wamp.Connected(p) =>
+    /*case signal @ Wamp.Connected(p) =>
       val peer = sender() // == p
       log.debug("[{}]     Wamp.Connected [{}]", self.path.name, peer.path.name)
-      listener.map(_ ! signal)
+      observer.map(_ ! signal)*/
       
     case signal @ Wamp.Disconnected =>
       val peer = sender()
@@ -101,7 +97,6 @@ final class Router(val scopes: Map[Symbol, Scope], val listener: Option[ActorRef
         case Some(session) => closeSession(session)
         case None => ()
       }
-      listener.map(_ ! signal)
   }
   
   
@@ -219,11 +214,10 @@ object Router {
     * Create a Props for an actor of this type
     *
     * @param scopes is the [[Scope]] map used for [[Id]] generation
-    * @param listener is the actor to notify Bind to
     * @return the props
     */
-  def props(scopes: Map[Symbol, Scope] = Scope.defaults, listener: Option[ActorRef] = None) = 
-    Props(new Router(scopes, listener))
+  def props(scopes: Map[Symbol, Scope] = Scope.defaults) = 
+    Props(new Router(scopes))
   
   /**
     * Starts the router as standalone application
@@ -243,8 +237,12 @@ object Router {
     IO(Wamp) ! Bind(router)
     
     def receive = {
-      case Wamp.BindFailed(cause) =>
+      case signal @ Wamp.Bound(listener, url) =>
+        log.info("[{}]    Successfully bound on {}", self.path.name, url)
+        
+      case Wamp.CommandFailed(cmd, cause) =>
         context.system.terminate().map[Unit](_ => System.exit(-1))
+        
     }
   }
 }

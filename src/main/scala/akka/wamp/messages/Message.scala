@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Common interface of WAMP messages exchanged by two peers during a session
   */
-sealed trait Message extends AbstractMessage {
+sealed trait Message extends ManagedMessage {
   protected val tpe: TypeCode
 }
 

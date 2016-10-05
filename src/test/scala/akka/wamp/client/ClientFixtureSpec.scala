@@ -15,8 +15,6 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   extends ActorSpec(_system)
     with ParallelTestExecution
     with ScalaFutures {
-
-  
   
   implicit val defaultPatience =
     PatienceConfig(timeout = 16 seconds, interval = 100 millis)
@@ -50,17 +48,15 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
       'router -> new Scope.SessionScope {},
       'session -> new Scope.SessionScope {}
     )
-    val listener = TestProbe()
-    val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
+    val router = TestActorRef[Router](Router.props(scopes))
     try {
       IO(Wamp) ! Bind(router)
-      val bound = listener.expectMsgType[Bound](16 seconds)
+      val signal = expectMsgType[Bound](16 seconds)
       val client = new Client()(system)
-      val theFixture = FixtureParam(client, router, bound.url)
+      val theFixture = FixtureParam(client, router, signal.url)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {
-      system.stop(listener.ref)
       system.stop(router)
     }
   }

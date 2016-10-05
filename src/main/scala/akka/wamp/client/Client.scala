@@ -57,8 +57,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     subprotocol: String = Client.defaultSubprotocol): Future[Connection] = 
   {
     val promise = Promise[Connection]
-    val clientRef = system.actorOf(Props(new ClientActor(promise)))
-    IO(Wamp) ! Wamp.Connect(clientRef, url, subprotocol)
+    system.actorOf(Props(new ClientActor(url, subprotocol, promise)))
     promise.future
   }
 

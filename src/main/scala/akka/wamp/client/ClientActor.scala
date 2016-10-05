@@ -1,6 +1,7 @@
 package akka.wamp.client
 
 import akka.actor.{Actor, ActorLogging, Status}
+import akka.io.IO
 import akka.wamp.{Validator, Wamp}
 
 import scala.concurrent.{ExecutionContext, Promise}
@@ -11,11 +12,18 @@ import scala.concurrent.{ExecutionContext, Promise}
   *
   * The connection actor which will keep (or break) the given connection promise
   *
+  * @param url is the URL to connect to (default is "ws://localhost:8080/router")
+  * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
   * @param promise is the promise of connection to fulfill
   */
 private[client] 
-class ClientActor(promise: Promise[Connection]) extends Actor with ActorLogging {
+class ClientActor(url: String, subprotocol: String, promise: Promise[Connection]) extends Actor with ActorLogging {
 
+  // TODO how about resiliency
+
+  import context.system // implicitly used by IO(Wamp)
+  IO(Wamp) ! Wamp.Connect(url, subprotocol)
+  
   /**
     * The connection
     */
@@ -52,8 +60,8 @@ class ClientActor(promise: Promise[Connection]) extends Actor with ActorLogging 
     // TODO https://github.com/angiolep/akka-wamp/issues/29  
     // case command @ Wamp.Disconnect =>
       
-    case signal @ Wamp.ConnectionFailed(cause) =>
-      fail(signal.toString, cause.getMessage)
+    case signal @ Wamp.CommandFailed(cmd, ex) =>
+      fail(signal.toString, ex.getMessage)
 
     case signal @ Status.Failure(cause) =>
       fail(signal.toString, cause.getMessage)

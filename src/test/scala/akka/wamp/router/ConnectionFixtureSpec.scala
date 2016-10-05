@@ -43,7 +43,7 @@ class ConnectionFixtureSpec
     val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
     val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
     
-    val transport = TestActorRef[Connection](Connection.props(wampRouter, serializationFlows))
+    val transport = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, serializationFlows))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = transport.underlyingActor.httpRoute

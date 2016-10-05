@@ -49,12 +49,11 @@ object PubSubApp extends App {
 
 ### Major features
 
-* Proper connection and [Session Handling](client/future/session)
-* Simple and concise [Publish Subscribe](client/future/pubsub)
-* Simple and concise routed [Remote Procedure Call](client/future/rpc)
-* Lazy [Payload Handling](client/future/payload) with Streaming support
+* Fully compliant with Reactive Manifesto
+* Simple and well documented API
+* Lazy deserialization
 
-Please, read the docs for [further details](client/future)
+Please, read the docs for [further details](client/overview)
 
 
 ## Router

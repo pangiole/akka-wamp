@@ -13,9 +13,10 @@ import scala.util.{Failure, Success}
 /**
   * INTERNAL API
   * 
-  * The Akka IO manager actor for the WAMP router
+  * The transport listener actor spawned by the [[ExtensionManager]]
+  * each time it executes [[Wamp.Bind]] commands
   */
-private class Manager extends Actor {
+private class TransportListener extends Actor {
   
   /** The execution context */
   private implicit val ec = context.system.dispatcher
@@ -55,6 +56,8 @@ private class Manager extends Actor {
   private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
 
   
+  private var binding: Http.ServerBinding = _
+  
   /**
     * Handle BIND and UNBIND commands
     */
@@ -71,44 +74,46 @@ private class Manager extends Actor {
         Flow[Http.IncomingConnection].
           watchTermination()((_, termination) => termination.onFailure {
             case cause => 
-              binder ! Wamp.ConnectionFailed(cause)
+              binder ! Wamp.CommandFailed(cmd, cause)
           })
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val transport = context.actorOf(Connection.props(router, serializationFlows))
-          transport ! conn
+          val handler = context.actorOf(ConnectionHandler.props(router, serializationFlows))
+          handler ! conn
         }
 
-      val binding: Future[Http.ServerBinding] =
-        serverSource.
-          via(reactToTopLevelFailures).
-          to(handleConnection).
-          run()
-
-      binding.onComplete {
-        case Success(b) =>
-          val host = b.localAddress.getHostString
-          val port = b.localAddress.getPort
-          val path = context.system.settings.config.getString("akka.wamp.router.path")
-          val url = s"ws://$host:$port/$path"
-          router ! Wamp.Bound(url)
-        case Failure(cause) =>
-          router ! Wamp.BindFailed(cause)
-      }
+      serverSource
+        .via(reactToTopLevelFailures)
+        .to(handleConnection)
+        .run()
+        .onComplete {
+          case Success(b) =>
+            this.binding = b
+            val transport = config.getString("transport")
+            assert(b.localAddress.getHostString == iface)
+            val port = b.localAddress.getPort
+            val path = config.getString("path")
+            val url = s"$transport://$iface:$port/$path"
+            binder ! Wamp.Bound(self, url)
+            
+          case Failure(cause) =>
+            binder ! Wamp.CommandFailed(cmd, cause)
+        }
     }
 
-    // TODO https://github.com/angiolep/akka-wamp/issues/13
-    // case cmd @ Wamp.Unbind
+    case cmd @ Wamp.Unbind =>
+      this.binding.unbind()
+      context.stop(self)
   }
 }
 
 /**
   * INTERNAL API
   */
-private[wamp] object Manager {
+private[wamp] object TransportListener {
   /**
-    * Factory for [[Manager]] instances
+    * Factory for [[TransportListener]] instances
     */
-  def props() = Props(new Manager())
+  def props() = Props(new TransportListener())
 }

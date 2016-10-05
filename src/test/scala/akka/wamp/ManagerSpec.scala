@@ -17,25 +17,37 @@ class ManagerSpec
 
   "The IO(Wamp) manager" should "bind a router" in { f =>
     val manager = IO(Wamp)
-    manager ! Bind(f.listener.ref)
-    val bound = f.listener.expectMsgType[Bound](16 seconds)
-    bound.url must startWith("ws://127.0.0.1:")
-    bound.url must endWith("/router")
+    manager ! Bind(f.router)
+    val signal = expectMsgType[Bound](16 seconds)
+    signal.url must startWith("ws://127.0.0.1:")
+    signal.url must endWith("/router")
   }
 
-  it should "unbind a router" in { fixture =>
-    // TODO https://github.com/angiolep/akka-wamp/issues/13
-    pending
+  
+  it should "unbind a transport listener" in { f =>
+    val manager = IO(Wamp)
+    manager ! Bind(f.router)
+    val signal = expectMsgType[Bound](16 seconds)
+    val listener = signal.listener
+    
+    val watcher = TestProbe("watchee")
+    watcher.watch(listener)
+    
+    listener ! Unbind
+    expectNoMsg()
+    val terminated = watcher.expectMsgType[Terminated]
+    terminated.actor mustBe listener
   }
+  
   
   it should "connect a client" in { f =>
     val manager = IO(Wamp)
     manager ! Bind(f.router)
-    val bound = f.listener.expectMsgType[Bound](16 seconds)
+    val signal = expectMsgType[Bound](16 seconds)
     
-    manager ! Connect(client = testActor, bound.url)
+    manager ! Connect(signal.url, "wamp.2.json")
     val connected = expectMsgType[Wamp.Connected](16 seconds)
-    connected.peer must not be (null)
+    connected.conn must not be (null)
   }
   
   
@@ -45,18 +57,15 @@ class ManagerSpec
   }
 
   
-  // see http://www.scalatest.org/user_guide/sharing_fixtures#withFixtureOneArgTest
-  case class FixtureParam(router: TestActorRef[Router], listener: TestProbe)
+  case class FixtureParam(router: TestActorRef[Router])
   
   def withFixture(test: OneArgTest) = {
-    val listener = TestProbe()
-    val router = TestActorRef[Router](Router.props(listener = Some(listener.ref)))
-    val theFixture = FixtureParam(router, listener)
+    val router = TestActorRef[Router](Router.props())
+    val theFixture = FixtureParam(router)
     try {
       withFixture(test.toNoArgTest(theFixture)) 
     }
     finally {
-      system.stop(listener.ref)
       system.stop(router)
     }
   }

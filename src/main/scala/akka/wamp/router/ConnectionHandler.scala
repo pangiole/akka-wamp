@@ -19,7 +19,7 @@ import akka.wamp.serialization.SerializationFlows
   *
   * @param router is the first peer to connect
   */
-class Connection(router: ActorRef, serializationFlows: SerializationFlows) 
+private class ConnectionHandler(router: ActorRef, serializationFlows: SerializationFlows) 
   extends Actor with ActorLogging 
 {
   /**
@@ -39,9 +39,9 @@ class Connection(router: ActorRef, serializationFlows: SerializationFlows)
         actorRef[Message](bufferSize = 4, OverflowStrategies.Fail)
 
     // Create a new transportSink which delivers any message to this transportActor (self)
-    val transportSink: Sink[Wamp.AbstractMessage, NotUsed] =
+    val transportSink: Sink[Wamp.ManagedMessage, NotUsed] =
       Sink.
-        actorRef[Wamp.AbstractMessage](self, onCompleteMessage = Wamp.Disconnected)
+        actorRef[Wamp.ManagedMessage](self, onCompleteMessage = Wamp.Disconnected)
 
     Flow.fromGraph(GraphDSL.create(transportSource) {
       implicit builder => transportSource =>
@@ -59,7 +59,7 @@ class Connection(router: ActorRef, serializationFlows: SerializationFlows)
         val fromWebSocket = builder.add(serializationFlows.deserialize)
 
         // The merge junction forwards all messages fromWebSocket downstream to the transportSink
-        val merge = builder.add(Merge[Wamp.AbstractMessage](2))
+        val merge = builder.add(Merge[Wamp.ManagedMessage](2))
 
         // The toWebSocket flow
         //   - receives outgoing WampMessages from the transportSource
@@ -157,7 +157,7 @@ class Connection(router: ActorRef, serializationFlows: SerializationFlows)
 }
 
 
-object Connection {
+object ConnectionHandler {
   /**
     * Create a Props for an actor of this type
     * 
@@ -166,5 +166,5 @@ object Connection {
     * @return the props
     */
   def props(router: ActorRef, serializationFlows: SerializationFlows) = 
-    Props(new Connection(router, serializationFlows))
+    Props(new ConnectionHandler(router, serializationFlows))
 }

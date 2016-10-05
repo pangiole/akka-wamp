@@ -22,17 +22,15 @@ class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test"))
   case class FixtureParam(router: TestActorRef[Router], client: TestProbe)
 
   override def withFixture(test: OneArgTest) = {
-    val listener = TestProbe()
-    val router = TestActorRef[Router](Router.props(scopes, Some(listener.ref)))
+    val router = TestActorRef[Router](Router.props(scopes))
     try {
       IO(Wamp) ! Bind(router)
-      listener.expectMsgType[Bound](16 seconds)
+      expectMsgType[Bound](16 seconds)
       val client = TestProbe("client")
       val theFixture = FixtureParam(router, client)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {
-      system.stop(listener.ref)
       system.stop(router)
     }
   }
