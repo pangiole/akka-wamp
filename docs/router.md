@@ -8,7 +8,7 @@ It provides:
 
 
 
-## Standalone 
+## Standalone router
 [![Download][download-image]][download-url]
 
 Download the latest router version, extract it, configure it and launch it as standalone application:
@@ -83,14 +83,31 @@ akka {
       
 Above settings can be overridden by
 
- * providing a TypeSafe Config ``application.conf`` file right in the classpath,
- * or passing Java system properties (e.g. ``-Dakka.wamp.router.port=7070``) to the Java interpreter on the command line
+ * (for standalone router) editing ``conf/application.conf``
+ * (for embedded router) providing ``application.conf`` in the classpath,
+ * or passing Java system properties (e.g. ``-Dakka.wamp.router.port=7070``)
 
 
-### SSL/TLS support
+### Logging
+```bash
+akka {
+  #
+  # Following are already set by akka-wamp as default
+  #
+  loggers = ["akka.event.slf4j.Slf4jLogger"]
+  loglevel = "INFO"
+  logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+    
+  # Just provide a logback.xml file in your classpath 
+  # so to customize your loggers, appenders and patterns
+  # 
+}
+```
+
+### Security
 TBD
 
-## Embedded
+## Embedded router
 Make your build depend on the latest version of akka-wamp: 
 
 ```scala
@@ -106,9 +123,6 @@ libraryDependencies ++= Seq(
 Create the Akka ``ActorSystem`` and the Akka Wamp ``Router`` actor as follows:
 
 ```scala
-import akka.actor._
-import akka.wamp.router._
-
 implicit val system = ActorSystem("myapp")
 val router = system.actorOf(Router.props(), "router")
 ```
@@ -119,6 +133,7 @@ val router = system.actorOf(Router.props(), "router")
 To bind a transport, just send a ``Bind`` command to the ``IO(Wamp)`` extension manager:
 
 ```scala
+
 val manager = IO(Wamp)
 manager ! Bind(router)
 ```
@@ -128,12 +143,12 @@ The manager will spawn a new transport listener for the given the router binding
 ```scala
 override def receive: Receive = {
   case signal @ Wamp.CommandFailed(cmd, ex) =>
-    log.info(s"$cmd failed because of $ex")
+    log.warning(s"$cmd failed because of $ex")
 
   case signal @ Wamp.Bound(listener, url) =>
-    log.info(s"Bound succeeded with $url")
+    log.debug(s"$listener bound to $url")
     // ...
-    listener ! Wamp.Unbind
+    // listener ! Wamp.Unbind
 } 
 ```
 
@@ -143,7 +158,9 @@ On successfully bound, you'll be sent the actor reference of the transport liste
 listener ! Wamp.Unbind
 ```
 
+### Examples
 
+* [EmbeddedRouterApp](https://github.com/angiolep/akka-wamp/blob/master/examples/src/main/scala/examples/EmbeddedRouterApp.scala)
 
 
 ## Limitations

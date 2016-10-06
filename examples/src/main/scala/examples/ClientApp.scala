@@ -1,4 +1,4 @@
-package example.actor
+package examples
 
 /**
   * Example of client app written with Actor based API

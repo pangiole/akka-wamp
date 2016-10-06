@@ -1,0 +1,2 @@
+
+name := "akka-wamp-example"

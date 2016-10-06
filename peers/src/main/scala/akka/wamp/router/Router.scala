@@ -207,9 +207,10 @@ final class Router(val scopes: Map[Symbol, Scope])
 }
 
 
-
+/**
+  * Router companion object
+  */
 object Router {
-
   /**
     * Create a Props for an actor of this type
     *
@@ -218,33 +219,6 @@ object Router {
     */
   def props(scopes: Map[Symbol, Scope] = Scope.defaults) = 
     Props(new Router(scopes))
-  
-  /**
-    * Starts the router as standalone application
-    * 
-    * @param args
-    */
-  def main(args: Array[String]): Unit = {
-    val system = ActorSystem("wamp")
-    system.actorOf(Props(new Binder()), name = "binder")
-  }
-  
-  class Binder extends Actor with ActorLogging {
-    implicit val system = context.system
-    implicit val ec = context.system.dispatcher
-    
-    val router = context.system.actorOf(Router.props(), "router")
-    IO(Wamp) ! Bind(router)
-    
-    def receive = {
-      case signal @ Wamp.Bound(listener, url) =>
-        log.info("[{}]    Successfully bound on {}", self.path.name, url)
-        
-      case Wamp.CommandFailed(cmd, cause) =>
-        context.system.terminate().map[Unit](_ => System.exit(-1))
-        
-    }
-  }
 }
 
 
