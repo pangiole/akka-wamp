@@ -9,12 +9,14 @@ object StandaloneRouterApp extends  App {
   import akka.wamp._
 
   val configFile = System.getProperty("config.file")
-  val system = 
-    if (configFile != null) 
-      ActorSystem("wamp")
+  val config = 
+    if (configFile == null) 
+      ConfigFactory.load()
     else
-      ActorSystem("wamp", ConfigFactory.load(configFile))
-  
+      ConfigFactory.load(configFile)
+
+  val properties = ConfigFactory.systemProperties()
+  val system = ActorSystem("wamp", properties.withFallback(config))
   system.actorOf(Props(new Binder()), name = "binder")
 
   class Binder extends Actor with ActorLogging {

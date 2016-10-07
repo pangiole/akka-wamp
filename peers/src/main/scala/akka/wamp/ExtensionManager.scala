@@ -6,8 +6,8 @@ import akka.actor.{Actor, ActorLogging, Props}
   * It's the manager actor of the [[Wamp]] I/O Extension which is able
   * to process both [[Wamp.Bind]] and [[Wamp.Connect]] commands.
   * 
-  * It spawns and supervises the [[router.TransportListener]] and [[client.Manager]]
-  * actors
+  * It spawns and supervises the [[router.TransportListener]] and 
+  * [[client.TransportHandler]] actors
   */
 private[wamp] class ExtensionManager extends Actor with ActorLogging {
 
@@ -18,7 +18,7 @@ private[wamp] class ExtensionManager extends Actor with ActorLogging {
     }
       
     case cmd: Wamp.Connect => 
-      val manager = context.actorOf(client.Manager.props())
+      val manager = context.actorOf(client.TransportHandler.props())
       manager.forward(cmd)
   }
 }

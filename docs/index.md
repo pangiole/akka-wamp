@@ -50,7 +50,7 @@ object PubSubApp extends App {
 ### Major features
 
 * Fully compliant with Reactive Manifesto
-* Simple and well documented API
+* Simple and well documented APIs
 * Lazy deserialization
 
 Please, read the docs for [further details](client/overview)

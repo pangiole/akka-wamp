@@ -47,7 +47,7 @@ class ManagerSpec
     
     manager ! Connect(signal.url, "wamp.2.json")
     val connected = expectMsgType[Wamp.Connected](16 seconds)
-    connected.conn must not be (null)
+    connected.transport must not be (null)
   }
   
   

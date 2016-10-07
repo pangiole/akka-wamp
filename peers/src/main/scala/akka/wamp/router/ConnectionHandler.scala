@@ -6,11 +6,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.{Route, Directives => dsl}
-import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
+import akka.stream.{ActorMaterializer, FlowShape, Materializer, OverflowStrategies}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.wamp.messages.Message
 import akka.wamp.{Wamp, _}
-import akka.wamp.serialization.SerializationFlows
+import akka.wamp.serialization.{JsonSerializationFlows, SerializationFlows}
+import com.typesafe.config.Config
 
 
 /**
@@ -18,17 +19,25 @@ import akka.wamp.serialization.SerializationFlows
   * over which JSON messages for a session can flow in both directions.
   *
   * @param router is the first peer to connect
+  * @param path
+  * @param validateStrictUris 
+  * @param disconnectOffendingPeers
   */
-private class ConnectionHandler(router: ActorRef, serializationFlows: SerializationFlows) 
-  extends Actor with ActorLogging 
+private 
+class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Boolean, disconnectOffendingPeers: Boolean) 
+  extends Actor 
+    with ActorLogging 
 {
-  /**
-    * It is the second peer to connect
-    */
-  var peer: ActorRef = _
-  
   implicit val mat = ActorMaterializer()
   // TODO close the materializer at some point
+
+  
+  
+  // TODO https://github.com/angiolep/akka-wamp/issues/12
+  val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
+  
+  /** The second peer to connect */
+  var peer: ActorRef = _
   
   val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
 
@@ -80,7 +89,6 @@ private class ConnectionHandler(router: ActorRef, serializationFlows: Serializat
     })
   }
 
-  val path = context.system.settings.config.getString("akka.wamp.router.path")
   
   val httpRoute: Route = {
     dsl.get {
@@ -162,9 +170,8 @@ object ConnectionHandler {
     * Create a Props for an actor of this type
     * 
     * @param router ???
-    * @param serializationFlows ???
     * @return the props
     */
-  def props(router: ActorRef, serializationFlows: SerializationFlows) = 
-    Props(new ConnectionHandler(router, serializationFlows))
+  def props(router: ActorRef, path: String, validateStrictUris: Boolean, disconnectOffendingPeers: Boolean) = 
+    Props(new ConnectionHandler(router, path, validateStrictUris, disconnectOffendingPeers))
 }

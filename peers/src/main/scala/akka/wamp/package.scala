@@ -63,6 +63,8 @@ package object wamp {
     */
   type Id = Long
   
+  type SessionId = Long
+  
   type RequestId = Long
   
   type SubscriptionId = Long

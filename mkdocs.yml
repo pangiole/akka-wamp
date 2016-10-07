@@ -6,7 +6,7 @@ theme: cinder
 pages:
   - Home: 'index.md'
   - Router: 'router.md'
-  - Client:
+  - Client APIs:
     - 'Overview': 'client/overview.md'
     - 'Actor based API':
       - 'Overview': 'client/actor/overview.md'

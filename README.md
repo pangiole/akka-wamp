@@ -47,14 +47,15 @@ object PubSubApp extends App {
 }
 ```
 
-## Read the docs
 
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/index.html)
- 
-* Proper connection and [Session Handling](https://angiolep.github.io/projects/akka-wamp/client/future/session)
-* Simple and concise [Publish Subscribe](https://angiolep.github.io/projects/akka-wamp/client/future/pubsub)
-* Simple and concise routed [Remote Procedure Call](https://angiolep.github.io/projects/akka-wamp/client/future/rpc)
-* Lazy [Payload Handling](https://angiolep.github.io/projects/akka-wamp/client/future/payload) with Streaming support
+### Major features
+
+* Fully compliant with Reactive Manifesto
+* Simple and well documented APIs
+* Lazy deserialization
+
+Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/overview)
+
 
 ## Router
  

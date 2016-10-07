@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Fixed
 - Default JSON deserializer shall bind ``null`` to ``None``
 - Support Unbind command messages to stop a router.TransportListener [\#13](https://github.com/angiolep/akka-wamp/issues/13)
+- Support Disconnect command messages to stop a client.TransportHandler [\#29](https://github.com/angiolep/akka-wamp/issues/29)
 
 ## [0.10.0] _ 2016-10-01
 

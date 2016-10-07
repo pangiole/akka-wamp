@@ -82,7 +82,7 @@ trait Publisher { this: Session =>
   /** Publish to a topic */
   private def publish(topic: Uri, ack: Boolean, payload: Payload): Future[Either[Done, Publication]] =  {
     withPromise[Either[Done, Publication]] { promise =>
-      val message = Publish(requestId = nextId(), Dict().setAck(ack), topic, payload)
+      val message = Publish(requestId = nextRequestId(), Dict().setAck(ack), topic, payload)
       pendingPublications += (message.requestId -> promise)
       if (!ack) {
         connection ! message

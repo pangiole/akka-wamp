@@ -187,7 +187,7 @@ final class Router(val scopes: Map[Symbol, Scope])
 
   private 
   def createNewSession(client: ActorRef, details: Dict, realm: Uri) = {
-    val id = scopes('global).nextId(excludes = sessions.keySet.toSet)
+    val id = scopes('global).nextRequestId(excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
     val session = new Session(id, client, roles, realm)
     sessions += (id -> session)

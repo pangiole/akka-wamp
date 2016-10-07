@@ -1,4 +1,5 @@
 # Session Handling
+Easily create clients, establish connections and open sessions.
 
 ```scala
 import akka.wamp.client._
@@ -16,8 +17,6 @@ val session = client
   )
 }
 ```
-
-Create the client and establish connections to open sessions.
 
 
 ## Create clients

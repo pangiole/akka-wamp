@@ -61,7 +61,7 @@ trait Callee { this: Session =>
     */
   def register(procedure: Uri)(handler: InvocationHandler): Future[Registration] = {
     withPromise[Registration] { promise =>
-      val msg = Register(requestId = nextId(), Register.defaultOptions, procedure)
+      val msg = Register(requestId = nextRequestId(), Register.defaultOptions, procedure)
       pendingRegistrations += (msg.requestId -> new PendingRegistration(msg, handler, promise))
       connection ! msg
     }
@@ -115,7 +115,7 @@ trait Callee { this: Session =>
     withPromise[Unregistered] { promise =>
       registrations.find { case (_, registration) =>  registration.procedure == procedure } match {
         case Some((registrationId, _)) => {
-          val msg = Unregister(requestId = nextId(), registrationId)
+          val msg = Unregister(requestId = nextRequestId(), registrationId)
           pendingUnregistrations += (msg.requestId -> new PendingUnregistration(msg, promise))
           connection ! msg
         }

@@ -37,13 +37,12 @@ class ConnectionFixtureSpec
   override def withFixture(test: OneArgTest) = {
     val wampRouter = TestActorRef[Router](Router.props(scopes))
     val wampClient = WSProbe()
-    
+
     val routerConfig = testConfig.getConfig("akka.wamp.router")
     val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
     val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
-    val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
-    
-    val transport = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, serializationFlows))
+    val path = routerConfig.getString("transport.default.path")
+    val transport = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, validateStrictUris, disconnectOffendingPeers))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = transport.underlyingActor.httpRoute

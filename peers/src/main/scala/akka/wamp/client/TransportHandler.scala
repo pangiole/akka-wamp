@@ -17,7 +17,7 @@ import scala.concurrent.Future
   * 
   * The Akka IO manager actor for the WAMP client
   */
-private class Manager extends Actor {
+private class TransportHandler extends Actor {
 
   /** The execution context */
   private implicit val ec = context.system.dispatcher
@@ -94,8 +94,9 @@ private class Manager extends Actor {
       }
     }
 
-    // TODO https://github.com/angiolep/akka-wamp/issues/29
-    // case cmd @ Wamp.Disconnect
+    case cmd @ Wamp.Disconnect => {
+      ???
+    }
       
     case msg: WampMessage => {
       outlets.get(sender()).foreach(client => client ! msg)
@@ -107,9 +108,9 @@ private class Manager extends Actor {
 /**
   * INTERNAL API
   */
-private[wamp] object Manager {
+private[wamp] object TransportHandler {
   /**
-    * Factory for [[Manager]] instances
+    * Factory for [[TransportHandler]] instances
     */
-  def props() = Props(new Manager())
+  def props() = Props(new TransportHandler())
 }

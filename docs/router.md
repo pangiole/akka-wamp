@@ -11,7 +11,7 @@ It provides:
 ## Standalone router
 [![Download][download-image]][download-url]
 
-Download the latest router version, extract it, configure it and launch it as standalone application:
+Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
 curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.10.0.tgz
@@ -26,48 +26,22 @@ vim ./conf/application.conf
 
 
 ## Configuration
-Either the embedded or the standalone router can be configured by applying the following configuration:
+Either the embedded or the standalone router can be configured by applying the following settings:
  
 ```bash
 akka {
   wamp {
     router {
-      # Underlying transport can be one of the followings:
-      #
-      # - tcp
-      #     Raw TCP
-      # - tsl
-      #     Transport Secure Layer
-      # - ws    
-      #     WebSocket 
-      # - wss
-      #     WebSocket over SSL/TLS
-      #
-      transport = "ws"
-            
-      # The TCP interface to bind to
-      #
-      iface = "127.0.0.1"
-      
-      # The TCP port number (between 0 and 65536) to bind to
-      #
-      port = 8080
-      
-      # The URL path incoming HTTP Upgrade request are
-      # expected to be addressed to
-      #
-      path = "router"
-
       # The boolean switch to validate against strict URIs 
       # rather than loose URIs
       #
       validate-strict-uris = false
-
-      # The boolean switch to NOT automatically create 
-      # realms if they don't exist yet.
+   
+      # The boolean switch to NOT automatically create realms 
+      # if they don't exist yet.
       #
       abort-unknown-realms = false
-
+   
       # The boolean switch to disconnect those peers that send 
       # offending messages (e.g. not deserializable or causing
       # session failures)
@@ -76,16 +50,70 @@ akka {
       # the router resumes processing next incoming messages
       #
       disconnect-offending-peers = false
+      
+      # Named transport configurations
+      #
+      transport {
+        default {
+          # Transport protocol can be:
+          #
+          # - tcp
+          #     Raw TCP
+          # - tsl
+          #     Transport Secure Layer
+          # - ws    
+          #     WebSocket 
+          # - wss
+          #     WebSocket over TLS
+          #
+          protocol = "ws"
+
+          # Transport subprotocol can be:
+          # 
+          # - wamp.2.json
+          #   JSON Javascript Object Notation
+          #
+          # - wamp.2.msgpack
+          #   Message Pack
+          #
+          subprotocol = "wamp.2.json"
+
+          # The TCP interface to bind to
+          #
+          iface = "127.0.0.1"
+
+          # The TCP port number (between 0 and 65536) to bind to.
+          # If set to 0 the first available randome port number 
+          # will be chosen
+          #
+          port = 8080
+
+          # (Only for "ws" and "wss" protocols)
+          # The URL path incoming HTTP Upgrade request are expected 
+          # to be addressed to
+          #
+          path = "router"
+        },
+        #secure {
+        #  protocol = "wss"
+        #  iface = "127.0.0.1"
+        #  port = 8443
+        #  path = "router"
+        #  validate-strict-uris = false
+        #  abort-unknown-realms = false
+        #  disconnect-offending-peers = false
+        #}
+      }
     }
   }
 }
 ```
       
-Above settings can be overridden by
+Above settings can be overridden
 
- * (for standalone router) editing ``conf/application.conf``
- * (for embedded router) providing ``application.conf`` in the classpath,
- * or passing Java system properties (e.g. ``-Dakka.wamp.router.port=7070``)
+ * (for standalone router) by editing the ``conf/application.conf`` file
+ * (for embedded router) by providing an ``application.conf`` on the classpath,
+ * by passing Java system properties (e.g. ``-Dakka.wamp.router.transport.default.port=9090``)
 
 
 ### Logging

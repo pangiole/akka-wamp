@@ -48,7 +48,7 @@ TBD
 <a name="Connect"></a>
 
 ### Connect
-It is the message you send to the Akka IO entry point to establish a WAMP connection to a router. It can be constructed passing the following parameters:
+It is the message you send to the Akka I/O extension manager to establish a WAMP connection to a router. It can be constructed passing the following parameters:
 
 * ``client``  
   It is your client actor reference to which messages from the remote router are delivered while the connection is established.

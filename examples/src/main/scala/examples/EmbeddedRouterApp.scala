@@ -4,7 +4,9 @@ package examples
  * 
  * sbt -Dakka.loglevel=DEBUG
  * > examples/runMain examples.EmbeddedRouterApp
+ * 
  */
+
 object EmbeddedRouterApp extends App {
 
   import akka.actor._

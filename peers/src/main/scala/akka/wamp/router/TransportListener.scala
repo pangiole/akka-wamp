@@ -25,45 +25,26 @@ private class TransportListener extends Actor {
   // TODO close the materializer at some point
   private implicit val materializer = ActorMaterializer()
 
-  /** Router configuration */
-  private val config = context.system.settings.config.getConfig("akka.wamp.router")
-
-  /**
-    * The TCP interface (default is 127.0.0.1) to bind to
-    */
-  val iface = config.getString("iface")
-
-  /**
-    * The TCP port number (default is 8080) to bind to
-    */
-  val port = config.getInt("port")
-
-  /**
-    * The boolean switch (default is false) to validate against 
-    * strict URIs rather than loose URIs
-    */
-  val validateStrictUris = config.getBoolean("validate-strict-uris")
-
-  /**
-    * The boolean switch to disconnect those peers that 
-    * send invalid messages.
-    */
-  val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
-
-  
-  /** The serialization flows */
-  // TODO https://github.com/angiolep/akka-wamp/issues/12
-  private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
-
-  
   private var binding: Http.ServerBinding = _
+
+  val routerConfig = context.system.settings.config.getConfig("akka.wamp.router")
+  val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
+  val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
   
   /**
     * Handle BIND and UNBIND commands
     */
   override def receive: Receive = {
-    case cmd @ Wamp.Bind(router) => {
+    case cmd @ Wamp.Bind(router, transport) => {
       val binder = sender()
+      
+      val transportConfig = routerConfig.getConfig(s"transport.$transport")
+      val protocol = transportConfig.getString("protocol")
+      val subprotocol = transportConfig.getString("subprotocol")
+      val iface = transportConfig.getString("iface")
+      val port = transportConfig.getInt("port")
+      val path = transportConfig.getString("path")
+      
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
         Http(context.system).
           bind(iface, port)
@@ -79,7 +60,7 @@ private class TransportListener extends Actor {
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, serializationFlows))
+          val handler = context.actorOf(ConnectionHandler.props(router, path, validateStrictUris, disconnectOffendingPeers))
           handler ! conn
         }
 
@@ -90,11 +71,10 @@ private class TransportListener extends Actor {
         .onComplete {
           case Success(b) =>
             this.binding = b
-            val transport = config.getString("transport")
             assert(b.localAddress.getHostString == iface)
             val port = b.localAddress.getPort
-            val path = config.getString("path")
-            val url = s"$transport://$iface:$port/$path"
+            val path = transportConfig.getString("path")
+            val url = s"$protocol://$iface:$port/$path"
             binder ! Wamp.Bound(self, url)
             
           case Failure(cause) =>

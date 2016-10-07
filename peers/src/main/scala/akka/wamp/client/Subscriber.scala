@@ -58,7 +58,7 @@ trait Subscriber { this: Session =>
     */
   def subscribe(topic: Uri)(handler: EventHandler): Future[Subscription] = {
     withPromise[Subscription] { promise =>
-      val msg = Subscribe(requestId = nextId(), Subscribe.defaultOptions, topic)
+      val msg = Subscribe(requestId = nextRequestId(), Subscribe.defaultOptions, topic)
       pendingSubscribers += (msg.requestId -> new PendingSubscription(msg, handler, promise))
       connection ! msg
     }
@@ -75,7 +75,7 @@ trait Subscriber { this: Session =>
     withPromise[Unsubscribed] { promise =>
       subscriptions.find { case (_, subscription) =>  subscription.topic == topic } match {
         case Some((subscriptionId, _)) => {
-          val msg = Unsubscribe(requestId = nextId(), subscriptionId)
+          val msg = Unsubscribe(requestId = nextRequestId(), subscriptionId)
           pendingUnsubscribes += (msg.requestId -> (msg, promise))
           connection ! msg
         }

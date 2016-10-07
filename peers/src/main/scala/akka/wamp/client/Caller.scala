@@ -67,7 +67,7 @@ trait Caller { this: Session =>
   /** Call a procedure */
   private def call(procedure: Uri, payload: Payload): Future[Result] = {
     withPromise[Result] { promise =>
-      val msg = Call(requestId = nextId(), Call.defaultOptions, procedure, payload)
+      val msg = Call(requestId = nextRequestId(), Call.defaultOptions, procedure, payload)
       pendingCalls += (msg.requestId -> new PendingCall(msg, promise))
       connection ! msg
     }
