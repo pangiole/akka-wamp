@@ -109,11 +109,11 @@ akka {
 }
 ```
       
-Above settings can be overridden
+Above default settings can be overridden
 
  * (for standalone router) by editing the ``conf/application.conf`` file
- * (for embedded router) by providing an ``application.conf`` on the classpath,
- * by passing Java system properties (e.g. ``-Dakka.wamp.router.transport.default.port=9090``)
+ * (for embedded router) by providing an ``application.conf`` file on the classpath,
+ * by passing system properties to the Java interpreter (e.g. ``-Dakka.wamp.router.transport.default.port=9090``)
 
 
 ### Logging
@@ -126,7 +126,7 @@ akka {
   loglevel = "INFO"
   logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
     
-  # Just provide a logback.xml file in your classpath 
+  # Just provide an additional logback.xml file on the classpath 
   # so to customize your loggers, appenders and patterns
   # 
 }
@@ -151,6 +151,9 @@ libraryDependencies ++= Seq(
 Create the Akka ``ActorSystem`` and the Akka Wamp ``Router`` actor as follows:
 
 ```scala
+import akka.actor._
+import akka.wamp.router._
+
 implicit val system = ActorSystem("myapp")
 val router = system.actorOf(Router.props(), "router")
 ```
@@ -161,9 +164,10 @@ val router = system.actorOf(Router.props(), "router")
 To bind a transport, just send a ``Bind`` command to the ``IO(Wamp)`` extension manager:
 
 ```scala
+import akka.wamp._
 
 val manager = IO(Wamp)
-manager ! Bind(router)
+manager ! Wamp.Bind(router)
 ```
 
 The manager will spawn a new transport listener for the given the router binding it as per above configuration. Your application actor, the binder, will be notified by the manager about the outcome of the command:
