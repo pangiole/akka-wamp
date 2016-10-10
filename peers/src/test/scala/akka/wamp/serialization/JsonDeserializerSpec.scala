@@ -3,7 +3,7 @@ package akka.wamp.serialization
 import akka.wamp._
 import akka.wamp.messages._
 
-class JsonDeserializerSpec extends DeserializerSpec {
+class JsonDeserializerSpec extends SerializingBaseSpec {
 
   val s = new JsonSerialization
 

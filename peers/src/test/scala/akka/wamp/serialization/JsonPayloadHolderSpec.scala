@@ -3,7 +3,7 @@ package akka.wamp.serialization
 import akka.wamp.messages.PayloadHolder
 
 class JsonPayloadHolderSpec 
-  extends DeserializerSpec 
+  extends SerializingBaseSpec 
     with JsonPayloadHolderBehaviours 
 {
   

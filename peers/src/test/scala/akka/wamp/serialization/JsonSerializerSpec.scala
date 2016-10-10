@@ -1,40 +1,12 @@
 package akka.wamp.serialization
 
-
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.wamp._
 import akka.wamp.messages._
-import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent._
-import scala.concurrent.duration._
 
 
-class JsonSerializerSpec extends FlatSpec
-  with MustMatchers
-  with TryValues 
-  with OptionValues
-  with EitherValues 
-  with ScalaFutures
-  with ParallelTestExecution
-  with BeforeAndAfterAll 
+class JsonSerializerSpec extends SerializingBaseSpec 
 {
-
-  implicit val system = ActorSystem("test")
-  implicit val materializer = ActorMaterializer()
-  implicit val ec = system.dispatcher
-
-  override protected def afterAll(): Unit = {
-    materializer.shutdown()
-    system.terminate()
-    Await.ready(system.whenTerminated, 16 seconds)
-  }
-
-  implicit val validator = new Validator(strictUris = false)
-
   val s = new JsonSerialization
 
   "The wamp.2.json serializer" should  "serialize Hello object messages" in {

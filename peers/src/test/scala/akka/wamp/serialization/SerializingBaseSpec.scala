@@ -10,19 +10,23 @@ import org.scalatest.concurrent._
 import scala.concurrent._
 import scala.concurrent.duration._
 
-class DeserializerSpec extends FlatSpec
-  with MustMatchers
-  with TryValues
-  with OptionValues
-  with EitherValues
-  with ScalaFutures
-  with ParallelTestExecution
-  with BeforeAndAfterAll
+class SerializingBaseSpec 
+  extends FlatSpec
+    with MustMatchers
+    with TryValues
+    with OptionValues
+    with EitherValues
+    with ScalaFutures
+    with ParallelTestExecution
+    with BeforeAndAfterAll
 {
 
+  implicit val defaultPatience = PatienceConfig(timeout = 16 seconds, interval = 100 millis)
+  
   implicit val system = ActorSystem("test")
   implicit val materializer = ActorMaterializer()
   implicit val validator = new Validator(strictUris = false)
+  implicit val ec = system.dispatcher
 
   override protected def afterAll(): Unit = {
     materializer.shutdown()

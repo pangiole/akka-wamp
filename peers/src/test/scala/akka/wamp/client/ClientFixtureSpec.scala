@@ -16,8 +16,7 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     with ParallelTestExecution
     with ScalaFutures {
   
-  implicit val defaultPatience =
-    PatienceConfig(timeout = 16 seconds, interval = 100 millis)
+  implicit val defaultPatience = PatienceConfig(timeout = 16 seconds, interval = 100 millis)
 
   case class FixtureParam(client: Client, router: TestActorRef[Router], url: String) {
     // create a new transport to test with
