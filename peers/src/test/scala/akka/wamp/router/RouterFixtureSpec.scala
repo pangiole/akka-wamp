@@ -3,7 +3,7 @@ package akka.wamp.router
 import akka.actor.ActorSystem
 import akka.io.IO
 import akka.testkit.{TestActorRef, TestProbe}
-import akka.wamp.Wamp.{Bind, Bound}
+import akka.wamp.messages.{Bind, Bound}
 import akka.wamp.{ActorSpec, Validator, Wamp}
 import org.scalatest.{LoneElement, ParallelTestExecution}
 

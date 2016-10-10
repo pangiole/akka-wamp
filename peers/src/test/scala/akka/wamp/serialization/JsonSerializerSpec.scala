@@ -30,7 +30,7 @@ class JsonSerializerSpec extends FlatSpec
   override protected def afterAll(): Unit = {
     materializer.shutdown()
     system.terminate()
-    Await.ready(system.whenTerminated, 10.seconds)
+    Await.ready(system.whenTerminated, 16 seconds)
   }
 
   implicit val validator = new Validator(strictUris = false)

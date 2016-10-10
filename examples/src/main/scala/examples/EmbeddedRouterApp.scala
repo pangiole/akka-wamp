@@ -13,6 +13,7 @@ object EmbeddedRouterApp extends App {
   import akka.io._
   import akka.wamp._
   import akka.wamp.router._
+  import akka.wamp.messages._
 
   implicit val system = ActorSystem()
   system.actorOf(Props[Binder])
@@ -27,17 +28,17 @@ object EmbeddedRouterApp extends App {
     override def preStart(): Unit = {
       val router = system.actorOf(Router.props(), "router")
       val manager = IO(Wamp)
-      manager ! Wamp.Bind(router)
+      manager ! Bind(router)
     }
 
     override def receive: Receive = {
-      case signal @ Wamp.CommandFailed(cmd, ex) =>
+      case signal @ CommandFailed(cmd, ex) =>
         log.warning(s"$cmd failed because of $ex")
 
-      case signal @ Wamp.Bound(listener, url) =>
+      case signal @ Bound(listener, url) =>
         log.debug(s"$listener bound to $url")
         // ...
-        // listener ! Wamp.Unbind
+        // listener ! Unbind
     }
   }
 

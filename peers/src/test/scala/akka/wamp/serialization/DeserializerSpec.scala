@@ -27,7 +27,7 @@ class DeserializerSpec extends FlatSpec
   override protected def afterAll(): Unit = {
     materializer.shutdown()
     system.terminate()
-    Await.ready(system.whenTerminated, 10 seconds)
+    Await.ready(system.whenTerminated, 16 seconds)
   }
 
   def source[T](x: T): Source[T, _] = Source.single(x)

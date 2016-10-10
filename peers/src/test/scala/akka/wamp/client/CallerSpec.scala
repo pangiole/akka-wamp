@@ -35,13 +35,13 @@ class CallerSpec extends ClientFixtureSpec with MockFactory {
 
         // TODO can a caller invoke itself procedures?
 
-        // the caller shall be another connection actor,
+        // the caller shall be another transport actor,
         // otherwise the router wouldn't invoke the procedure
-        f.withConnection { conn2 =>
-          whenReady(conn2.openSession()) { session2 =>
+        f.withTransport { transport2 =>
+          whenReady(transport2.openSession()) { session2 =>
             val result = session2.call("myapp.procedure")
             whenReady(result) { _ =>
-              awaitAssert(handler.verify(*).once().returning(payload), 5 seconds)
+              awaitAssert(handler.verify(*).once().returning(payload), 16 seconds)
             }
           }
         }

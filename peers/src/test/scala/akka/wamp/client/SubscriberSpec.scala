@@ -28,13 +28,13 @@ class SubscriberSpec extends ClientFixtureSpec with MockFactory {
         subscription.subscribed.requestId mustBe 1
         subscription.subscribed.subscriptionId mustBe 1
 
-        // the publisher shall be another connection actor,
+        // the publisher shall be another transport actor,
         // otherwise the router wouldn't publish the event
-        f.withConnection { conn2 =>
-          whenReady(conn2.openSession()) { session2 =>
+        f.withTransport { transport =>
+          whenReady(transport.openSession()) { session2 =>
             val publication = session2.publish("myapp.topic", ack=true/*, data = List("paolo", 40, true)*/)
             whenReady(publication) { _ =>
-              awaitAssert(handler.verify(*).once(), 5 seconds)
+              awaitAssert(handler.verify(*).once(), 16 seconds)
             }
           }
         }

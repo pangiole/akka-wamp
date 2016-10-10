@@ -25,21 +25,21 @@ object ActorBasedClientApp extends App {
 
   class Client extends Actor with ClientUtils {
     val manager = IO(Wamp)
-    manager ! Wamp.Connect("ws://localhost:8080/router", "wamp.2.json")
+    manager ! Connect("ws://localhost:8080/router", "wamp.2.json")
     
-    var router: ActorRef = _
+    var transport: ActorRef = _
     var requestId: Id = _
     var subscriptionId: Id = _
     
     override def receive = {
-      case Wamp.Connected(transport) =>
-        router = transport
-        router ! Hello("myapp.realm")
+      case Connected(t) =>
+        transport = t
+        transport ! Hello("myapp.realm")
 
       case Welcome(_, _) =>
         requestId = nextRequestId()
-        router ! Subscribe(requestId, Dict(), "myapp.topic1")
-        router ! Publish(nextRequestId(), Dict(), "myapp.topic2")
+        transport ! Subscribe(requestId, Dict(), "myapp.topic1")
+        transport ! Publish(nextRequestId(), Dict(), "myapp.topic2")
 
       case Subscribed(reqId, subId)  =>
         if (reqId == requestId) 

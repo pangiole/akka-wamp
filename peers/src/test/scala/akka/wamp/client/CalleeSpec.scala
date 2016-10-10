@@ -36,12 +36,12 @@ class CalleeSpec extends ClientFixtureSpec with MockFactory {
         registration.registered.requestId mustBe 1
         registration.registered.registrationId mustBe 1
 
-        // the caller could be another connection actor
-        f.withConnection { conn2 =>
-          whenReady(conn2.openSession()) { session2 =>
+        // the caller could be another transpot actor
+        f.withTransport { transport2 =>
+          whenReady(transport2.openSession()) { session2 =>
             val result = session2.call("myapp.procedure")
             whenReady(result) { _ =>
-              awaitAssert(handler.verify(*).once().returning(payload), 5 seconds)
+              awaitAssert(handler.verify(*).once().returning(payload), 16 seconds)
             }
           }
         }

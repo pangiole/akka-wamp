@@ -8,17 +8,24 @@ object FutureBasedClientApp extends App {
   implicit val ec = client.executionContext
 
   for {
-    session <- client
-      .openSession(
+    connection <- client
+      .connect(
         url = "ws://localhost:8080/router",
-        subprotocol = "wamp.2.json",
+        subprotocol = "wamp.2.json")
+    session <- connection
+      .openSession(
         realm = "akka.wamp.realm",
         roles = Set("subscriber"))
     subscription <- session
       .subscribe(
         topic = "myapp.topic1")(
         event =>
-          event.data.map(println)
+          event.data.map { data =>
+            println(data)
+            if (data(0).toString == "Everybody out!") {
+              connection.disconnect().map(d => System.exit(0))
+            }
+          }
       )
     publication <- session
       .publish(

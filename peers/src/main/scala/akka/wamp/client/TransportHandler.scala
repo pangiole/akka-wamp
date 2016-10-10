@@ -6,17 +6,12 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage, _}
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.wamp._
-import akka.wamp.messages.{Message => WampMessage}
+import akka.wamp.messages.{Message => WampMessage, _}
 import akka.wamp.serialization._
 
 import scala.concurrent.Future
 
-/**
-  * INTERNAL API
-  * 
-  * The Akka IO manager actor for the WAMP client
-  */
+
 private class TransportHandler extends Actor {
 
   /** The execution context */
@@ -42,18 +37,21 @@ private class TransportHandler extends Actor {
   private val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
 
   /** The serialization flows */
-  // TODO https://github.com/angiolep/akka-wamp/issues/12
+  // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
   private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
   
-  // inlet -> outlet
-  private var outlets = Map.empty[ActorRef, ActorRef]
+  /** The client actor */
+  private var client: ActorRef = _
 
+  /** The outlet actor */
+  private var transport: ActorRef = _
+  
   /**
     * Handle CONNECT and DISCONNECT commands
     */
   override def receive: Receive = {
-    case cmd @ Wamp.Connect(uri, subprotocol) => {
-      val client = sender()
+    case cmd @ Connect(uri, subprotocol) => {
+      client = sender()
       try {
         val outgoingSource: Source[WampMessage, ActorRef] =
           Source.actorRef[WampMessage](0, OverflowStrategies.DropBuffer)
@@ -63,7 +61,7 @@ private class TransportHandler extends Actor {
             .webSocketClientFlow(WebSocketRequest(uri, subprotocol = Some(subprotocol)))
 
         val incomingSink: Sink[WampMessage, akka.NotUsed] =
-          Sink.actorRef[WampMessage](client, onCompleteMessage = Wamp.Disconnected)
+          Sink.actorRef[WampMessage](client, onCompleteMessage = Disconnected)
 
         if (subprotocol != "wamp.2.json") 
           throw new IllegalArgumentException(s"$subprotocol is not supported") 
@@ -75,34 +73,44 @@ private class TransportHandler extends Actor {
             .viaMat(serializationFlows.deserialize)(Keep.left)
             .toMat(incomingSink)(Keep.left)
             .run()
-
-        // hold the outlet reference for later usage
-        outlets += (client -> outgoingActor)
+        
+        // hold outlet reference for later usage and watch for its termination
+        transport = outgoingActor
+        context.watch(transport)
 
         // just like a regular http request we can get 404 NotFound etc.
         // that will be available from upgrade.response
         upgradeResponse.onSuccess { case upgrade =>
           if (upgrade.response.status == SwitchingProtocols) {
-            client ! Wamp.Connected(outgoingActor)
-          } else {
-            client ! Wamp.CommandFailed(cmd, new Exception(upgrade.response.toString))
+            context become connected
+            client ! Connected(self)
+          } 
+          else {
+            client ! CommandFailed(cmd, new Exception(upgrade.response.toString))
           }
         }
       } catch {
         case ex: Throwable =>
-          client ! Wamp.CommandFailed(cmd, ex)
+          client ! CommandFailed(cmd, ex)
       }
     }
-
-    case cmd @ Wamp.Disconnect => {
-      ???
-    }
-      
-    case msg: WampMessage => {
-      outlets.get(sender()).foreach(client => client ! msg)
-    }
+  }
+  
+  
+  
+  def connected: Receive = {
+    case msg: WampMessage =>
+      transport forward msg
+    
+    case cmd @ Disconnect =>
+      transport ! PoisonPill
+    
+    case Terminated(actor) =>
+      self ! PoisonPill
+      client ! Disconnected
   }
 }
+
 
 
 /**

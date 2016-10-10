@@ -1,5 +1,5 @@
 # Session Handling
-Easily create clients, establish connections and open sessions.
+Create clients, connect transport and open sessions.
 
 ```scala
 import akka.wamp.client._
@@ -42,11 +42,11 @@ TBD
 
 
 ### Multiplicity
-In Akka Wamp, one client can establish many connections but each connection can open only one session.
+In Akka Wamp, one client can connect many transports but each transport can open only one session.
 
 ```
     ,--------.  1      0..n  ,------------.  1      0..1  ,---------. 
-    | Client |  -----------  | Connection |  -----------  | Session | 
+    | Client |  -----------  | Transport  |  -----------  | Session | 
     `--------'               `------------'               `---------'
 ```
 
@@ -55,7 +55,7 @@ Bear in mind that, though you could create as many client as you wish, its actor
  
  
 ### Execution context
-All of the operation provided by client, connection and sessions objects always return futures. In order to execute callbacks and operations, futures need something called an [ExecutionContext](http://doc.akka.io/docs/akka/2.4.10/scala/futures.html). You can import the existing ``client.executionContext`` as implicit in scope:
+All of the operation provided by client, transport and session objects always return futures. In order to execute callbacks and operations, futures need something called an [ExecutionContext](http://doc.akka.io/docs/akka/2.4.10/scala/futures.html). You can import the existing ``client.executionContext`` as implicit in scope:
 
 ```scala
 implicit val ec = client.executionContext
@@ -64,35 +64,35 @@ implicit val ec = client.executionContext
 or create your own.
 
 
-## Establish connections
+## Connect transports
 
 ```scala
 import scala.concurrent.Future
 
-val conn1: Future[Connection] = client
+val transport1: Future[Transport] = client
   .connect(
     url = "ws://localhost:8080/router",
     subprotocol = "wamp.2.json")
     
-val conn2 = client
+val transport2 = client
   .connect(
     url = "wss://secure.host.net:443/wamp",
     subprotocol = "wamp.2.msgpack")    
 ```
 
-Establish a connection to a router invoking the client ``connect()`` method which accepts ``url`` and ``subprotocol`` arguments as documented for the [``Connect``](../../messages#Connect) message constructor. 
+Connect a transport by just invoking the client ``connect()`` method which accepts ``url`` and ``subprotocol`` arguments as documented for the [``Connect``](../../messages#Connect) message constructor. 
 
 You can establish as many connections as you wish (to the same or to different routers) as the connect method returns a distinct (future of) connection.
 
 ### Recover
-You can either recover or _"give up"_ when the (future of) connection fails. To recover from failures (such as ``ConnectionException`` thrown when router cannot accept connection) you can compose ``recoverWith`` to attempt another connection (maybe to a fallback router):
+You can either recover or _"give up"_ when the (future of) connection fails. To recover from failures (such as ``TransportException`` thrown when router cannot accept connection) you can compose ``recoverWith`` to attempt another connection (maybe to a fallback router):
 
 ```scala
-val conn1: Future[Connection] = client
+val transport1: Future[Transport] = client
   .connect(
     url = "ws://localhost:8080/router")
   .recoverWith { 
-    case ex: ConnectionException => client
+    case ex: TransportException => client
       .connect(
         url = "ws://fallback.host.net:9999/path")
   }
@@ -101,7 +101,7 @@ val conn1: Future[Connection] = client
 As last resort, instead of recovering, you could decide to _"give up"_ a callback function ``onFailure`` that terminates the application:
 
 ```scala
-conn.onFailure {
+transport.onFailure {
   case ex: Throwable =>
     client.terminate().map(_ => System.exit(-1))
 }
@@ -120,13 +120,13 @@ val session2 = conn2.flatMap(
     roles = Set("publisher", "callee")))    
 ```
 
-A (future of) connection can be mapped to a (future of) session by just invoking the connection ``openSession()`` method which accepts ``realm`` and ``roles`` arguments as documented for the [``Hello``](../../messages#Hello) message constructor. 
+A (future of) transport can be mapped to a (future of) session by just invoking the ``openSession()`` method which accepts ``realm`` and ``roles`` arguments as documented for the [``Hello``](../../messages#Hello) message constructor. 
 
-You can open only one session per connection. Therefore, if you wish to open a second session then you must establish a second connection (using the same client or a different one).
+You can open only one session per transport. Therefore, if you wish to open a second session then you must establish a second transport (using the same client or a different one).
 
 
 ### Shortcut
-You can shortcut connection establishment and session opening in one single concise statement by invoking ``openSession()`` on the client rather than on the connection:
+You can shortcut transport connection and session opening in one single concise statement by invoking ``openSession()`` on the client rather than on the transport:
 
 ```scala
 val session: Future[Session] = client
@@ -137,7 +137,7 @@ val session: Future[Session] = client
     roles = Set("subscriber", "caller"))
 ```
 
-The client ``openSession()`` method accepts all of the ``url``, ``subprotocol``, ``realm`` and ``details`` arguments mentioned above. It establishes a new connection and opens a new session each time you call it.
+The client ``openSession()`` method accepts all of the ``url``, ``subprotocol``, ``realm`` and ``details`` arguments mentioned above. It connects a new transport and opens a new session each time you call it.
 
 
 ### Recover
@@ -164,10 +164,16 @@ session.onFailure {
 ```
 
 ## Close sessions
-TBD
+```scala
+val transport: Future[Transport] = session.close()
+```
 
 ## Disconnect transports
-TBD
+```scala
+val d: Future[Disconnected] = transport.disconnect()
+```
 
 ## Terminate clients
-TBD
+```scala
+val t: Future[Terminated] = client.terminate()
+```

@@ -3,7 +3,7 @@ package akka.wamp.client
 import akka.actor._
 import akka.io.IO
 import akka.testkit._
-import akka.wamp.Wamp._
+import akka.wamp.messages._
 import akka.wamp._
 import akka.wamp.router._
 import org.scalatest._
@@ -20,23 +20,23 @@ class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
     PatienceConfig(timeout = 16 seconds, interval = 100 millis)
 
   case class FixtureParam(client: Client, router: TestActorRef[Router], url: String) {
-    // create a new connection to test with
-    def withConnection(testCode: Connection => Unit) = {
-      whenReady(client.connect(url)) { conn =>
-        testCode(conn)
+    // create a new transport to test with
+    def withTransport(testCode: Transport => Unit) = {
+      whenReady(client.connect(url)) { transport =>
+        testCode(transport)
         // TODO conn.disconnect()
       }
     }
-    // create a new connection/session to test with
+    // create a new transport/session to test with
     def withSession(roles: Set[Role])(testCode: Session => Unit): Unit = {
-      withConnection { conn =>
-        whenReady(conn.openSession(roles = roles)) { session =>
+      withTransport { transport =>
+        whenReady(transport.openSession(roles = roles)) { session =>
           testCode(session)
           session.close()
         }
       }
     }
-    // create a new connection/session to test with
+    // create a new transport/session to test with
     def withSession(testCode: Session => Unit): Unit = {
       withSession(Roles.client)(testCode)
     }

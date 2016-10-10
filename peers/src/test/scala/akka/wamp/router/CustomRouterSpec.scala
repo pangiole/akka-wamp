@@ -38,12 +38,12 @@ class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
     f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
     f.router.underlyingActor.sessions must have size(1)
     f.router ! Hello("whatever.realm", Dict().addRoles("subscriber"))
-    expectMsg(Wamp.Disconnect)
+    expectMsg(Disconnect)
     f.router.underlyingActor.sessions  mustBe empty
   }
 
   it should "disconnect on GOODBYE before open session" in { f =>
     f.router ! Goodbye()
-    expectMsg(Wamp.Disconnect)
+    expectMsg(Disconnect)
   }
 }

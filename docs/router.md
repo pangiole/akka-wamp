@@ -161,33 +161,34 @@ val router = system.actorOf(Router.props(), "router")
 ![router](router.png)
 
 ### Bind/Unbind
-To bind a transport, just send a ``Bind`` command to the ``IO(Wamp)`` extension manager:
+To bind a router a router to a configured transport, just send a ``Bind`` command to the ``IO(Wamp)`` extension manager:
 
 ```scala
 import akka.wamp._
+import akka.wamp.messages._
 
 val manager = IO(Wamp)
-manager ! Wamp.Bind(router)
+manager ! Bind(router, transport = "default")
 ```
 
-The manager will spawn a new transport listener for the given the router binding it as per above configuration. Your application actor, the binder, will be notified by the manager about the outcome of the command:
+The manager will spawn a new transport listener for the given transport name as per above configuration. Your application actor, the binder, will be notified by the manager about the outcome of the command:
 
 ```scala
 override def receive: Receive = {
-  case signal @ Wamp.CommandFailed(cmd, ex) =>
+  case signal @ CommandFailed(cmd, ex) =>
     log.warning(s"$cmd failed because of $ex")
 
-  case signal @ Wamp.Bound(listener, url) =>
+  case signal @ Bound(listener, url) =>
     log.debug(s"$listener bound to $url")
     // ...
-    // listener ! Wamp.Unbind
+    // listener ! Unbind
 } 
 ```
 
 On successfully bound, you'll be sent the actor reference of the transport listener actor and the URL which that actor is bound to. If you wish to unbind the listener, just the send an ``Unbind`` message.
 
 ```scala
-listener ! Wamp.Unbind
+listener ! Unbind
 ```
 
 ### Examples

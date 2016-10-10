@@ -5,7 +5,7 @@ import akka.http.scaladsl._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.wamp._
-import akka.wamp.serialization._
+import akka.wamp.messages._
 
 import scala.concurrent._
 import scala.util.{Failure, Success}
@@ -14,7 +14,7 @@ import scala.util.{Failure, Success}
   * INTERNAL API
   * 
   * The transport listener actor spawned by the [[ExtensionManager]]
-  * each time it executes [[Wamp.Bind]] commands
+  * each time it executes [[Bind]] commands
   */
 private class TransportListener extends Actor {
   
@@ -35,7 +35,7 @@ private class TransportListener extends Actor {
     * Handle BIND and UNBIND commands
     */
   override def receive: Receive = {
-    case cmd @ Wamp.Bind(router, transport) => {
+    case cmd @ Bind(router, transport) => {
       val binder = sender()
       
       val transportConfig = routerConfig.getConfig(s"transport.$transport")
@@ -55,7 +55,7 @@ private class TransportListener extends Actor {
         Flow[Http.IncomingConnection].
           watchTermination()((_, termination) => termination.onFailure {
             case cause => 
-              binder ! Wamp.CommandFailed(cmd, cause)
+              binder ! CommandFailed(cmd, cause)
           })
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
@@ -75,14 +75,14 @@ private class TransportListener extends Actor {
             val port = b.localAddress.getPort
             val path = transportConfig.getString("path")
             val url = s"$protocol://$iface:$port/$path"
-            binder ! Wamp.Bound(self, url)
+            binder ! Bound(self, url)
             
           case Failure(cause) =>
-            binder ! Wamp.CommandFailed(cmd, cause)
+            binder ! CommandFailed(cmd, cause)
         }
     }
 
-    case cmd @ Wamp.Unbind =>
+    case cmd @ Unbind =>
       this.binding.unbind()
       context.stop(self)
   }

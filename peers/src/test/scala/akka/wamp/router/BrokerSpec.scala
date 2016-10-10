@@ -24,7 +24,7 @@ class BrokerSpec extends RouterFixtureSpec {
 
   it should "drop SUBSCRIBE if peer didn't announce 'subscriber' role" in { f =>
     f.client.send(f.router, Hello(details = Dict().addRoles( Roles.publisher)))
-    f.client.receiveOne(0.seconds)
+    f.client.expectMsgType[Welcome]
     f.client.send(f.router, Subscribe(1, topic = "mypp.topic1"))
     f.client.expectNoMsg()
     f.router.underlyingActor.subscriptions mustBe empty
@@ -33,7 +33,7 @@ class BrokerSpec extends RouterFixtureSpec {
 
   it should "create new subscription on first SUBSCRIBE" in { f =>
     f.client.send(f.router , Hello()) 
-    f.client.receiveOne(0.seconds)
+    f.client.expectMsgType[Welcome]
     f.client.send(f.router, Subscribe(1, topic = "mypp.topic"))
     f.client.receiveOne(0.seconds) match {
       case Subscribed(requestId, subscriptionId) =>

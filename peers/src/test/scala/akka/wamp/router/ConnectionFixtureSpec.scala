@@ -42,10 +42,10 @@ class ConnectionFixtureSpec
     val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
     val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
     val path = routerConfig.getString("transport.default.path")
-    val transport = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, validateStrictUris, disconnectOffendingPeers))
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, validateStrictUris, disconnectOffendingPeers))
     
     // httpRoute is the SUT - System Under Test
-    val httpRoute: Route = transport.underlyingActor.httpRoute
+    val httpRoute: Route = handler.underlyingActor.httpRoute
     val theFixture = FixtureParam(httpRoute, wampClient)
     try {
       WS(URL, wampClient.flow, List("wamp.2.json")) ~> httpRoute ~> check {

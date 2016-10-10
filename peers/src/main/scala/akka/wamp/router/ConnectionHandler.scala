@@ -6,12 +6,10 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.{Route, Directives => dsl}
-import akka.stream.{ActorMaterializer, FlowShape, Materializer, OverflowStrategies}
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
-import akka.wamp.messages.Message
-import akka.wamp.{Wamp, _}
-import akka.wamp.serialization.{JsonSerializationFlows, SerializationFlows}
-import com.typesafe.config.Config
+import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
+import akka.wamp.messages.{ManagedMessage => WampMessage, _}
+import akka.wamp.serialization.JsonSerializationFlows
 
 
 /**
@@ -31,9 +29,7 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
   implicit val mat = ActorMaterializer()
   // TODO close the materializer at some point
 
-  
-  
-  // TODO https://github.com/angiolep/akka-wamp/issues/12
+  // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
   val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
   
   /** The second peer to connect */
@@ -48,9 +44,9 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
         actorRef[Message](bufferSize = 4, OverflowStrategies.Fail)
 
     // Create a new transportSink which delivers any message to this transportActor (self)
-    val transportSink: Sink[Wamp.ManagedMessage, NotUsed] =
+    val transportSink: Sink[WampMessage, NotUsed] =
       Sink.
-        actorRef[Wamp.ManagedMessage](self, onCompleteMessage = Wamp.Disconnected)
+        actorRef[WampMessage](self, onCompleteMessage = Disconnected)
 
     Flow.fromGraph(GraphDSL.create(transportSource) {
       implicit builder => transportSource =>
@@ -58,9 +54,9 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
 
         // As soon as a new WebSocket connection is established with a client
         // then the following materialized outlet:
-        //   - will emit the Wamp.Connected signal carrying the clientActor reference, and
+        //   - will emit the Connected signal carrying the clientActor reference, and
         //   - will go downstream to the transportSink via a merge junction
-        val onConnect = builder.materializedValue.map(client => Wamp.Connected(client))
+        val onConnect = builder.materializedValue.map(client => Connected(client))
 
         // The fromWebSocket flow
         //   - receives incoming WebSocketMessages from the connected client, and
@@ -68,7 +64,7 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
         val fromWebSocket = builder.add(serializationFlows.deserialize)
 
         // The merge junction forwards all messages fromWebSocket downstream to the transportSink
-        val merge = builder.add(Merge[Wamp.ManagedMessage](2))
+        val merge = builder.add(Merge[WampMessage](2))
 
         // The toWebSocket flow
         //   - receives outgoing WampMessages from the transportSource
@@ -128,9 +124,9 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
       log.debug("[{}]     Http.Incoming accepted on {}", self.path.name, conn.localAddress)
       conn.handleWith(httpFlow)
       
-    case signal @ Wamp.Connected(p) =>
+    case signal @ Connected(p) =>
       peer = p
-      log.debug("[{}]     Wamp.Connected [{}]", self.path.name, peer.path.name)
+      log.debug("[{}]     Connected [{}]", self.path.name, peer.path.name)
       router ! signal
 
     case msg: Message if (sender() == router) =>
@@ -141,9 +137,9 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
       log.debug("[{}] <-- {}", self.path.name, msg)
       router ! msg
       
-    case signal @ Wamp.Disconnected =>
+    case signal @ Disconnected =>
       // This happens when the underlying WebSocket transport disconnects
-      log.debug("[{}]     Wamp.Disconnected [{}]", self.path.name, peer.path.name)
+      log.debug("[{}]     Disconnected [{}]", self.path.name, peer.path.name)
       router ! signal
       context.stop(peer)
       context.stop(self)
@@ -152,13 +148,13 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
       // This happens if disconnect-offending-peers is switched on 
       // and the connected peer sends and offending message
       log.warning("[{}]     Stream.Failure [{}: {}]", self.path.name, ex.getClass.getName, ex.getMessage)
-      router ! Wamp.Disconnected
+      router ! Disconnected
       context.stop(peer)
       context.stop(self)
 
-    case cmd @ Wamp.Disconnect =>
+    case cmd @ Disconnect =>
       // This happens when the router commands a disconnection
-      router ! Wamp.Disconnected
+      router ! Disconnected
       context.stop(peer)
       context.stop(self)
   }

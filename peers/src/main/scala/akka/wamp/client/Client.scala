@@ -50,13 +50,13 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     * 
     * @param url is the URL to connect to (default is "ws://localhost:8080/router")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
-    * @return the (future of) connection or [[ConnectionException]]
+    * @return the (future of) connection or [[TransportException]]
     */
   def connect(
     url: String = Client.defaultUrl, 
-    subprotocol: String = Client.defaultSubprotocol): Future[Connection] = 
+    subprotocol: String = Client.defaultSubprotocol): Future[Transport] = 
   {
-    val promise = Promise[Connection]
+    val promise = Promise[Transport]
     system.actorOf(Props(new ClientActor(url, subprotocol, promise)))
     promise.future
   }
@@ -69,7 +69,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
     * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
     * @param roles is this client roles set (default is all possible client roles) 
-    * @return the (future of) session or [[ConnectionException]] or [[AbortException]] 
+    * @return the (future of) session or [[TransportException]] or [[AbortException]] 
     */
   def openSession(
     url: String = Client.defaultUrl, 
@@ -81,9 +81,6 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
       _.openSession(realm, roles)
     )
   }
-    
-
-  // TODO ConnectionActor will be stopped on terminate ...
   
   /**
     * Terminate this client.
@@ -99,6 +96,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
   def terminate(): Future[Terminated] = {
     system.terminate()
   }
+  // TODO Test what will happen on client terminate
 }
 
 /**

@@ -23,7 +23,6 @@ class Validator(strictUris: Boolean) {
       if (!uriRegex.pattern.matcher(uri).matches) 
         throw new IllegalArgumentException(s"invalid URI $uri")
 
-    // TODO pattern matching on type erasure  
     case dict: Dict =>
       if (dict == null)
         throw new IllegalArgumentException(s"invalid DICT")

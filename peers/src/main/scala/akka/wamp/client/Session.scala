@@ -48,7 +48,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * @param welcome is the WELCOME message
   * @param validator is WAMP types validator
   */
-class Session private[client](val connection: Connection, welcome: Welcome)
+class Session private[client](val connection: Transport, welcome: Welcome)
                              (implicit val validator: Validator, val executionContext: ExecutionContext) 
   extends SessionLike 
     with Subscriber 
@@ -59,7 +59,7 @@ class Session private[client](val connection: Connection, welcome: Welcome)
 {
   import connection.{handleGoodbye, handleUnexpected}
   
-  protected val log = LoggerFactory.getLogger(classOf[Connection])
+  protected val log = LoggerFactory.getLogger(classOf[Transport])
 
   /**
     * This session identifier
@@ -119,8 +119,8 @@ class Session private[client](val connection: Connection, welcome: Welcome)
     * @param details are the details to send (default is empty)
     * @return the (future of) connection
     */
-  def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Connection] = {
-    withPromise[Connection] { promise =>
+  def close(reason: Uri = Goodbye.defaultReason, details: Dict = Goodbye.defaultDetails): Future[Transport] = {
+    withPromise[Transport] { promise =>
       def handleGoodbye: Receive = {
         case msg: Goodbye =>
           // upon receiving goodbye message FROM the router 

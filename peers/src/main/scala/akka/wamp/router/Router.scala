@@ -2,10 +2,7 @@ package akka.wamp.router
 
 
 import akka.actor.{Scope => _, _}
-import akka.io.IO
-import akka.wamp.Wamp._
 import akka.wamp._
-import akka.wamp.client.Client
 import akka.wamp.messages._
 
 import scala.collection.mutable
@@ -84,15 +81,8 @@ final class Router(val scopes: Map[Symbol, Scope])
     * Handle transports lifecycle signals such as DISCONNECTED
     */
   private def handleConnections: Receive = {
-
-    /*case signal @ Wamp.Connected(p) =>
-      val peer = sender() // == p
-      log.debug("[{}]     Wamp.Connected [{}]", self.path.name, peer.path.name)
-      observer.map(_ ! signal)*/
-      
-    case signal @ Wamp.Disconnected =>
+    case signal @ Disconnected =>
       val peer = sender()
-      log.debug("[{}]     Wamp.Disconnected [{}]", self.path.name, peer.path.name)
       sessions.values.find(_.peer == peer) match {
         case Some(session) => closeSession(session)
         case None => ()
@@ -117,7 +107,7 @@ final class Router(val scopes: Map[Symbol, Scope])
           log.warning("[{}] !!! SessionException: received HELLO but session already open.", self.path.name)
           closeSession(session)
           if (disconnectOffendingPeers) {
-            session.peer ! Wamp.Disconnect
+            session.peer ! Disconnect
           } else {
             session.peer ! Abort(reason = "akka.wamp.error.session_already_open")
           }
@@ -171,7 +161,7 @@ final class Router(val scopes: Map[Symbol, Scope])
           } 
           else {
             if (disconnectOffendingPeers) {
-              peer ! Wamp.Disconnect
+              peer ! Disconnect
             }
           }
         }
@@ -179,7 +169,7 @@ final class Router(val scopes: Map[Symbol, Scope])
       case None => {
         log.warning("SessionException: received message {} but NO session open.", msg)
         if (disconnectOffendingPeers) {
-          peer ! Wamp.Disconnect
+          peer ! Disconnect
         }
       }
     }

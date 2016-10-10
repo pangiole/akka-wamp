@@ -20,18 +20,23 @@ That's how many WAMP implementations (such AutobahnJS, Crossbar.io, Jawampa, etc
       
 That's how Akka Wamp works, instead! 
 
-Akka Wamp handles transport connections and sessions as separate entities, each with their own lifecycle. That gives you a way to keep the transport connection established whatever happens to the session that has been opened onto it. So that, if the session gets closed you can still reuse the transport connection to establish a subsequent new session.
+Akka Wamp handles transports and sessions as separate entities, each with their own lifecycle. That gives you a way to keep the transport connection established whatever happens to the session opened onto it. So that, if the session gets closed you can still reuse the transport connection to open a subsequent new session.
 
 For example, using the future based API, you could:
 
 ```scala
-val conn = client.connect()
-val session1 = conn.flatMap(_.openSession())
+val transport = client.connect()
+val session1 = transport.flatMap(_.openSession())
 // ... 
 session1.close()
 
-// reuse the same connection to establish subsequent session
+// reuse the same transport to open subsequent sessions
 val session2 = conn.flatMap(_.openSession())
+// ... 
+session2.close()
+
+// finally disconnect the transport
+transport.disconnect()
 ```
 
 
