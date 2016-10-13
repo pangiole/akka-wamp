@@ -36,7 +36,7 @@ object EmbeddedRouterApp extends App {
         log.warning(s"$cmd failed because of $ex")
 
       case signal @ Bound(listener, url) =>
-        log.debug(s"$listener bound to $url")
+        log.debug(s"Bound to $url")
         // ...
         // listener ! Unbind
     }

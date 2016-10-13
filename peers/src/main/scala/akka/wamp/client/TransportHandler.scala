@@ -24,23 +24,14 @@ class TransportHandler(clientRef: ActorRef)
   private implicit val materializer = ActorMaterializer()
 
   /** Client configuration */
-  private val config = context.system.settings.config.getConfig("akka.wamp.client")
-
-  /**
-    * The boolean switch (default is false) to validate against 
-    * strict URIs rather than loose URIs
-    */
-  private val validateStrictUris = config.getBoolean("validate-strict-uris")
-
-  /**
-    * The boolean switch to disconnect those peers that 
-    * send invalid messages.
-    */
-  private val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
-
+  private val clientConfig = context.system.settings.config.getConfig("akka.wamp.client")
+  
   /** The serialization flows */
   // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
-  private val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
+  private val serializationFlows = new JsonSerializationFlows(
+    clientConfig.getBoolean("validate-strict-uris"), 
+    disconnectOffendingPeers = true
+  )
 
   /** The client actor */
   private var client: ActorRef = _

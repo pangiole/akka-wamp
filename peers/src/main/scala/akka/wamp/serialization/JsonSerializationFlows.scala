@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
   * The JSON serialization flows
   * 
   * @param validateStrictUri is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
-  * @param disconnectOffendingPeers is the boolean switch to disconnect those clients that send invalid messages
+  * @param disconnectOffendingPeers is the boolean switch to disconnect those peers that send invalid messages
   * @param mat is the Akka Stream materializer
   */
 class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeers: Boolean)(implicit mat: Materializer) 
@@ -64,6 +64,7 @@ class JsonSerializationFlows(validateStrictUri: Boolean, disconnectOffendingPeer
       .withAttributes(supervisionStrategy {
         case ex: DeserializeException =>
           if (!disconnectOffendingPeers) {
+            // default
             log.warn("Resume from DeserializeException: {}", ex.getMessage)
             Supervision.Resume
           }

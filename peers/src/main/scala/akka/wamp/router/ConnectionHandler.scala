@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.wamp.messages.{ManagedMessage => WampMessage, _}
 import akka.wamp.serialization.JsonSerializationFlows
+import com.typesafe.config.Config
 
 
 /**
@@ -18,11 +19,10 @@ import akka.wamp.serialization.JsonSerializationFlows
   *
   * @param router is the first peer to connect
   * @param path
-  * @param validateStrictUris 
-  * @param disconnectOffendingPeers
+  * @param routerConfig
   */
 private 
-class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Boolean, disconnectOffendingPeers: Boolean) 
+class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config) 
   extends Actor 
     with ActorLogging 
 {
@@ -30,7 +30,10 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
   // TODO close the materializer at some point
 
   // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
-  val serializationFlows = new JsonSerializationFlows(validateStrictUris, disconnectOffendingPeers)
+  val serializationFlows = new JsonSerializationFlows(
+    routerConfig.getBoolean("validate-strict-uris"),
+    routerConfig.getBoolean("disconnect-offending-peers")
+  )
   
   /** The second peer to connect */
   var peer: ActorRef = _
@@ -166,10 +169,12 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
 object ConnectionHandler {
   /**
     * Create a Props for an actor of this type
-    * 
-    * @param router ???
-    * @return the props
+    *
+    * @param router
+    * @param path
+    * @param routerConfig
+    * @return
     */
-  def props(router: ActorRef, path: String, validateStrictUris: Boolean, disconnectOffendingPeers: Boolean) = 
-    Props(new ConnectionHandler(router, path, validateStrictUris, disconnectOffendingPeers))
+  def props(router: ActorRef, path: String, routerConfig: Config) = 
+    Props(new ConnectionHandler(router, path, routerConfig))
 }

@@ -27,9 +27,9 @@ private class TransportListener extends Actor {
 
   private var binding: Http.ServerBinding = _
 
-  val routerConfig = context.system.settings.config.getConfig("akka.wamp.router")
-  val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
-  val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
+  /** Router config **/
+  private val routerConfig = context.system.settings.config.getConfig("akka.wamp.router")
+  
   
   /**
     * Handle BIND and UNBIND commands
@@ -60,7 +60,7 @@ private class TransportListener extends Actor {
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, path, validateStrictUris, disconnectOffendingPeers))
+          val handler = context.actorOf(ConnectionHandler.props(router, path, routerConfig))
           handler ! conn
         }
 

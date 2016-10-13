@@ -39,10 +39,8 @@ class ConnectionFixtureSpec
     val wampClient = WSProbe()
 
     val routerConfig = testConfig.getConfig("akka.wamp.router")
-    val validateStrictUris = routerConfig.getBoolean("validate-strict-uris")
-    val disconnectOffendingPeers = routerConfig.getBoolean("disconnect-offending-peers")
     val path = routerConfig.getString("transport.default.path")
-    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, validateStrictUris, disconnectOffendingPeers))
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, routerConfig))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = handler.underlyingActor.httpRoute
