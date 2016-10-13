@@ -4,7 +4,7 @@ import akka.wamp.messages.Event
 import org.scalamock.scalatest.MockFactory
 import scala.concurrent.duration._
 
-class SubscriberSpec extends ClientFixtureSpec with MockFactory {
+class SubscriberSpec extends ClientBaseSpec with MockFactory {
 
   "A subscriber" should "fail subscribe to topic when session closed" in { f =>
     f.withSession { session =>

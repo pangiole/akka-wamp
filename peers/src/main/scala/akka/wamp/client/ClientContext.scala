@@ -3,9 +3,10 @@ package akka.wamp.client
 import akka.actor._
 import akka.wamp._
 
-trait ClientUtils extends Scope.SessionScope { 
+trait ClientContext extends Scope.SessionScope { 
   this: Actor =>
 
+  /** The Akka Wamp Client API configuration */
   val config = context.system.settings.config.getConfig("akka.wamp.client")
 
   /**
@@ -16,8 +17,13 @@ trait ClientUtils extends Scope.SessionScope {
 
   /** WAMP types Validator */
   implicit val validator = new Validator(strictUris)
+
+  /** Actor system */
+  implicit val system = context.system
   
   /** Execution context */
   implicit val ec = context.system.dispatcher
   
+  /** Task scheduler */
+  val scheduler = context.system.scheduler
 }

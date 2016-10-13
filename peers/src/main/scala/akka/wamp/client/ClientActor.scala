@@ -6,7 +6,7 @@ import akka.wamp._
 import akka.wamp.messages._
 
 import scala.concurrent._
-
+import scala.concurrent.duration._
 
 /**
   * INTERNAL API
@@ -18,59 +18,53 @@ import scala.concurrent._
   * @param promise is the promise of connection to fulfill
   */
 private[client] 
-class ClientActor(url: String, subprotocol: String, promise: Promise[Transport]) extends Actor with ActorLogging {
-
-  // TODO how about resiliency
-
-  import context.system // implicitly used by IO(Wamp)
-  IO(Wamp) ! Connect(url, subprotocol)
+class ClientActor(
+  url: String, 
+  subprotocol: String,
+  maxAttempts: Int,
+  promise: Promise[Transport]
+) 
+extends Actor
+with ActorLogging
+with ClientContext
+{
+  import ClientActor._
   
-  /**
-    * The connection
-    */
-  private var transport: Transport = _
-
-  /**
-    * Client configuration 
-    */
-  private val config = context.system.settings.config.getConfig("akka.wamp.client")
-
-  /**
-    * The boolean switch (default is false) to validate
-    * against strict URIs rather than loose URIs
-    */
-  val strictUris = config.getBoolean("validate-strict-uris")
-
-  /** WAMP types Validator */
-  private implicit val validator = new Validator(strictUris)
-
-  /** Akka actor system dispatcher */
-  private implicit val executionContext: ExecutionContext = context.system.dispatcher
-
-  /**
-    * This actor receive partial function
-    */
+  var attempts = 0
+  
+  override def preStart(): Unit = {
+    attempts = 0
+    self ! DoConnect
+  }
+  
   override def receive: Receive = {
-    case signal @ Connected(handler) =>
-      log.debug("    {}", signal)
-      // switch its receive method so to delegate to a connection object
-      this.transport = new Transport(self, handler)
-      context.become { case msg => transport.receive(msg) }
-      promise.success(transport)
+    case DoConnect =>
+      val cmd = Connect(url, subprotocol)
+      log.debug("=== {}", cmd)
+      attempts = attempts + 1
+      IO(Wamp) ! cmd
+
+    case signal @ CommandFailed(cmd, ex) =>
+      log.debug("=== {}", signal)
+      if (attempts < maxAttempts) {
+        scheduler.scheduleOnce(1 second, self, DoConnect)
+      } else {
+        promise.failure(new TransportException(ex.getMessage))
+        context.stop(self)
+      }
       
-    case signal @ CommandFailed(_, ex) =>
-      fail(signal, ex.getMessage)
-
-    case signal @ Status.Failure(cause) =>
-      fail(signal, cause.getMessage)
-
-    case msg =>
-      fail(msg, s"Unexpected message $msg")
+    case signal @ Connected(handler) =>
+      log.debug("=== {}", signal)
+      val transport = new Transport(self, handler)
+      // switch its receive method so to delegate to the transport object
+      context.become { 
+        case msg => transport.receive(msg) 
+      }
+      promise.success(transport)
   }
-  
-  private def fail(msg: Any, cause: String) = {
-    log.warning("!!! {}", msg)
-    promise.failure(new TransportException(cause))
-    context.stop(self)
-  }
+}
+
+
+private[client] object ClientActor {
+  case object DoConnect
 }

@@ -7,7 +7,7 @@ import org.scalamock.scalatest.MockFactory
 import scala.concurrent._
 import scala.concurrent.duration._
 
-class CalleeSpec extends ClientFixtureSpec with MockFactory {
+class CalleeSpec extends ClientBaseSpec with MockFactory {
 
 
   "A callee" should "fail register procedure when session closed" in { f =>

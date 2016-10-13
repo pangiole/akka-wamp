@@ -1,6 +1,6 @@
 package akka.wamp
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, Props, Status}
 import akka.wamp.messages._
 
 /**
@@ -19,7 +19,7 @@ private[wamp] class ExtensionManager extends Actor with ActorLogging {
     }
       
     case cmd: Connect => 
-      val handler = context.actorOf(client.TransportHandler.props())
+      val handler = context.actorOf(client.TransportHandler.props(sender()))
       handler.forward(cmd)
   }
 }

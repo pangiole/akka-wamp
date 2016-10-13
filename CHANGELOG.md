@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Added
 - ``unregister()`` method can be called on registration directly
 - ``unsubscribe()`` method can be called on subscription directly
+- ``Client.connect()`` method now accepts a maximum number of attempts before giving up
 
 ### Fixed
 - Default JSON deserializer shall bind ``null`` to ``None``

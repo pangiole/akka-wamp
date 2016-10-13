@@ -31,12 +31,12 @@ import scala.concurrent._
   * A WAMP session can be opened during the WAMP connection lifecycle, but
   * only one at the time.
   *
-  * @param client is the client actor reference
-  * @param handler is transport handler actor reference
+  * @param clientRef is the client actor reference
+  * @param transportRef is transport handler actor reference
   * @param executionContext is the Akka actor system dispatcher
   * @param validator is the WAMP types validator
   */
-class Transport private[client](client: ActorRef, handler: ActorRef)
+class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
                                (implicit executionContext: ExecutionContext, validator: Validator) 
 {
   private val log = LoggerFactory.getLogger(classOf[Transport])
@@ -44,12 +44,7 @@ class Transport private[client](client: ActorRef, handler: ActorRef)
   /** Connection state */
   private[client] var connected = true
   
-  /** The client actor reference */
-  private[client] val clientRef: ActorRef = client
-
-  /** The transport handler actor reference */
-  private[client] val handlerRef: ActorRef = handler
-
+  
   /**
     * Open a WAMP session with the given realm and roles.
     * 
@@ -81,11 +76,11 @@ class Transport private[client](client: ActorRef, handler: ActorRef)
         val hello = Hello(realm, Dict().addRoles(roles.toList: _*))
         become {
           handleWelcome(promise) orElse
-            handleAbort(promise) orElse
-            handleUnexpected
+            handleAbort(promise) 
+               // TODO orElse handleDisconnect
         }
         log.debug("--> {}", hello)
-        handlerRef ! hello
+        transportRef.tell(hello, clientRef)
       } catch {
         case ex: Throwable =>
           log.debug(ex.getMessage)
@@ -101,15 +96,15 @@ class Transport private[client](client: ActorRef, handler: ActorRef)
     */
   def disconnect(): Future[Disconnected] = {
     withPromise[Disconnected] { promise =>
-      become {
-        // TODO how about disconnection from router?
+      become /* handleDisconnecting */ 
+      {
         case signal @ Disconnected =>
           log.debug("!!! {}", signal)
           connected = false
           clientRef ! PoisonPill
           promise.success(signal)
       }
-      handlerRef ! Disconnect
+      transportRef.tell(Disconnect, clientRef)
     }
   }
 
@@ -139,7 +134,7 @@ class Transport private[client](client: ActorRef, handler: ActorRef)
     */
   private[client] def !(message: Message) = {
     log.debug("--> {}", message)
-    handlerRef ! message
+    transportRef.tell(message, clientRef)
   }
 
   
@@ -171,15 +166,9 @@ class Transport private[client](client: ActorRef, handler: ActorRef)
        * one peer and a GOODBYE message sent from the other peer 
        * in response.
        */
-      handlerRef ! Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
+      val reply = Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
+      transportRef.tell(reply, clientRef)
       session.doClose()
-  }
-  
-  
-  private[client] def handleUnexpected: Receive = {
-    case msg =>
-      // TODO shouldn't we consider it as protocol error, therefore close the session?
-      log.warn("!!! {}", msg)
   }
 }
 

@@ -50,14 +50,16 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     * 
     * @param url is the URL to connect to (default is "ws://localhost:8080/router")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
+    * @param maxAttempts is the maximum number of attempts before giving up (default is 1)
     * @return the (future of) connection or [[TransportException]]
     */
   def connect(
     url: String = Client.defaultUrl, 
-    subprotocol: String = Client.defaultSubprotocol): Future[Transport] = 
+    subprotocol: String = Client.defaultSubprotocol,
+    maxAttempts: Int = 1): Future[Transport] = 
   {
     val promise = Promise[Transport]
-    system.actorOf(Props(new ClientActor(url, subprotocol, promise)))
+    system.actorOf(Props(new ClientActor(url, subprotocol, maxAttempts, promise)))
     promise.future
   }
 
@@ -112,7 +114,8 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
   *   val conn: Future[Connection] = client
   *     .connect(
   *       url = "ws://localhost:8080/router",
-  *       subprotocol = "wamp.2.json"
+  *       subprotocol = "wamp.2.json",
+  *       maxAttempts = 8
   *     )
   * }}}
   */

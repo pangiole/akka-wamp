@@ -11,7 +11,7 @@ import org.scalatest.concurrent._
 
 import scala.concurrent.duration._
 
-class ClientFixtureSpec(_system: ActorSystem = ActorSystem("test"))
+class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
   extends ActorSpec(_system)
     with ParallelTestExecution
     with ScalaFutures {

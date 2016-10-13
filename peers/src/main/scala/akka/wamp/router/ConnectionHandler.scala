@@ -90,6 +90,7 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
     dsl.get {
       dsl.path(path) {
         dsl.handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
+        // TODO add handler for wamp.2.msgpack
       }
     }
   }
@@ -114,14 +115,12 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
     log.debug("[{}]     Starting", self.path.name)
   }
 
-  override def postStop(): Unit = {
-    log.debug("[{}]     Stopped", self.path.name)
-  }
+  
   
   def receive: Receive = {
 
     case conn: Http.IncomingConnection =>
-      log.debug("[{}]     Http.Incoming accepted on {}", self.path.name, conn.localAddress)
+      log.debug("[{}]     Tcp.Incoming accepted on {}", self.path.name, conn.localAddress)
       conn.handleWith(httpFlow)
       
     case signal @ Connected(p) =>
@@ -145,8 +144,7 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
       context.stop(self)
 
     case status @ stream.Failure(ex) =>
-      // This happens if disconnect-offending-peers is switched on 
-      // and the connected peer sends and offending message
+      // TODO when does this happen?
       log.warning("[{}]     Stream.Failure [{}: {}]", self.path.name, ex.getClass.getName, ex.getMessage)
       router ! Disconnected
       context.stop(peer)
@@ -157,6 +155,10 @@ class ConnectionHandler(router: ActorRef, path: String, validateStrictUris: Bool
       router ! Disconnected
       context.stop(peer)
       context.stop(self)
+  }
+
+  override def postStop(): Unit = {
+    log.debug("[{}]     Stopped", self.path.name)
   }
 }
 

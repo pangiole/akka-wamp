@@ -49,7 +49,7 @@ class ManagerSpec
   it should "connect a client" in {
     manager ! Connect(url, "wamp.2.json")
     val connected = expectMsgType[Connected](16 seconds)
-    handler = connected.handler 
+    handler = connected.inletHandler 
     handler must not be (null)
     // TODO handler mustBe childOf(manager)
   }

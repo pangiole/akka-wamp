@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.wamp._
 import com.typesafe.config.ConfigFactory
 
-class TransportSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.parseString(
+class TransportSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.parseString(
   """
     | akka {
     |   wamp {
@@ -44,6 +44,7 @@ class TransportSpec extends ClientFixtureSpec(ActorSystem("test", ConfigFactory.
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     pending
     f.withTransport { transport =>
+      
       // TODO how to simulate router side disconnection ???
       val session = transport.openSession()
       whenReady(session.failed) { e =>

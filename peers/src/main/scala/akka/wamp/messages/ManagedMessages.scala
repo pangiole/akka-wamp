@@ -91,9 +91,9 @@ final case class Bound(listener: ActorRef, url: String) extends Signal
 /**
   * This connected signal is replied back whenever a [[Connect]] command succeed. 
   *
-  * @param handler is the actor reference of the newly spawned [[client.TransportHandler]]
+  * @param inletHandler is the actor reference of the newly spawned [[client.TransportHandler]]
   */
-final case class Connected(handler: ActorRef) extends Signal
+final case class Connected(inletHandler: ActorRef) extends Signal
 
 /**
   * This disconnected signal announces handler disconnection
@@ -101,9 +101,3 @@ final case class Connected(handler: ActorRef) extends Signal
 sealed abstract class Disconnected extends Signal
 final case object Disconnected extends Disconnected
 
-
-/**
-  * This timout signal announces time is expired
-  */
-sealed abstract class Timeout extends Signal
-final case object Timeout extends Timeout

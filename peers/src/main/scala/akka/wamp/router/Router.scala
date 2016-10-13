@@ -81,8 +81,13 @@ final class Router(val scopes: Map[Symbol, Scope])
     * Handle transports lifecycle signals such as DISCONNECTED
     */
   private def handleConnections: Receive = {
+    case signal @ Connected(handler) =>
+      val peer = sender()
+      log.debug("[{}]     Connected [{}]", self.path.name, handler.path.name)
+      
     case signal @ Disconnected =>
       val peer = sender()
+      log.debug("[{}]     Disconnected [{}]", self.path.name, peer.path.name)
       sessions.values.find(_.peer == peer) match {
         case Some(session) => closeSession(session)
         case None => ()

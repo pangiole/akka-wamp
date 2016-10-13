@@ -3,7 +3,7 @@ package akka.wamp.client
 import akka.Done
 import org.scalamock.scalatest.MockFactory
 
-class PublisherSpec extends ClientFixtureSpec with MockFactory {
+class PublisherSpec extends ClientBaseSpec with MockFactory {
 
   "A publisher" should "fail publish to topic when session closed" in { f =>
     f.withSession { session =>

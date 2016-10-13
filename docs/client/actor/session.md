@@ -62,6 +62,22 @@ override def receive = {
 }
 ```
 
+### Repeated attempts
+You could repeatedly attempt a transport connection if the last failed:
+
+```scala
+val connect = Connect("ws://localhost:8080/router", "wamp.2.json")
+
+override def receive = {
+  // ...
+  
+  case CommandFailed(cmd: Connect, _ =>
+    scheduler.scheduleOne(1 second, manager, connect)
+    
+  // ...  
+}
+```
+
 ## Open sessions
 ```scala
 transport ! Hello("myapp.realm")

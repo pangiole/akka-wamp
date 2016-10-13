@@ -7,7 +7,7 @@ import org.scalamock.scalatest.MockFactory
 import scala.concurrent.duration._
 import scala.concurrent._
 
-class CallerSpec extends ClientFixtureSpec with MockFactory {
+class CallerSpec extends ClientBaseSpec with MockFactory {
 
 
   "A caller" should "fail call procedure when session closed" in { f =>

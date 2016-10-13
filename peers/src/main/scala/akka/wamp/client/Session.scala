@@ -57,7 +57,7 @@ class Session private[client](val connection: Transport, welcome: Welcome)
     with Caller
     with Scope.SessionScope 
 {
-  import connection.{handleGoodbye, handleUnexpected}
+  import connection.handleGoodbye
   
   protected val log = LoggerFactory.getLogger(classOf[Transport])
 
@@ -129,8 +129,7 @@ class Session private[client](val connection: Transport, welcome: Welcome)
           promise.success(connection)
       }
       connection.become(
-        handleGoodbye orElse 
-        handleUnexpected
+        handleGoodbye
       )
       // send goodbye message TO the router
       connection ! Goodbye(details, reason)
@@ -149,8 +148,7 @@ class Session private[client](val connection: Transport, welcome: Welcome)
       handleEvents orElse
       handleRegistrations orElse 
       handleInvocations orElse
-      handleResults orElse
-      handleUnexpected
+      handleResults
   }
 }
 
