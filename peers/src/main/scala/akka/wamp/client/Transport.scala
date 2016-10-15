@@ -32,11 +32,11 @@ import scala.concurrent._
   * only one at the time.
   *
   * @param clientRef is the client actor reference
-  * @param transportRef is transport handler actor reference
+  * @param transportHandler is transport handler actor reference
   * @param executionContext is the Akka actor system dispatcher
   * @param validator is the WAMP types validator
   */
-class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
+class Transport private[client](clientRef: ActorRef, transportHandler: ActorRef)
                                (implicit executionContext: ExecutionContext, validator: Validator) 
 {
   private val log = LoggerFactory.getLogger(classOf[Transport])
@@ -65,7 +65,7 @@ class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
     *     `------'              `------'
     * }}}
     * 
-    * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
+    * @param realm is the realm to attach the session to (default is "default.realm")
     * @param roles is this client roles set (default is all possible client roles)
     * @return the (future of) session or [[AbortException]]
     */
@@ -76,11 +76,11 @@ class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
         val hello = Hello(realm, Dict().addRoles(roles.toList: _*))
         become {
           handleWelcome(promise) orElse
-            handleAbort(promise) 
-               // TODO orElse handleDisconnect
+            handleAbort(promise) orElse 
+              handleDisconnected(promise)
         }
         log.debug("--> {}", hello)
-        transportRef.tell(hello, clientRef)
+        transportHandler.tell(hello, clientRef)
       } catch {
         case ex: Throwable =>
           log.debug(ex.getMessage)
@@ -104,7 +104,7 @@ class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
           clientRef ! PoisonPill
           promise.success(signal)
       }
-      transportRef.tell(Disconnect, clientRef)
+      transportHandler.tell(Disconnect, clientRef)
     }
   }
 
@@ -134,7 +134,7 @@ class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
     */
   private[client] def !(message: Message) = {
     log.debug("--> {}", message)
-    transportRef.tell(message, clientRef)
+    transportHandler.tell(message, clientRef)
   }
 
   
@@ -167,8 +167,16 @@ class Transport private[client](clientRef: ActorRef, transportRef: ActorRef)
        * in response.
        */
       val reply = Goodbye(Goodbye.defaultDetails, "wamp.error.goodbye_and_out")
-      transportRef.tell(reply, clientRef)
+      transportHandler.tell(reply, clientRef)
       session.doClose()
+  }
+  
+  /** Handle disconnection from router side */
+  private[client] def handleDisconnected[T](promise: Promise[T]): Receive = {
+    case signal @ Disconnected =>
+      log.debug("!!! {}", signal)
+      connected = false
+      promise.failure(new TransportException("Disconnected from router side"))
   }
 }
 

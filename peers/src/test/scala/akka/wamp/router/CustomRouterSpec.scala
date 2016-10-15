@@ -7,43 +7,32 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 /**
-  * It tests the Router running with some custom configuration
-  * (e.g. when it shall auto create realms)
+  * Test the [[Router]] when configured with custom settings
   */
-class CustomRouterSpec extends RouterFixtureSpec(ActorSystem("test",
-  ConfigFactory.parseString(
-    """
-      | akka {
-      |   wamp {
-      |     router {
-      |       abort-unknown-realms = true
-      |       validate-strict-uris = true
-      |       disconnect-offending-peers = true
-      |     }
-      |   }
-      | }
-    """.stripMargin)
-)) {
+class CustomRouterSpec extends CustomRouterBaseSpec {
+  
+  "A router configured with custom settings" should "drop incoming repeated HELLOs, and resume" in { f =>
+    // TODO https://github.com/angiolep/akka-wamp/issues/21
+    f.router ! Hello("default.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
+    f.router.underlyingActor.sessions must have size(1)
+    f.router ! Hello("default.realm", Dict().addRoles("subscriber"))
+    expectNoMsg()
+    f.router.underlyingActor.sessions must have size(1)
+  }
 
-  "A router with custom settings" should "reply ABORT on HELLO for unknown realm" in { f =>
+  it should "drop incoming repeated GOODBYEs if peer didn't open session, and resume" in { f =>
+    f.router ! Goodbye()
+    f.router ! Goodbye()
+    f.router ! Hello()
+    expectMsgType[Welcome]
+    f.router.underlyingActor.sessions must have size(1)
+  }
+  
+  it should "NOT open session on incoming HELLO('unknown.realm') and reply ABORT" in { f =>
     f.router ! Hello("unknown.realm")
     expectMsg(Abort(Dict("message"->"The realm 'unknown.realm' does not exist."), "wamp.error.no_such_realm"))
     f.router.underlyingActor.realms must have size(1)
-    f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
+    f.router.underlyingActor.realms must contain only ("default.realm")
     f.router.underlyingActor.sessions mustBe empty
-  }
-
-
-  it should "disconnect on HELLO twice (regardless the realm)" in { f =>
-    f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
-    f.router.underlyingActor.sessions must have size(1)
-    f.router ! Hello("whatever.realm", Dict().addRoles("subscriber"))
-    expectMsg(Disconnect)
-    f.router.underlyingActor.sessions  mustBe empty
-  }
-
-  it should "disconnect on GOODBYE before open session" in { f =>
-    f.router ! Goodbye()
-    expectMsg(Disconnect)
   }
 }

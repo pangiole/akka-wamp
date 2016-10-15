@@ -11,22 +11,12 @@ import scala.concurrent.duration._
   * It tests the router running with its default settings 
   * (NO custom configuration is applied)
   */
-class BrokerSpec extends RouterFixtureSpec {
+class BrokerSpec extends RouterBaseSpec {
 
-  // TODO https://github.com/angiolep/akka-wamp/issues/22
-  "The default broker" should "drop SUBSCRIBE if client didn't open session" in { f =>
+  "The default broker" should "disconnect on incoming SUBSCRIBE if client didn't open session" in { f =>
     f.router ! Subscribe(1, topic = "mypp.topic")
-    f.router ! Hello()
-    expectMsgType[Welcome]
-    f.router.underlyingActor.sessions must have size(1)
-  }
-  
-
-  it should "drop SUBSCRIBE if peer didn't announce 'subscriber' role" in { f =>
-    f.client.send(f.router, Hello(details = Dict().addRoles( Roles.publisher)))
-    f.client.expectMsgType[Welcome]
-    f.client.send(f.router, Subscribe(1, topic = "mypp.topic1"))
-    f.client.expectNoMsg()
+    expectMsg(Disconnect)
+    f.router.underlyingActor.sessions mustBe empty
     f.router.underlyingActor.subscriptions mustBe empty
   }
 
@@ -175,33 +165,12 @@ class BrokerSpec extends RouterFixtureSpec {
   
   // ~~~~~~~~~~~~~~~~~~~
 
-
-  // TODO https://github.com/angiolep/akka-wamp/issues/22
-  it should "drop PUBLISH if client didn't open session" in { f =>
+  it should "disconnect on incoming PUBLISH if client didn't open session" in { f =>
     f.router ! Publish(1, topic = "mypp.topic1")
-    f.router ! Hello()
-    expectMsgType[Welcome]
-    f.router.underlyingActor.sessions must have size(1)
-  }
-
-  // TODO https://github.com/angiolep/akka-wamp/issues/22
-  it should "drop PUBLISH if peer didn't announce 'publisher' role" in { f =>
-    f.client.send(f.router , Hello(details = Dict().addRoles(Roles.callee)))
-    f.client.receiveOne(0.seconds)
-    f.client.send(f.router, Publish(1, options = Dict("acknowledge" -> true), "mypp.topic"))
-    f.client.expectNoMsg()
+    expectMsg(Disconnect)
+    f.router.underlyingActor.sessions mustBe empty
     f.router.underlyingActor.publications mustBe empty
   }
-
-  
-  it should "drop PUBLISH(noack) if peer didn't  announce 'publisher' role" in { f =>
-    f.client.send(f.router , Hello(details = Dict().addRoles(Roles.callee)))
-    f.client.receiveOne(0.seconds)
-    f.client.send(f.router, Publish(1, topic = "mypp.topic"))
-    f.client.expectNoMsg()
-    f.router.underlyingActor.publications mustBe empty
-  }
-
 
   it should "dispatch EVENT on PUBLISH to a topic with subscribers" in { f =>
     val client1 = TestProbe("client1")

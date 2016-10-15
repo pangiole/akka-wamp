@@ -222,7 +222,7 @@ class JsonSerialization() extends Serialization {
         Source.single(fields.map(toJson).mkString("[", ",", "]"))
 
       case Some(p: TextLazyPayload) =>
-        Source.single(fields.map(toJson).mkString("[", ",", ",")).concat(p.unparsed).concat(Source.single("]"))
+        Source.single(fields.map(toJson).mkString("[", ",", ",")).concat(p.unparsed)
         
       case Some(p: BinaryLazyPayload) => 
         throw new IllegalStateException("Cannot serialize binary payload to JSON")

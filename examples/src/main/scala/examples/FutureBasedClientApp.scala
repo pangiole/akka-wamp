@@ -14,7 +14,7 @@ object FutureBasedClientApp extends App {
         subprotocol = "wamp.2.json")
     session <- connection
       .openSession(
-        realm = "akka.wamp.realm",
+        realm = "default.realm",
         roles = Set("subscriber"))
     subscription <- session
       .subscribe(

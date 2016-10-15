@@ -44,7 +44,6 @@ class TransportSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.par
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     pending
     f.withTransport { transport =>
-      
       // TODO how to simulate router side disconnection ???
       val session = transport.openSession()
       whenReady(session.failed) { e =>
@@ -68,7 +67,7 @@ class TransportSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.par
   
   it should "fail open session when invalid roles are given" in { f =>
     f.withTransport { transport =>
-      val session = transport.openSession("akka.wamp.realm", roles = Set("invalid"))
+      val session = transport.openSession("default.realm", roles = Set("invalid"))
       whenReady(session.failed) { ex =>
         ex mustBe a[TransportException]
         ex.getMessage must startWith("invalid roles in Map(roles -> Map(invalid -> Map()))")
@@ -98,9 +97,8 @@ class TransportSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.par
       whenReady(transport.openSession()) { session1 =>
         val session2 = transport.openSession()
         session2.failed.futureValue match {
-          case AbortException(abort) =>
-            abort.reason mustBe "akka.wamp.error.session_already_open"
-            abort.details mustBe Dict()
+          case TransportException(message) =>
+            message mustBe "Disconnected from router side"
           case e =>
             fail(s"unexpected $e")
         }

@@ -60,8 +60,8 @@ private class TransportListener extends Actor {
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, path, routerConfig))
-          handler ! conn
+          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, path))
+          handler ! HandleHttpConnection(conn)
         }
 
       serverSource

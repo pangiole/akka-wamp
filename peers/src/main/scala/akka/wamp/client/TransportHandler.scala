@@ -29,8 +29,13 @@ class TransportHandler(clientRef: ActorRef)
   /** The serialization flows */
   // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
   private val serializationFlows = new JsonSerializationFlows(
-    clientConfig.getBoolean("validate-strict-uris"), 
-    disconnectOffendingPeers = true
+    clientConfig.getBoolean("validate-strict-uris"),
+    /*
+     * NOTE
+     * Clients will always disconnect on offending messages
+     * No configuration setting is provided to change this behaviour.
+     */
+    dropOffendingMessages = false
   )
 
   /** The client actor */
@@ -114,17 +119,23 @@ class TransportHandler(clientRef: ActorRef)
 
     case cmd @ Disconnect =>
       // NOTE:
-      // It happens when client send Disconnect to this handler
-      // so to successfully terminate the outletHandler
-      // RouterDisconnect will be sent as consequence
+      //    It happens when client sends Disconnect command
+      //    to terminate the outletHandler
       outletHandler ! PoisonPill
+      // TODO take following invocation off and improve tests
+      onOutletHandlerComplete()
       
     case signal @ Disconnected =>
-      // As documented for Sink.actorRef(), this signal is sent when  
-      // the above AKKA STREAM is completed successful, such as 
-      // disconnection from router side
-      clientRef ! Disconnected
-      self ! PoisonPill
+      // NOTE:
+      //    As documented for Sink.actorRef(), this signal 
+      //    is sent when the outletHandler completes successful, 
+      //    such as disconnection from router side
+      onOutletHandlerComplete()
+  }
+  
+  private def onOutletHandlerComplete() = {
+    clientRef ! Disconnected
+    self ! PoisonPill
   }
 }
 

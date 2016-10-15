@@ -12,7 +12,7 @@ val session = client
     url = "ws://localhost:8080/router",
     subprotocol = "wamp.2.json")
   .openSession(
-    realm = "akka.wamp.realm",
+    realm = "default.realm",
     roles = Set("subscriber")
   )
 }
@@ -112,7 +112,7 @@ transport.onFailure {
 ```scala
 val session1: Future[Session] = conn1.flatMap(
   _.openSession(
-    realm = "akka.wamp.realm",
+    realm = "default.realm",
     roles = Set("subscriber")))
     
 val session2 = conn2.flatMap(
@@ -133,7 +133,7 @@ val session: Future[Session] = client
   .openSession(
     url = "ws://some.host.net:8080/ws",
     subprotocol = "wamp.2.json",
-    realm = "akka.wamp.realm",
+    realm = "default.realm",
     roles = Set("subscriber", "caller"))
 ```
 
@@ -146,7 +146,7 @@ You can either recover or _"give up"_ when the (future of) session fails. To rec
 ```scala
 val session: Future[Session] = client
   .openSession(
-    realm = "akka.wamp.realm")
+    realm = "default.realm")
   .recoverWith { 
     case ex: AbortException => client
       .openSession(

@@ -51,7 +51,7 @@ trait Dealer { this: Router =>
     */
   private[router] def handleRegistrations: Receive = {
     case msg @ Register(requestId, options, procedure) =>
-      withSession(msg, sender(), Some("callee")) { session =>
+      withSession(msg, sender()) { session =>
         registrations.values.toList.filter(_.procedure == procedure) match {
           case Nil => {
             /**
@@ -86,7 +86,7 @@ trait Dealer { this: Router =>
       }
 
     case msg @ Unregister(requestId, registrationId) =>
-      withSession(msg, sender(), Some("callee")) { session =>
+      withSession(msg, sender()) { session =>
         registrations.get(registrationId) match {
           case Some(registration) =>
             if (unregister(session.peer, registration)) {
@@ -111,7 +111,7 @@ trait Dealer { this: Router =>
   private[router] def handleCalls: Receive = {
     case call: Call =>
       val caller = sender()
-      withSession(call, caller, Some("caller")) { _ =>
+      withSession(call, caller) { _ =>
         registrations.values.find(_.procedure == call.procedure) match {
           case Some(registration) =>
             /**
@@ -150,7 +150,7 @@ trait Dealer { this: Router =>
       
     case yld @ Yield(requestId, options, payload) =>
       val callee = sender()
-      withSession(yld, callee, Some("callee")) { session =>
+      withSession(yld, callee) { session =>
         invocations.get(requestId) match {
           case Some(invocation) =>
             invocation.caller ! Result(invocation.call.requestId, Result.defaultDetails, payload)

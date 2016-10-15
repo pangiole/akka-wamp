@@ -85,7 +85,7 @@ IO(Wamp) ! Connect(client, subprotocol = "wamp.2.mgspack")
 It is the message your client application sends to the router to request a new session being opened with the given realm attached plus additional details. It can be constructed passing the following parameters:
 
 * ``realm``  
-  It is the realm identifier given as [URI](https://tools.ietf.org/html/draft-oberstet-hybi-tavendo-wamp-02#section-5.1.1). By default, Akka Wamp sends ``akka.wamp.realm``
+  It is the realm identifier given as [URI](https://tools.ietf.org/html/draft-oberstet-hybi-tavendo-wamp-02#section-5.1.1). By default, Akka Wamp sends ``default.realm``
 
 * ``details``  
    It is a dictionary of additional details. By default, Akka Wamp makes a dictionary with all possible client roles its supports:

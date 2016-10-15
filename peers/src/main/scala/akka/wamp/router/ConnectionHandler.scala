@@ -1,7 +1,7 @@
 package akka.wamp.router
 
 import akka.NotUsed
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status => stream}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Status => stream}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
@@ -18,11 +18,11 @@ import com.typesafe.config.Config
   * over which JSON messages for a session can flow in both directions.
   *
   * @param router is the first peer to connect
-  * @param path
-  * @param routerConfig
+  * @param config is the router configuration
+  * @param path is the resource path this handler expects HTTP Upgrade to be addressed to
   */
 private 
-class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config) 
+class ConnectionHandler(router: ActorRef, config: Config, path: String) 
   extends Actor 
     with ActorLogging 
 {
@@ -31,8 +31,8 @@ class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config)
 
   // TODO [Provide wamp.2.msgpack subprotocol](https://github.com/angiolep/akka-wamp/issues/12)
   val serializationFlows = new JsonSerializationFlows(
-    routerConfig.getBoolean("validate-strict-uris"),
-    routerConfig.getBoolean("disconnect-offending-peers")
+    config.getBoolean("validate-strict-uris"),
+    config.getBoolean("drop-offending-messages")
   )
   
   /** The second peer to connect */
@@ -48,18 +48,17 @@ class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config)
 
     // Create a new transportSink which delivers any message to this transportActor (self)
     val transportSink: Sink[WampMessage, NotUsed] =
-      Sink.
-        actorRef[WampMessage](self, onCompleteMessage = Disconnected)
+      Sink.actorRef[WampMessage](self, onCompleteMessage = Disconnected)
 
     Flow.fromGraph(GraphDSL.create(transportSource) {
       implicit builder => transportSource =>
         import GraphDSL.Implicits._
 
-        // As soon as a new WebSocket connection is established with a client
+        // As soon as a new WebSocket connection is established with a peer
         // then the following materialized outlet:
-        //   - will emit the Connected signal carrying the clientActor reference, and
+        //   - will emit the Connected signal carrying the peer actor reference, and
         //   - will go downstream to the transportSink via a merge junction
-        val onConnect = builder.materializedValue.map(client => Connected(client))
+        val onConnect = builder.materializedValue.map(peer => Connected(peer))
 
         // The fromWebSocket flow
         //   - receives incoming WebSocketMessages from the connected client, and
@@ -88,7 +87,6 @@ class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config)
     })
   }
 
-  
   val httpRoute: Route = {
     dsl.get {
       dsl.path(path) {
@@ -113,51 +111,53 @@ class ConnectionHandler(router: ActorRef, path: String, routerConfig: Config)
   }
   
   
-  
   override def preStart(): Unit = {
     log.debug("[{}]     Starting", self.path.name)
   }
 
   
-  
   def receive: Receive = {
-
-    case conn: Http.IncomingConnection =>
-      log.debug("[{}]     Tcp.Incoming accepted on {}", self.path.name, conn.localAddress)
+    case cmd @ HandleHttpConnection(conn) =>
+      log.debug("[{}]     Handling HTTP connection {}", self.path.name, conn.localAddress)
       conn.handleWith(httpFlow)
       
     case signal @ Connected(p) =>
       peer = p
-      log.debug("[{}]     Connected [{}]", self.path.name, peer.path.name)
-      router ! signal
+      log.debug("[{}]     Connected WAMP [{}]", self.path.name, peer.path.name)
+      router ! Connected(self)
 
     case msg: Message if (sender() == router) =>
       log.debug("[{}] --> {}", self.path.name, msg)
       peer ! msg
       
-    case msg: Message =>
+    case msg: Message /* if (sender() == peer) */ =>
       log.debug("[{}] <-- {}", self.path.name, msg)
       router ! msg
       
     case signal @ Disconnected =>
-      // This happens when the underlying WebSocket transport disconnects
-      log.debug("[{}]     Disconnected [{}]", self.path.name, peer.path.name)
-      router ! signal
-      context.stop(peer)
-      context.stop(self)
+      // NOTE:
+      //    It happens when the AKKA STREAM completes 
+      //    (e.g. when the underlying WebSocket disconnects 
+      //          from client side)
+      log.debug("[{}] !!! Disconnected [{}]", self.path.name, peer.path.name)
+      router ! Disconnected
+      self ! PoisonPill
 
     case status @ stream.Failure(ex) =>
-      // TODO when does this happen?
-      log.warning("[{}]     Stream.Failure [{}: {}]", self.path.name, ex.getClass.getName, ex.getMessage)
+      // NOTE:
+      //    It happens when exceptions are thrown and
+      //    the above AKKA STREAM completes with failure
+      log.warning("[{}] !!! Stream.Failure [{}: {}]", self.path.name, ex.getClass.getName, ex.getMessage)
       router ! Disconnected
-      context.stop(peer)
-      context.stop(self)
+      self ! PoisonPill
 
     case cmd @ Disconnect =>
-      // This happens when the router commands a disconnection
-      router ! Disconnected
-      context.stop(peer)
-      context.stop(self)
+      // NOTE:
+      //    It happens when the router commands disconnection
+      //    (e.g. upon receive offending messages)
+      peer ! PoisonPill
+      //    ... and Disconnected signal will 
+      //    be emitted as consequence.  
   }
 
   override def postStop(): Unit = {
@@ -172,9 +172,9 @@ object ConnectionHandler {
     *
     * @param router
     * @param path
-    * @param routerConfig
+    * @param config
     * @return
     */
-  def props(router: ActorRef, path: String, routerConfig: Config) = 
-    Props(new ConnectionHandler(router, path, routerConfig))
+  def props(router: ActorRef, config: Config, path: String) = 
+    Props(new ConnectionHandler(router, config, path))
 }

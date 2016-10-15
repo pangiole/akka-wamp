@@ -1,6 +1,7 @@
 package akka.wamp.messages
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.Http
 import akka.wamp._
 
 /**
@@ -30,6 +31,16 @@ trait Command extends ManagedMessage
   * @param subprotocol is the WebSocket subprotocol to negotiate (e.g. "wamp.2.msgpack" or "wamp.2.json")
   */
 final case class Connect(url: String, subprotocol: String) extends Command
+
+
+/**
+  * This handle command is sent by a [[router.TransportListener]] upon receiving 
+  * a [[Http.IncomingConnection]] to ask a newly spawned [[router.ConnectionHandler]] to
+  * handle it
+  * 
+  * @param conn is the incoming connection to be handled
+  */
+final case class HandleHttpConnection(conn: Http.IncomingConnection) extends Command
 
 /**
   * This disconnect command is sent by client applications with the intent to connect from a router.

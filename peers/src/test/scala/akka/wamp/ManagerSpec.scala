@@ -24,14 +24,14 @@ class ManagerSpec
   //       Therefore, you cannot mixin ParallelTestExecution!
 
   var manager: ActorRef = _
-  var router: TestActorRef[Router] = _
+  var router: ActorRef = _
   var listener: ActorRef = _
   var handler: ActorRef = _
   var url: String = _
   
   override protected def beforeAll(): Unit = {
     manager = IO(Wamp)
-    router = TestActorRef(Router.props())
+    router = system.actorOf(Router.props())
   }
 
   "The IO(Wamp) manager" should "bind a router to the default transport" in {
@@ -56,6 +56,8 @@ class ManagerSpec
   
   
   it should "disconnect a client" in {
+    pending
+    // TODO it requires WebSocket connection
     val watcher = TestProbe()
     watcher.watch(handler)
     handler ! Disconnect

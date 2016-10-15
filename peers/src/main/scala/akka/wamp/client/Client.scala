@@ -69,7 +69,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     *
     * @param url is the URL to connect to (default is "ws://localhost:8080/router")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
-    * @param realm is the realm to attach the session to (default is "akka.wamp.realm")
+    * @param realm is the realm to attach the session to (default is "default.realm")
     * @param roles is this client roles set (default is all possible client roles) 
     * @return the (future of) session or [[TransportException]] or [[AbortException]] 
     */
@@ -97,8 +97,9 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     */
   def terminate(): Future[Terminated] = {
     system.terminate()
+    // TODO https://github.com/angiolep/akka-wamp/issues/36
+    // TODO Test what will happen on client terminate
   }
-  // TODO Test what will happen on client terminate
 }
 
 /**

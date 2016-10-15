@@ -42,14 +42,14 @@ akka {
       #
       abort-unknown-realms = false
    
-      # The boolean switch to disconnect those peers that send 
-      # offending messages (e.g. not deserializable or causing
-      # session failures)
+      # The boolean switch to drop offending messages (e.g. 
+      # not deserializable or against the protocol).
       #
-      # By default, offending messages are just dropped and 
-      # the router resumes processing next incoming messages
+      # By default, offending messages will cause session to be
+      # closed and transport to be disconnected. Set this switch on 
+      # if you prefer to rather drop offending messages and resume.
       #
-      disconnect-offending-peers = false
+      drop-offending-messages = false
       
       # Named transport configurations
       #
@@ -99,9 +99,6 @@ akka {
         #  iface = "127.0.0.1"
         #  port = 8443
         #  path = "router"
-        #  validate-strict-uris = false
-        #  abort-unknown-realms = false
-        #  disconnect-offending-peers = false
         #}
       }
     }

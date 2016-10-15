@@ -19,7 +19,6 @@ libraryDependencies ++= Seq (
 testOptions in Test += Tests.Setup { () =>
   System.setProperty("akka.loglevel", "off")
   System.setProperty("akka.stdout-loglevel", "off")
-  System.setProperty("akka.test.timefactor", "5")
 }
 
 parallelExecution in Test := true

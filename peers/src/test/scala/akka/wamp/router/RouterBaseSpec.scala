@@ -2,16 +2,17 @@ package akka.wamp.router
 
 import akka.actor.ActorSystem
 import akka.io.IO
-import akka.testkit.{TestActorRef, TestProbe}
+import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import akka.wamp.messages.{Bind, Bound}
 import akka.wamp.{ActorSpec, Validator, Wamp}
 import org.scalatest.{LoneElement, ParallelTestExecution}
 
 import scala.concurrent.duration._
 
-class RouterFixtureSpec(_system: ActorSystem = ActorSystem("test")) 
-  extends ActorSpec(_system) 
-    with ParallelTestExecution 
+class RouterBaseSpec(_system: ActorSystem = ActorSystem("test")) 
+  extends ActorSpec(_system)
+    with ImplicitSender
+    with ParallelTestExecution
     with LoneElement
     with SequentialIdGenerators
 {

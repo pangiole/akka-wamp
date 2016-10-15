@@ -1,12 +1,9 @@
 package akka.wamp.messages
 
-import akka.wamp.Wamp._
 import akka.wamp._
-import akka.wamp.client.Client
-import akka.wamp.router._
-import akka.wamp.serialization.{Payload, ParsedContent}
+import akka.wamp.serialization._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent._
 
 /**
   * Common interface of WAMP messages exchanged by two peers during a session
@@ -40,7 +37,7 @@ sealed trait Message extends ManagedMessage {
   * @param details
   */
 final case class Hello(
-  realm: Uri = "akka.wamp.realm", 
+  realm: Uri = "default.realm", 
   details: Dict = Hello.defaultDetails)
   (implicit validator: Validator) 
   extends Message 
@@ -52,7 +49,7 @@ final case class Hello(
 }
 final object Hello {
   val tpe = 1
-  val defaultRealm = "akka.wamp.realm"
+  val defaultRealm = "default.realm"
   val defaultDetails = Dict("roles" -> Roles.client.toList.sorted.map(_ -> Map()).toMap)
 }
 

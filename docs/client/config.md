@@ -8,15 +8,11 @@ akka {
       # rather than loose URIs
       #
       validate-strict-uris = false
-
-      # The boolean switch to disconnect those peers that send 
-      # offending messages (e.g. not deserializable or causing
-      # session failures)
+      
+      # NOTE
+      # Clients will always disconnect on offending messages
+      # No configuration settings is provided to change this behaviour.
       #
-      # By default, offending messages are just dropped and 
-      # the router resumes processing next incoming messages
-      #
-      disconnect-offending-peers = false
     }
   }
 }

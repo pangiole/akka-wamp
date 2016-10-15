@@ -38,7 +38,7 @@ object ActorBasedClientApp extends App {
       case signal @ Connected(transport) =>
         log.info(s"Connected $transport")
         context become handleConnected(transport)
-        transport ! Hello("akka.wamp.realm")
+        transport ! Hello("default.realm")
     }
 
     

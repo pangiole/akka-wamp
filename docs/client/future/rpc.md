@@ -14,7 +14,7 @@ object RpcApp extends App {
         .openSession(
           url = "ws://localhost:8080/router",
           subprotocol = "wamp.2.json",
-          realm = "akka.wamp.realm",
+          realm = "default.realm",
           roles = Set("callee"))
       registration <- session
         .register(

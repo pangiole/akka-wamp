@@ -19,7 +19,7 @@ import org.scalatest._
   * httpRoute is wrapped by ``testkit.Route.seal()`` when HTTP rejections
   * need to be checked
   */
-class ConnectionFixtureSpec 
+class ConnectionHandlerBaseSpec 
   extends fixture.FlatSpec 
     with MustMatchers with BeforeAndAfterAll
     with ScalatestRouteTest
@@ -40,7 +40,7 @@ class ConnectionFixtureSpec
 
     val routerConfig = testConfig.getConfig("akka.wamp.router")
     val path = routerConfig.getString("transport.default.path")
-    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, path, routerConfig))
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, path))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = handler.underlyingActor.httpRoute

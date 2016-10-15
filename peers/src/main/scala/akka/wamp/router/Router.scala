@@ -26,22 +26,14 @@ final class Router(val scopes: Map[Symbol, Scope])
     */
   val abortUnknownRealms = config.getBoolean("abort-unknown-realms")
 
-  /**
-    * Boolean ifSession (default is false) to validate against strict URIs
-    * rather than loose URIs
-    */
-  val validateStrictUris = config.getBoolean("validate-strict-uris")
-
-  /**
-    * The boolean ifSession to disconnect those peers that 
-    * send invalid messages.
-    */
-  val disconnectOffendingPeers = config.getBoolean("disconnect-offending-peers")
-
+  /** IF drop an offending message and resume to the next one */
+  private val dropOffendingMessages = config.getBoolean("drop-offending-messages")
   
   
   /** WAMP types validator */
-  protected implicit val validator = new Validator(validateStrictUris)
+  protected implicit val validator = new Validator(
+    config.getBoolean("validate-strict-uris")
+  )
   
   /** Akka Execution Content */
   protected implicit val executionContext = context.system.dispatcher
@@ -61,7 +53,7 @@ final class Router(val scopes: Map[Symbol, Scope])
     * Messages are only routed within a Realm.
     *
     */
-  private[router] val realms = mutable.Set[Uri]("akka.wamp.realm")
+  private[router] val realms = mutable.Set[Uri]("default.realm")
   
   /**
     * Map of open sessions
@@ -82,13 +74,12 @@ final class Router(val scopes: Map[Symbol, Scope])
     */
   private def handleConnections: Receive = {
     case signal @ Connected(handler) =>
-      val peer = sender()
       log.debug("[{}]     Connected [{}]", self.path.name, handler.path.name)
       
     case signal @ Disconnected =>
-      val peer = sender()
-      log.debug("[{}]     Disconnected [{}]", self.path.name, peer.path.name)
-      sessions.values.find(_.peer == peer) match {
+      val handler = sender()
+      log.debug("[{}]     Disconnected [{}]", self.path.name, handler.path.name)
+      sessions.values.find(_.peer == handler) match {
         case Some(session) => closeSession(session)
         case None => ()
       }
@@ -104,17 +95,15 @@ final class Router(val scopes: Map[Symbol, Scope])
       val peer = sender()
       sessions.values.find(_.peer == peer) match {
         case Some(session) => {
-          /*
-           * It is a protocol error to receive a second "HELLO" message 
-           * during the lifetime of the session and the peer must fail 
-           * the session if that happens.
-           */
-          log.warning("[{}] !!! SessionException: received HELLO but session already open.", self.path.name)
-          closeSession(session)
-          if (disconnectOffendingPeers) {
+          if (!dropOffendingMessages) {
+            /*
+             * It is a protocol error to receive a second "HELLO" message 
+             * during the lifetime of the session and the peer must close 
+             * the session if that happens.
+             */
+            log.warning("[{}] !!! SessionException: received HELLO but session already open.", self.path.name)
+            closeSession(session)
             session.peer ! Disconnect
-          } else {
-            session.peer ! Abort(reason = "akka.wamp.error.session_already_open")
           }
         }
         case None => {
@@ -139,12 +128,9 @@ final class Router(val scopes: Map[Symbol, Scope])
         }
       }
     }
-      
-    // ignore ABORT messages from transport
-    case Abort => ()
-
+                 
     case msg @ Goodbye(details, reason) => {
-      withSession(msg, sender(), role = None) { session =>
+      withSession(msg, sender()) { session =>
         closeSession(session)
         session.peer ! Goodbye(reason = "wamp.error.goodbye_and_out")
       }
@@ -153,27 +139,15 @@ final class Router(val scopes: Map[Symbol, Scope])
 
 
   private[router] 
-  def withSession(msg: Message, peer: ActorRef, role: Option[Role])(fn: (Session) => Unit): Unit = 
+  def withSession(msg: Message, peer: ActorRef)(fn: (Session) => Unit): Unit = 
   {
     sessions.values.find(_.peer == peer) match {
       case Some(session) => {
-        if (!role.isDefined) {
-          fn(session)
-        } 
-        else {
-          if (session.roles.contains(role.get)) {
-            fn(session)
-          } 
-          else {
-            if (disconnectOffendingPeers) {
-              peer ! Disconnect
-            }
-          }
-        }
+        fn(session)
       }
       case None => {
         log.warning("SessionException: received message {} but NO session open.", msg)
-        if (disconnectOffendingPeers) {
+        if (!dropOffendingMessages) {
           peer ! Disconnect
         }
       }

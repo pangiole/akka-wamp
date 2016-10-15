@@ -14,11 +14,8 @@ import scala.concurrent.{Future, Promise}
 trait Caller { this: Session =>
   import Caller._
 
-  /**
-    * The map of pending calls which collects those calls waiting for a result
-    */
+  /** Map of pending calls (waiting for a result)*/
   private val pendingCalls: mutable.Map[RequestId, PendingCall] = mutable.Map()
-  // TODO how to remove those calls that could be never replied?
 
   /**
     * Call a procedure
@@ -70,6 +67,8 @@ trait Caller { this: Session =>
       val msg = Call(requestId = nextRequestId(), Call.defaultOptions, procedure, payload)
       pendingCalls += (msg.requestId -> new PendingCall(msg, promise))
       connection ! msg
+      // TODO https://github.com/angiolep/akka-wamp/issues/35
+      // TODO Pending calls must have a configurable timeout
     }
   }
   

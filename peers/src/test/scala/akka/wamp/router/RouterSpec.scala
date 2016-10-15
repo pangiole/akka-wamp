@@ -8,56 +8,50 @@ import scala.concurrent.duration._
   * It tests the Router running with its default settings 
   * (when NO custom configuration is applied)
   */
-class RouterSpec extends RouterFixtureSpec {
+class RouterSpec extends RouterBaseSpec {
 
-  "The default router" should "auto-create realm and reply GOODBYE on HELLO for new.realm" in { f =>
-    f.router ! Hello("new.realm", Dict().addRoles("subscriber", "callee"))
+  "The default router" should "auto-create realms on incoming HELLO('myapp.realm') and reply GOODBYE" in { f =>
+    f.router ! Hello("myapp.realm", Dict().addRoles("subscriber", "callee"))
     expectMsg(Welcome(1, Dict().addRoles("broker", "dealer").setAgent("akka-wamp-0.10.0")))
     f.router.underlyingActor.realms must have size(2)
-    f.router.underlyingActor.realms must contain allOf ("akka.wamp.realm", "new.realm")
+    f.router.underlyingActor.realms must contain allOf ("default.realm", "myapp.realm")
     f.router.underlyingActor.sessions.values.loneElement must have (
       'id (1),
       'peer (testActor),
       'roles (Set("subscriber", "callee")),
-      'realm ("new.realm")
+      'realm ("myapp.realm")
     )
   }
 
-  
-  // TODO https://github.com/angiolep/akka-wamp/issues/21
-  it should "fail session on HELLO twice (regardless the realm)" in { f =>
-    f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
+  it should "disconnect on incoming repeated HELLOs('whatever.realm')" in { f =>
+    f.router ! Hello("default.realm", Dict().addRoles("publisher")); receiveOne(0.seconds)
     f.router.underlyingActor.sessions must have size(1)
-    f.router ! Hello("akka.wamp.realm", Dict().addRoles("subscriber"))
-    expectMsg(Abort(reason = "akka.wamp.error.session_already_open"))
-    f.router.underlyingActor.sessions mustBe empty
+    f.router ! Hello("whatever.realm", Dict().addRoles("subscriber"))
+    expectMsg(Disconnect)
+    f.router.underlyingActor.sessions  mustBe empty
+  }
+
+  it should "disconnect on incoming GOODBYE if peer didn't open session" in { f =>
+    f.router ! Goodbye()
+    expectMsg(Disconnect)
   }
 
   
-  // TODO https://github.com/angiolep/akka-wamp/issues/22
-  it should "drop message GOODBYE if it didn't open session" in { f =>
-    f.router ! Goodbye()
-    f.router ! Hello()
-    expectMsgType[Welcome]
-    f.router.underlyingActor.sessions must have size(1)
-  }
-  
-  
-  it should "open session and reply WELCOME on HELLO for existing realm" in { f =>
-    f.router ! Hello("akka.wamp.realm", Dict().addRoles("publisher"))
+  it should "open session on incoming HELLO('default.realm') and reply WELCOME" in { f =>
+    f.router ! Hello("default.realm", Dict().addRoles("publisher"))
     expectMsg(Welcome(1, Dict().addRoles("broker", "dealer").setAgent("akka-wamp-0.10.0")))
     f.router.underlyingActor.realms must have size(1)
-    f.router.underlyingActor.realms must contain only ("akka.wamp.realm")
+    f.router.underlyingActor.realms must contain only ("default.realm")
     f.router.underlyingActor.sessions.values.loneElement must have (
       'id (1),
       'peer (testActor),
       'roles (Set("publisher")),
-      'realm ("akka.wamp.realm")
+      'realm ("default.realm")
     )
   }
   
 
-  it should "close session and reply GOODBYE on GOODBYE" in { f =>
+  it should "close session on incoming GOODBYE and reply GOODBYE" in { f =>
     f.router ! Hello()
     expectMsgType[Welcome]
     f.router.underlyingActor.sessions must have size(1)

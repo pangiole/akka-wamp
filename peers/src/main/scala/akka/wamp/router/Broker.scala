@@ -21,7 +21,7 @@ trait Broker { this: Router =>
   /** Handle publications lifecycle messages such as: PUBLISH */
   private[router] def handlePublications: Receive = {
     case msg@Publish(requestId, options, topic, payload) =>
-      withSession(msg, sender(), Some("publisher")) { session =>
+      withSession(msg, sender()) { session =>
         /**
           * By default, publications are unacknowledged, and the Broker will
           * not respond, whether the publication was successful indeed or not.
@@ -68,7 +68,7 @@ trait Broker { this: Router =>
     */
   private[router] def handleSubscriptions: Receive = {
     case message@Subscribe(requestId, options, topic) =>
-      withSession(message, sender(), Some("subscriber")) { session =>
+      withSession(message, sender()) { session =>
         subscriptions.values.toList.filter(_.topic == topic) match {
           case Nil => {
             /**
@@ -105,7 +105,7 @@ trait Broker { this: Router =>
 
       
     case message@Unsubscribe(requestId, subscriptionId) =>
-      withSession(message, sender(), Some("subscriber")) { session =>
+      withSession(message, sender()) { session =>
         subscriptions.get(subscriptionId) match {
           case Some(subscription) =>
             if (unsubscribe(subscriber = session.peer, subscription)) {

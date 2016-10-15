@@ -10,9 +10,9 @@ class JsonSerializerSpec extends SerializingBaseSpec
   val s = new JsonSerialization
 
   "The wamp.2.json serializer" should  "serialize Hello object messages" in {
-    val message = Hello("akka.wamp.realm", Dict().addRoles(Roles.client))
+    val message = Hello("default.realm", Dict().addRoles(Roles.client))
     whenReduced(s.serialize(message)) { json =>
-      json mustBe """[1,"akka.wamp.realm",{"roles":{"callee":{},"caller":{},"publisher":{},"subscriber":{}}}]"""
+      json mustBe """[1,"default.realm",{"roles":{"callee":{},"caller":{},"publisher":{},"subscriber":{}}}]"""
     }
   }
 

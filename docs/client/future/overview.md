@@ -18,7 +18,7 @@ object FutureBasedClientApp extends App {
       .openSession(
         url = "ws://localhost:8080/router",
         subprotocol = "wamp.2.json",
-        realm = "akka.wamp.realm",
+        realm = "default.realm",
         roles = Set("subscriber"))
     subscription <- session
       .subscribe(
