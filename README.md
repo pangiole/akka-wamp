@@ -1,5 +1,5 @@
 # Akka Wamp 
-[![Build Status][travis-image]][travis-url] [![Codacy Status][codacy-image]][codacy-url] [![Gitter][gitter-image]][gitter-url] 
+[![Build Status][travis-image]][travis-url] [![CodeCov Status][codecov-image]][codecov-url] [![Gitter][gitter-image]][gitter-url] 
 
      
 Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written in [Scala](http://scala-lang.org/) with [Akka](http://akka.io/)
@@ -99,9 +99,9 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
 [travis-url]: https://travis-ci.org/angiolep/akka-wamp
 
-[codacy-image]: https://api.codacy.com/project/badge/grade/f66d939188b944bbbfacde051a015ca1
-[codacy-url]: https://www.codacy.com/app/paolo-angioletti/akka-wamp
-                
+[codecov-image]: https://codecov.io/gh/angiolep/akka-wamp/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/angiolep/akka-wamp
+        
 [gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
 [gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
 
