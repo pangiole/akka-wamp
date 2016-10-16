@@ -21,7 +21,7 @@ class SerializingBaseSpec
     with BeforeAndAfterAll
 {
 
-  implicit val defaultPatience = PatienceConfig(timeout = 16 seconds, interval = 100 millis)
+  implicit val defaultPatience = PatienceConfig(timeout = 32 seconds, interval = 100 millis)
   
   implicit val system = ActorSystem("test")
   implicit val materializer = ActorMaterializer()
@@ -31,7 +31,7 @@ class SerializingBaseSpec
   override protected def afterAll(): Unit = {
     materializer.shutdown()
     system.terminate()
-    Await.ready(system.whenTerminated, 16 seconds)
+    Await.ready(system.whenTerminated, 32 seconds)
   }
 
   def source[T](x: T): Source[T, _] = Source.single(x)

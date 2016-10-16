@@ -26,7 +26,7 @@ class RouterBaseSpec(_system: ActorSystem = ActorSystem("test"))
     val router = TestActorRef[Router](Router.props(scopes))
     try {
       IO(Wamp) ! Bind(router)
-      expectMsgType[Bound](16 seconds)
+      expectMsgType[Bound](32 seconds)
       val client = TestProbe("client")
       val theFixture = FixtureParam(router, client)
       withFixture(test.toNoArgTest(theFixture))

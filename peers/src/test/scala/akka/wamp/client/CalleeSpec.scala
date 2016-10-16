@@ -41,7 +41,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
           whenReady(transport2.openSession()) { session2 =>
             val result = session2.call("myapp.procedure")
             whenReady(result) { _ =>
-              awaitAssert(handler.verify(*).once().returning(payload), 16 seconds)
+              awaitAssert(handler.verify(*).once().returning(payload), 32 seconds)
             }
           }
         }

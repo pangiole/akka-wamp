@@ -36,7 +36,7 @@ class ManagerSpec
 
   "The IO(Wamp) manager" should "bind a router to the default transport" in {
     manager ! Bind(router, transport = "default")
-    val bound = expectMsgType[Bound](16 seconds)
+    val bound = expectMsgType[Bound](32 seconds)
     listener = bound.listener
     listener must not be (null)
     // TODO listener mustBe childOf(manager)
@@ -48,7 +48,7 @@ class ManagerSpec
   
   it should "connect a client" in {
     manager ! Connect(url, "wamp.2.json")
-    val connected = expectMsgType[Connected](16 seconds)
+    val connected = expectMsgType[Connected](32 seconds)
     handler = connected.inletHandler 
     handler must not be (null)
     // TODO handler mustBe childOf(manager)

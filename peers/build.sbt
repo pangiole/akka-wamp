@@ -41,7 +41,7 @@ pomIncludeRepository := { _ => false }
 
 licenses := Seq("Apache 2" -> url("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 
-homepage := Some(url("http://angiolep.github.io/akka-wamp"))
+homepage := Some(url("http://angiolep.github.io/projects/akka-wamp/index.html"))
 
 pomExtra :=
   <scm>
@@ -56,7 +56,7 @@ pomExtra :=
       </developer>
     </developers>
 
-apiURL := Some(url("http://angiolep.github.io/projects/akka-wamp/doc/index.html"))
+apiURL := Some(url("http://angiolep.github.io/projects/akka-wamp/api/index.html"))
 
 credentials += Credentials(Path.userHome / ".ivy2" / "sonatype")
 

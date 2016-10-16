@@ -34,7 +34,7 @@ class SubscriberSpec extends ClientBaseSpec with MockFactory {
           whenReady(transport.openSession()) { session2 =>
             val publication = session2.publish("myapp.topic", ack=true/*, data = List("paolo", 40, true)*/)
             whenReady(publication) { _ =>
-              awaitAssert(handler.verify(*).once(), 16 seconds)
+              awaitAssert(handler.verify(*).once(), 32 seconds)
             }
           }
         }

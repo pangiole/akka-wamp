@@ -16,7 +16,7 @@ class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
     with ParallelTestExecution
     with ScalaFutures {
   
-  implicit val defaultPatience = PatienceConfig(timeout = 16 seconds, interval = 100 millis)
+  implicit val defaultPatience = PatienceConfig(timeout = 32 seconds, interval = 100 millis)
 
   case class FixtureParam(client: Client, router: TestActorRef[Router], url: String) {
     // create a new transport to test with
@@ -50,7 +50,7 @@ class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
     val router = TestActorRef[Router](Router.props(scopes))
     try {
       IO(Wamp) ! Bind(router)
-      val signal = expectMsgType[Bound](16 seconds)
+      val signal = expectMsgType[Bound](32 seconds)
       val client = new Client()(system)
       val theFixture = FixtureParam(client, router, signal.url)
       withFixture(test.toNoArgTest(theFixture))
