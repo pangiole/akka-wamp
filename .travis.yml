@@ -4,11 +4,11 @@ scala:
 jdk:
   - oraclejdk8
 env:
-  - CODACY_PROJECT_TOKEN=c77729ea848d41529e513607e45dfe96
+  - CODECOV_TOKEN=b7421e3a-0317-4044-bd21-3693bb7095cd
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
   - sbt coverageReport
-  - sbt codacyCoverage
+  - sbt coverageAggregate
 sudo: false
 cache:
   directories:
@@ -18,3 +18,5 @@ before_cache:
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
   - find $HOME/.sbt -name "*.lock" -delete
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
