@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+...
+
+## [v0.11.0] _ 2016-10-16
 
 ### Added
 - ``unregister()`` method can be called on registration directly
@@ -16,7 +19,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Support Disconnect command messages to stop a client.TransportHandler [\#29](https://github.com/angiolep/akka-wamp/issues/29)
 - Router doesn't disconnect offending clients by default [\#33](https://github.com/angiolep/akka-wamp/issues/33)
 
-## [0.10.0] _ 2016-10-01
+## [v0.10.0] _ 2016-10-01
 
 ### Added
 - Improve Payload Handling and Streaming support
@@ -26,7 +29,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Both router and client shall validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
 
     
-## [0.9.0] _ 2016-09-29    
+## [v0.9.0] _ 2016-09-29    
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
@@ -36,7 +39,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Improve tests
 - Improve documentation
 
-## [0.8.0] _ 2016-09-19  
+## [v0.8.0] _ 2016-09-19  
 
 ### Added  
 - Validate dictionaries [\#19](https://github.com/angiolep/akka-wamp/issues/19)        
@@ -51,14 +54,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/) 
 
 
-## [0.7.0] _ 2016-09-12
+## [v0.7.0] _ 2016-09-12
 
 ### Added
 - Provide better API for payloads [\#16](https://github.com/angiolep/akka-wamp/issues/16)
 - Parse incoming messages skipping the payload [\#17](https://github.com/angiolep/akka-wamp/issues/17)
 
 
-## [0.6.0] _ 2016-08-24
+## [v0.6.0] _ 2016-08-24
 
 ### Added
 - Validate against loose URIs by default but strict URIs validation now configurable [\#7](https://github.com/angiolep/akka-wamp/issues/7)
@@ -68,7 +71,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Update user's documentation
 
 
-## [0.5.1] _ 2016-08-21
+## [v0.5.1] _ 2016-08-21
 
 ### Added
 - Provide proper error handling in ``router.Connection`` [\#18](https://github.com/angiolep/akka-wamp/issues/18)
@@ -81,10 +84,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.10.0...HEAD?&diff=split&name=HEAD
-[0.10.0]: https://github.com/angiolep/akka-wamp/compare/v0.0.0...v0.10.0?diff=split&name=v0.9.0
-[0.9.0]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...v0.9.0?diff=split&name=v0.8.0
-[0.8.0]: https://github.com/angiolep/akka-wamp/compare/v0.7.0...v0.8.0?diff=split&name=v0.7.0
-[0.7.0]: https://github.com/angiolep/akka-wamp/compare/v0.6.0...v0.7.0?diff=split&name=v0.7.0
-[0.6.0]: https://github.com/angiolep/akka-wamp/compare/v0.5.1...v0.6.0?diff=split&name=v0.6.0
-[0.5.1]: https://github.com/angiolep/akka-wamp/compare/v0.5.0...v0.5.1?diff=split&name=v0.5.1
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.11.0...HEAD?&diff=split&name=HEAD
+[v0.11.0]: https://github.com/angiolep/akka-wamp/compare/v0.11.0...v0.10.0?&diff=split&name=v0.10.0
+[v0.10.0]: https://github.com/angiolep/akka-wamp/compare/v0.9.0...v0.10.0?diff=split&name=v0.9.0
+[v0.9.0]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...v0.9.0?diff=split&name=v0.8.0
+[v0.8.0]: https://github.com/angiolep/akka-wamp/compare/v0.7.0...v0.8.0?diff=split&name=v0.7.0
+[v0.7.0]: https://github.com/angiolep/akka-wamp/compare/v0.6.0...v0.7.0?diff=split&name=v0.7.0
+[v0.6.0]: https://github.com/angiolep/akka-wamp/compare/v0.5.1...v0.6.0?diff=split&name=v0.6.0
+[v0.5.1]: https://github.com/angiolep/akka-wamp/compare/v0.5.0...v0.5.1?diff=split&name=v0.5.1

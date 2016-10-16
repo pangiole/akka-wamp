@@ -112,7 +112,7 @@ class TransportSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.par
       whenReady(conn1.openSession()) { session =>
         session.id mustBe 1
         session.details mustBe Map(
-          "agent" -> "akka-wamp-0.10.0",
+          "agent" -> "akka-wamp-0.11.0",
           "roles" -> Map("broker" -> Map(), "dealer" -> Map())
         )
       }

@@ -14,9 +14,9 @@ It provides:
 Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.10.0.tgz
-tar xvfz akka-wamp-0.10.0.tar.gz
-cd akka-wamp-0.10.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.11.0.tgz
+tar xvfz akka-wamp-0.11.0.tar.gz
+cd akka-wamp-0.11.0
 vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
@@ -139,7 +139,7 @@ Make your build depend on the latest version of akka-wamp:
 scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
-  "com.github.angiolep" %% "akka-wamp" % "0.10.0"
+  "com.github.angiolep" %% "akka-wamp" % "0.11.0"
   // ...
 )
 ```

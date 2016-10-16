@@ -8,7 +8,7 @@ Easy to download as [SBT](http://www.scala-sbt.org/) library dependency.
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.11" % "0.10.0"
+  "com.github.angiolep" % "akka-wamp_2.11" % "0.11.0"
 )  
 ```
 

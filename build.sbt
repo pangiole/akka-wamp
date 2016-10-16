@@ -2,7 +2,7 @@
 val commonSettings = Seq(
   scalaVersion := "2.11.8",
   organization := "com.github.angiolep",
-  version := "0.10.0",
+  version := "0.11.0",
   description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka HTTP"
 )
 
