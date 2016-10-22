@@ -60,18 +60,6 @@ class Validator(strictUris: Boolean) {
           if (!rolesKey.forall(Roles.client.contains(_))) {
             throw new IllegalArgumentException(s"invalid roles in $details")
           }
-          val rolesValues = rolesDict.values.map(_.asInstanceOf[Map[String, _]])
-          if (!rolesValues.forall(_.isEmpty)) {
-            /**
-              * The "<role>|dict" is in turn a dictionary describing features
-              * supported by the peer for that role.
-              *
-              * This MUST be empty for WAMP Basic Profile implementations, and MUST
-              * be used by implementations implementing parts of the Advanced Profile
-              * to list the specific set of features they support.
-              */
-            throw new IllegalArgumentException(s"invalid roles in $details")
-          }  
         case _ => {
           throw new IllegalArgumentException(s"invalid roles in $details")
         }

@@ -38,7 +38,7 @@ class JsonDeserializerSpec extends SerializingBaseSpec {
   }
 
   it should "deserialize a valid HELLO text message" in {
-    s.deserialize(source("""[  1  ,"myapp.realm",  {"roles":{"caller":{},"callee":{}}}]""")) match {
+    s.deserialize(source("""[1,"myapp.realm",{"roles":{"caller":{"features":{"caller_identification":true,"progressive_call_results":true}},"callee":{"features":{"caller_identification":true,"pattern_based_registration":true,"shared_registration":true,"progressive_call_results":true,"registration_revocation":true}},"publisher":{"features":{"publisher_identification":true,"subscriber_blackwhite_listing":true,"publisher_exclusion":true}},"subscriber":{"features":{"publisher_identification":true,"pattern_based_subscription":true,"subscription_revocation":true}}}}]""")) match {
       case msg: Hello =>
         msg.realm mustBe "myapp.realm"
         msg.details mustBe Dict("roles" -> Dict("caller" -> Dict(), "callee" -> Dict()))

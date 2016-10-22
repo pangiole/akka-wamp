@@ -66,6 +66,7 @@ class JsonSerializationFlows(validateStrictUri: Boolean, dropOffendingMessages: 
         case ex: DeserializeException =>
           if (!dropOffendingMessages) {
             // default
+            log.error(ex.getMessage, ex)
             Supervision.Stop
           }
           else {
