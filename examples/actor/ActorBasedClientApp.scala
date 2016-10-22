@@ -27,7 +27,7 @@ object ActorBasedClientApp extends App {
     
     override def receive(): Receive = {
       case DoConnect =>
-        manager ! Connect("ws://localhost:8080/router", "wamp.2.json")
+        manager ! Connect("ws://localhost:8080/ws", "wamp.2.json")
 
       case signal @ CommandFailed(cmd: Connect, ex) =>
         log.warning(ex.getMessage)
