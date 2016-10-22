@@ -2,10 +2,10 @@ package akka.wamp.router
 
 import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Status => stream}
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.server.{Route, Directives => dsl}
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategies}
 import akka.wamp.messages.{ManagedMessage => WampMessage, _}
@@ -13,16 +13,13 @@ import akka.wamp.serialization.JsonSerializationFlows
 import com.typesafe.config.Config
 
 
-/**
+/*
   * This connection connects two peers and provides a WebSocket channel
   * over which JSON messages for a session can flow in both directions.
   *
-  * @param router is the first peer to connect
-  * @param config is the router configuration
-  * @param path is the resource path this handler expects HTTP Upgrade to be addressed to
   */
 private 
-class ConnectionHandler(router: ActorRef, config: Config, path: String) 
+class ConnectionHandler(router: ActorRef, config: Config, wspath: String, webroot: String) 
   extends Actor 
     with ActorLogging 
 {
@@ -88,12 +85,13 @@ class ConnectionHandler(router: ActorRef, config: Config, path: String)
   }
 
   val httpRoute: Route = {
-    dsl.get {
-      dsl.path(path) {
-        dsl.handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
+    get {
+      path(wspath) {
+        handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
         // TODO add handler for wamp.2.msgpack
       }
-    }
+    } ~
+    getFromDirectory(webroot)
   }
 
   val reactToConnectionFailure: Flow[HttpRequest, HttpRequest, _] = {
@@ -170,11 +168,12 @@ object ConnectionHandler {
   /**
     * Create a Props for an actor of this type
     *
-    * @param router
-    * @param path
-    * @param config
+    * @param router is the first peer to connect
+    * @param config is the router configuration
+    * @param wspath is the resource path this handler expects HTTP Upgrade to be addressed to
+    * @param webroot is the local filesystem path this handler serves resources out of
     * @return
     */
-  def props(router: ActorRef, config: Config, path: String) = 
-    Props(new ConnectionHandler(router, config, path))
+  def props(router: ActorRef, config: Config, wspath: String, webroot: String) = 
+    Props(new ConnectionHandler(router, config, wspath, webroot))
 }

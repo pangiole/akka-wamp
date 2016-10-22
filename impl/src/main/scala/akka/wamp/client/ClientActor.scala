@@ -13,7 +13,7 @@ import scala.concurrent.duration._
   *
   * The connection actor which will keep (or break) the given promise of transport
   *
-  * @param url is the URL to connect to (default is "ws://localhost:8080/router")
+  * @param url is the URL to connect to (default is "ws://localhost:8080/ws")
   * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
   * @param promise is the promise of connection to fulfill
   */

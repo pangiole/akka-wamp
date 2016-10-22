@@ -27,7 +27,7 @@ object PubSubApp extends App {
     for {
       session <- client
         .openSession(
-          url = "ws://localhost:8080/router",
+          url = "ws://localhost:8080/ws",
           subprotocol = "wamp.2.json",
           realm = "default.realm",
           roles = Set("subscriber"))

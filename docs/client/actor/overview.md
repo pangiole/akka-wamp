@@ -25,7 +25,7 @@ object ActorBasedClientApp extends App {
 
   class Client extends Actor with ClientUtils {
     val manager = IO(Wamp)
-    manager ! Connect("ws://localhost:8080/router", "wamp.2.json")
+    manager ! Connect("ws://localhost:8080/ws", "wamp.2.json")
     
     var transport: ActorRef = _
     var requestId: Id = _

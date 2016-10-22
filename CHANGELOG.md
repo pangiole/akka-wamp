@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-...
+
+### Added
+- Router serves static assets out of a configurable directory like a HTTP server [\#38](https://github.com/angiolep/akka-wamp/issues/38)
+
+### Fixed
+- Router doesn't validate role's feature announcements [\#37](https://github.com/angiolep/akka-wamp/issues/37)
+
 
 ## [v0.11.0] _ 2016-10-16
 
@@ -18,6 +24,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Support Unbind command messages to stop a router.TransportListener [\#13](https://github.com/angiolep/akka-wamp/issues/13)
 - Support Disconnect command messages to stop a client.TransportHandler [\#29](https://github.com/angiolep/akka-wamp/issues/29)
 - Router doesn't disconnect offending clients by default [\#33](https://github.com/angiolep/akka-wamp/issues/33)
+
 
 ## [v0.10.0] _ 2016-10-01
 

@@ -37,13 +37,14 @@ private class TransportListener extends Actor {
   override def receive: Receive = {
     case cmd @ Bind(router, transport) => {
       val binder = sender()
-      
+
+      val webroot = routerConfig.getString("webroot")
       val transportConfig = routerConfig.getConfig(s"transport.$transport")
       val protocol = transportConfig.getString("protocol")
       val subprotocol = transportConfig.getString("subprotocol")
       val iface = transportConfig.getString("iface")
       val port = transportConfig.getInt("port")
-      val path = transportConfig.getString("path")
+      val wspath = transportConfig.getString("wspath")
       
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
         Http(context.system).
@@ -60,7 +61,7 @@ private class TransportListener extends Actor {
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, path))
+          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, wspath, webroot))
           handler ! HandleHttpConnection(conn)
         }
 
@@ -73,8 +74,8 @@ private class TransportListener extends Actor {
             this.binding = b
             assert(b.localAddress.getHostString == iface)
             val port = b.localAddress.getPort
-            val path = transportConfig.getString("path")
-            val url = s"$protocol://$iface:$port/$path"
+            val wspath = transportConfig.getString("wspath")
+            val url = s"$protocol://$iface:$port/$wspath"
             binder ! Bound(self, url)
             
           case Failure(cause) =>

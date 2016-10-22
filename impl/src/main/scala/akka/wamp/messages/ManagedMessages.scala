@@ -27,7 +27,7 @@ trait Command extends ManagedMessage
   * Either the manager replies with a [[CommandFailed]] signal or with a [[Connected]] signal 
   * bearing the reference to the newly spawned [[client.TransportHandler]] actor.
   *
-  * @param url is the URL to connect to (e.g. "ws://somehost.com:9999/path/to/router")
+  * @param url is the URL to connect to (e.g. "ws://somehost.com:9999/path/to/ws")
   * @param subprotocol is the WebSocket subprotocol to negotiate (e.g. "wamp.2.msgpack" or "wamp.2.json")
   */
 final case class Connect(url: String, subprotocol: String) extends Command

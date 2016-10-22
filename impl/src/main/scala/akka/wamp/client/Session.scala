@@ -19,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   *   
   *   val session: Future[Session] = 
   *     client.openSession(
-  *       url = "ws://localhost:8080/router", 
+  *       url = "ws://localhost:8080/ws", 
   *       subprotocol = "wamp.2.json",
   *       realm = "myapp.realm", 
   *       roles = Set(Roles.publisher)

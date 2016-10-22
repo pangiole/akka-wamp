@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   *
   *   val conn: Future[Connection] = client
   *     .connect(
-  *       url = "ws://localhost:8080/router",
+  *       url = "ws://localhost:8080/ws",
   *       subprotocol = "wamp.2.json"
   *     )
   * }}}
@@ -48,7 +48,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
     * Establish a WAMP connection to a router which is listening at 
     * the given URL and negotiate the given subprotocol
     * 
-    * @param url is the URL to connect to (default is "ws://localhost:8080/router")
+    * @param url is the URL to connect to (default is "ws://localhost:8080/ws")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
     * @param maxAttempts is the maximum number of attempts before giving up (default is 1)
     * @return the (future of) connection or [[TransportException]]
@@ -67,7 +67,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
   /**
     * Establish a WAMP connection to a router and open a new session
     *
-    * @param url is the URL to connect to (default is "ws://localhost:8080/router")
+    * @param url is the URL to connect to (default is "ws://localhost:8080/ws")
     * @param subprotocol is the subprotocol to negotiate (default is "wamp.2.json")
     * @param realm is the realm to attach the session to (default is "default.realm")
     * @param roles is this client roles set (default is all possible client roles) 
@@ -114,7 +114,7 @@ class Client private[client]()(implicit system: ActorSystem) extends Peer {
   *   
   *   val conn: Future[Connection] = client
   *     .connect(
-  *       url = "ws://localhost:8080/router",
+  *       url = "ws://localhost:8080/ws",
   *       subprotocol = "wamp.2.json",
   *       maxAttempts = 8
   *     )
@@ -131,7 +131,7 @@ object Client {
   
   val defaultName = "default"
   
-  val defaultUrl = "ws://localhost:8080/router"
+  val defaultUrl = "ws://localhost:8080/ws"
   
   val defaultSubprotocol = "wamp.2.json"
 }

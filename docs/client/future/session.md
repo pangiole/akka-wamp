@@ -9,7 +9,7 @@ implicit val ec = client.executionContext
 
 val session = client
   .connect(
-    url = "ws://localhost:8080/router",
+    url = "ws://localhost:8080/ws",
     subprotocol = "wamp.2.json")
   .openSession(
     realm = "default.realm",
@@ -71,7 +71,7 @@ import scala.concurrent.Future
 
 val transport1: Future[Transport] = client
   .connect(
-    url = "ws://localhost:8080/router",
+    url = "ws://localhost:8080/ws",
     subprotocol = "wamp.2.json")
     
 val transport2 = client
@@ -90,7 +90,7 @@ You can either recover or _"give up"_ when the (future of) connection fails. To 
 ```scala
 val transport1: Future[Transport] = client
   .connect(
-    url = "ws://localhost:8080/router")
+    url = "ws://localhost:8080/ws")
   .recoverWith { 
     case ex: TransportException => client
       .connect(

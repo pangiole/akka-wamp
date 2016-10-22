@@ -26,7 +26,7 @@ class ConnectionHandlerBaseSpec
     with ParallelTestExecution
     with SequentialIdGenerators
 {
-  val URL = "http://127.0.0.1:8080/router"
+  val URL = "http://127.0.0.1:8080/ws"
   
   def withWsClient(route: Route)(testScenario: (WSProbe) => Unit) = {
     
@@ -39,8 +39,9 @@ class ConnectionHandlerBaseSpec
     val wampClient = WSProbe()
 
     val routerConfig = testConfig.getConfig("akka.wamp.router")
-    val path = routerConfig.getString("transport.default.path")
-    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, path))
+    val webroot = routerConfig.getString("webroot")
+    val wspath = routerConfig.getString("transport.default.wspath")
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, wspath, webroot))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = handler.underlyingActor.httpRoute

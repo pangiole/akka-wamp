@@ -13,7 +13,7 @@ system.actorOf(Props[Client])
 
 class Client extends Actor with ClientUtils {
   val manager = IO(Wamp)
-  manager ! Connect("ws://localhost:8080/router", "wamp.2.json")
+  manager ! Connect("ws://localhost:8080/ws", "wamp.2.json")
   
   var transport: ActorRef = _
   val sessionId: Id = _
@@ -46,7 +46,7 @@ val manager = IO(Wamp)
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present themselves to the API user in the reply to the command that was sent. 
 
 ```scala
-manager ! Connect("ws://localhost:8080/router", "wamp.2.json")
+manager ! Connect("ws://localhost:8080/ws", "wamp.2.json")
 ```
 
 For example, after a ``Connect`` command is sent to the manager, the manager creates a worker actor representing the transport handler. All operations related to the WAMP protocol can be invoked by sending messages to the transport handler. The handler which announces itself via a ``Connected`` signal.
@@ -66,7 +66,7 @@ override def receive = {
 You could repeatedly attempt a transport connection if the last failed:
 
 ```scala
-val connect = Connect("ws://localhost:8080/router", "wamp.2.json")
+val connect = Connect("ws://localhost:8080/ws", "wamp.2.json")
 
 override def receive = {
   // ...

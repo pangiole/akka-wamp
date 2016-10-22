@@ -20,7 +20,7 @@ import scala.concurrent._
   *
   *   val transport: Future[Transport] = client
   *     .connect(
-  *       url = "ws://localhost:8080/router",
+  *       url = "ws://localhost:8080/ws",
   *       subprotocol = "wamp.2.json"
   *     )
   * }}}

@@ -42,7 +42,7 @@ class ManagerSpec
     // TODO listener mustBe childOf(manager)
     url = bound.url
     url must startWith("ws://127.0.0.1:")
-    url must endWith("/router")
+    url must endWith("/ws")
   }
 
   
