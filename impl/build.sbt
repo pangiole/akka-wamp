@@ -16,10 +16,10 @@ libraryDependencies ++= Seq (
   pegdown
 ).map(_ % Test)
 
-testOptions in Test += Tests.Setup { () =>
+/*testOptions in Test += Tests.Setup { () =>
   System.setProperty("akka.loglevel", "off")
   System.setProperty("akka.stdout-loglevel", "off")
-}
+}*/
 
 parallelExecution in Test := true
 

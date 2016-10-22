@@ -12,8 +12,14 @@ libraryDependencies ++= Seq(
 )  
 ```
 
-## Client API
+## Client APIs
 Connect to a router, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala!
+
+* Actor, Future and Stream based APIs
+* Well documented and rich examples
+* Lazy and pluggable deserialization
+
+Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/overview)
 
 ```scala
 object PubSubApp extends App {
@@ -46,15 +52,6 @@ object PubSubApp extends App {
     } yield ()
 }
 ```
-
-
-### Major features
-
-* Fully compliant with Reactive Manifesto
-* Simple and well documented APIs
-* Lazy deserialization
-
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/overview)
 
 
 ## Router

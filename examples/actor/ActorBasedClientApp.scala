@@ -1,9 +1,7 @@
-package examples
-
 /*
  * 
  * sbt -Dakka.loglevel=DEBUG
- * > examples/runMain examples.ActorBasedClientApp
+ * > examples_actor/runMain examples.ActorBasedClientApp
  * 
  */
 object ActorBasedClientApp extends App {

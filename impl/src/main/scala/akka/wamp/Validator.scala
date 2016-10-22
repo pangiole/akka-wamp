@@ -23,11 +23,11 @@ class Validator(strictUris: Boolean) {
       if (!uriRegex.pattern.matcher(uri).matches) 
         throw new IllegalArgumentException(s"invalid URI $uri")
 
-    case dict: Dict =>
+    case dict: Map[_, _] =>
       if (dict == null)
         throw new IllegalArgumentException(s"invalid DICT")
       dict.keys.foreach { key =>
-        if (!dictKeyRegex.pattern.matcher(key).matches)
+        if (!dictKeyRegex.pattern.matcher(key.asInstanceOf[String]).matches)
           throw new IllegalArgumentException(s"invalid KEY $key")
       }
   }

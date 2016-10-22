@@ -7,15 +7,28 @@ val commonSettings = Seq(
 )
 
 
-val peers = project
+val akka_wamp_impl = (project in file("./impl"))
   .settings(commonSettings)
 
+val examples_actor = (project in file("./examples/actor"))
+  .settings(commonSettings)
+  .dependsOn(akka_wamp_impl)
+
+val examples_hello = (project in file("./examples/hello"))
+  .settings(commonSettings)
+  .dependsOn(akka_wamp_impl)
+
+val examples_router = (project in file("./examples/router"))
+  .settings(commonSettings)
+  .dependsOn(akka_wamp_impl)
 
 val examples = project
   .settings(commonSettings)
-  .dependsOn(peers)
+  .aggregate(
+    examples_actor,
+    examples_hello
+  )
 
-
-val root = (project in file("."))
+val akka_wamp = (project in file("."))
   .settings(commonSettings)
-  .aggregate(peers, examples)
+  .aggregate(akka_wamp_impl, examples)

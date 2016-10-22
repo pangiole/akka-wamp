@@ -190,7 +190,7 @@ listener ! Unbind
 
 ### Examples
 
-* [EmbeddedRouterApp](https://github.com/angiolep/akka-wamp/blob/master/examples/src/main/scala/examples/EmbeddedRouterApp.scala)
+* [EmbeddedRouterApp](https://github.com/angiolep/akka-wamp/blob/master/examples/router/EmbeddedRouterApp.scala)
 
 
 ## Limitations
