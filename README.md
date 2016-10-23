@@ -22,34 +22,38 @@ Connect to a router, open a session, subscribe a topic, receive events, register
 Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/overview)
 
 ```scala
-object PubSubApp extends App {
+import scala.concurrent.duration._
+import akka.wamp.client._
 
-  import akka.wamp.client._
+object MyClientApp extends App {
   val client = Client()
-
   implicit val ec = client.executionContext
-
-  val publication = 
-    for {
-      session <- client
-        .openSession(
-          url = "ws://localhost:8080/ws",
-          subprotocol = "wamp.2.json",
-          realm = "default.realm",
-          roles = Set("subscriber"))
-      subscription <- session
-        .subscribe(
-          topic = "myapp.topic1")(
-          event =>
-            event.data.map(println)
-        )
-      publication <- session
-        .publish(
-          topic = "myapp.topic2",
-          ack = false,
-          kwdata = Map("name"->"paolo", "age"->40)
-        )
-    } yield ()
+  
+  for {
+    session <- client.
+      openSession(
+        url = "ws://localhost:8080/ws",
+        realm = "myapp.realm")
+    publication <- session.
+      publish(
+        topic = "myapp.topic.people",
+        ack = true,
+        argskw = Map("name"->"paolo", "age"->40))
+    subscription <- session.
+      subscribe(
+        topic = "myapp.topic.any",
+        (event) => event.data.map(println))
+    registration <- session.
+      register(
+        procedure = "myapp.procedure.sum", 
+        handler = (a: Int, b: Int) => a + b)
+    result <- session.
+      call(
+        procedure = "myapp.procedure.multiply",
+        args = List(3, 8)
+      )
+  } 
+  yield ()
 }
 ```
 

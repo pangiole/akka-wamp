@@ -1,12 +1,13 @@
 # Publish and Subscribe
 
 ```scala
-object PubSubApp extends App {
+import scala.concurrent.duration._
+import akka.wamp.client._
 
-  import akka.wamp.client._
+object MyClientApp extends App {
   val client = Client()
-
   implicit val ec = client.executionContext
+  
   for {
     session <- client
       .openSession(
@@ -16,19 +17,19 @@ object PubSubApp extends App {
         roles = Set("subscriber"))
     subscription <- session
       .subscribe(
-        topic = "myapp.topic1")(
-        event =>
-          event.data.map(println)
+        topic = "myapp.topic.any",
+        event => event.data.map(println)
       )
     publication <- session
       .publish(
-        topic = "myapp.topic2",
+        topic = "myapp.topic.people",
         ack = false,
         kwdata = Map("name"->"paolo", "age"->40)
       )
     tickling <- session
       .tickle(
-        topic = "myapp.ticks"
+        topic = "myapp.topic.ticks",
+        interval = 1 second
       )
   } yield ()
 }
@@ -36,7 +37,7 @@ object PubSubApp extends App {
 
 The WAMP protocol defines a Publish and Subscribe (PubSub) communication pattern where a client, the subscriber, informs the broker router that it wants to receive events on a topic (i.e., it subscribes to a topic). Another client, a publisher, can then publish events to this topic, and the broker router distributes events to all subscriber.
 
-```
+```text
   ,---------.          ,------.             ,----------.
   |Publisher|          |Broker|             |Subscriber|
   `----+----'          `--+---'             `----+-----'
@@ -63,7 +64,7 @@ The WAMP protocol defines a Publish and Subscribe (PubSub) communication pattern
 ```
 
 ## Subscribe topics
-Once you got a subscriber session as documented in the [Session Handling](../future/session) section, you can finally subscribe to a topic with its event handler:
+Once you got a session, you can subscribe to a topic:
 
 ```scala
 import akka.wamp._
@@ -74,22 +75,22 @@ import akka.wamp.message._
 
 val subscription: Future[Subscription] = session.flatMap(
   _.subscribe(
-      topic = "myapp.topic") { 
-      event =>
+      topic = "myapp.topic",
+      event => {
         log.info(s"${event.publicationId}")
         event.data.map(println)
       })
 ```
 
-A (future of) session can be mapped to a (future of) subscription by just invoking the ``subscribe`` method. It is a curried method with two parameter lists.
+A (future of) session can be mapped to a (future of) subscription by invoking one of the provided ``subscribe()`` method.
 
 ```scala
 // as defined by Akka Wamp
 
-def subscribe(topic: Uri)(handler: EventHandler)
+def subscribe(topic: Uri, handler: EventHandler)
 ```
 
-The first parameter list accepts ``topic`` as documented for the [``Subscribe``](../../messages#Subscribe) message constructor. The second parameter list accepts a callback function of type ``EventHandler`` which gets invoked to process each event from the topic. 
+It accepts a ``topic`` as documented for the [``Subscribe``](../../messages#Subscribe) message and a callback function of type ``EventHandler`` which gets invoked to process each event from the topic. 
 
 ### Event handlers
 
@@ -129,12 +130,12 @@ val handler2: EventHandler = { event =>
 
 val subscription1 = session.flatMap(
   _.subscribe(
-      topic = "myapp.topic")(
+      topic = "myapp.topic",
       handler1))
 
 val subscription2 = session.flatMap(
   _.subscribe(
-      topic = "myapp.topic")(
+      topic = "myapp.topic",
       handler2))
 ```
 
@@ -144,15 +145,15 @@ You can subscribe many times to the same topic passing the same or different eve
 * invoke all of them anytime an event with that subscription identifier is received.
 
 
-### Recover
+### Recover exceptions
 You can either recover or _"give up"_ when the (future of) subscription fails. To recover from failures (such as ``SessionException`` thrown when session turns out to be closed) you can compose ``recoverWith`` to attempt another session opening (maybe to a fallback realm and/or to a fallback topic):
 
 ```scala
 val subscription = session.flatMap(
-  _.subscribe("myapp.topic")(handler)
+  _.subscribe("myapp.topic", handler)
   .recoverWith { 
     case ex: SessionException => session.flatMap(
-      _.subscribe("myapp.topic.heartbeat")(handler)
+      _.subscribe("myapp.topic.heartbeat", handler)
   }
 ```
 
@@ -187,7 +188,7 @@ TBD
 
 
 ## Publish events
-Once you got a subscriber session as documented in the [Session Handling](../future/session) section, you can finally publish to a topic:
+Once you got a session, you can publish to a topic:
 
 ```scala
 import akka.Done
@@ -201,7 +202,7 @@ val publication: Future[Either[Done, Publication]] = session.flatMap(
   ))
 ```
 
-A (future of) session can be mapped to a (future of) either done or publication by just invoking the ``publish`` method which accepts ``topic``, ``ack`` and a ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor. Sending arguments is documented in the [Payload Handling](./payload) section.  
+A (future of) session can be mapped to a (future of) either done or publication by invoking the ``publish`` method which accepts ``topic``, ``ack`` and a ``payload`` arguments as documented for the [``Publish``](../../messages#Publish) message constructor. Sending arguments is documented in the [Payload Handling](./payload) section.  
 
 
 ### Acknowledge
@@ -225,7 +226,7 @@ publication.onSuccess {
 ```
 
 
-### Recover
+### Recover exceptions
 
 You can either recover or _"give up"_ when the (future of) publication fails. To recover from failures (such as ``SessionException`` when session turns out to be closed as you try to publish) you can compose ``recoverWith``  to attempt another session opening (maybe to a fallback realm and to a fallback topic):
 

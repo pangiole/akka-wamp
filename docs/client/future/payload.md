@@ -64,8 +64,9 @@ val handler: InvocationHandler = { invocation =>
 }
 ```
 
+<a name="default-type-bindings"></a>
 
-#### Default data type bindings
+#### Default type bindings
 By default, Akka Wamp makes use of either the embedded [Jackson JSON Parser](https://github.com/FasterXML/jackson-module-scala) (for textual data) or the embedded [MsgPack Parser](https://github.com/msgpack/msgpack-scala) (for binary data) and deserializes incoming data/arguments to Scala collection whose values match the following data type bindings:
  
 JSON       | MsgPack   | Scala

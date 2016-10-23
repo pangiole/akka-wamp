@@ -43,7 +43,7 @@ class CallerSpec extends ClientBaseSpec with MockFactory {
       val handler = stubFunction[Invocation, Future[Payload]]
       val payload = Future.successful(Payload(List("paolo", 40, true)))
       handler.when(*).returns(payload)
-      val registration = session1.register("myapp.procedure")(handler)
+      val registration = session1.register("myapp.procedure", handler)
       whenReady(registration) { registration =>
         registration.registered.requestId mustBe 1
         registration.registered.registrationId mustBe 1

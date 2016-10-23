@@ -3,9 +3,13 @@ package akka.wamp.client
 import akka.actor.Actor._
 import akka.wamp._
 import akka.wamp.messages._
+import akka.wamp.serialization.Payload
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
+import scala.{reflect => rf}
+import scala.reflect.runtime.{universe => ru}
+
 
 /**
   * A callee is a client that register procedures and
@@ -23,8 +27,8 @@ trait Callee { this: Session =>
 
   
   /**
-    * Register the given procedure so that the given handler will be 
-    * executed on invocations.
+    * Register the given procedure URI so that the given invocation handler 
+    * will be executed on INVOCATION from router.
     *
     * A callee announces the availability of an endpoint implementing a
     * procedure with a dealer by sending a REGISTER message:
@@ -55,16 +59,46 @@ trait Callee { this: Session =>
     *   `------'          `------'               `------'
     * }}}
     *
-    * @param procedure is the procedure the callee wants to register
+    * @param procedure is the procedure URI the callee wants to register
     * @param handler is the handler executed on invocations
     * @return the (future of) registration
     */
-  def register(procedure: Uri)(handler: InvocationHandler): Future[Registration] = {
+  def register(procedure: Uri, handler: InvocationHandler): Future[Registration] = {
     withPromise[Registration] { promise =>
       val msg = Register(requestId = nextRequestId(), Register.defaultOptions, procedure)
       pendingRegistrations += (msg.requestId -> new PendingRegistration(msg, handler, promise))
       connection ! msg
     }
+  }
+
+  /**
+    * Register the given procedure URI so that the given ``scala.Function``
+    * implementation will be dinamically invoked (via the experimental Scala 2.11
+    * reflection capabilities) on INVOCATION from router.
+    *
+    * @param procedure is the procedure URI the callee wants to register
+    * @param handler is a partially applied function
+    * @tparam T it must be any of the ``scala.Function`` types
+    * @return the (future of) registration
+    */
+  def register[T](procedure: Uri, handler: T)(implicit tt: ru.TypeTag[T], ct: rf.ClassTag[T]): Future[Registration] = {
+    register(procedure, { invocation: Invocation =>
+      // TODO https://github.com/angiolep/akka-wamp/issues/41
+      invocation.args.map { args =>
+        val theType = ru.typeTag[T].tpe
+        if (theType.typeSymbol.fullName.startsWith("scala.Function")) {
+          val theMethod = theType.decl(ru.TermName("apply")).asMethod
+
+          val mirror = ru.runtimeMirror(handler.getClass.getClassLoader)
+          val instanceMirror = mirror.reflect(handler)
+          val methodMirror = instanceMirror.reflectMethod(theMethod)
+
+          val result = methodMirror.apply(args: _*)
+          Payload(List(result))
+        }
+        else throw new SessionException("Either a scala.Fuction or an akka.wamp.InvocationHandler was expected")
+      }
+    })
   }
   
 
@@ -134,7 +168,7 @@ trait Callee { this: Session =>
       log.debug("<-- {}", msg)
       registrations.get(registrationId) match {
         case Some(registration) => 
-          val payload = registration.handler(msg)
+          val payload = registration.handler.apply(msg)
           payload.map { p => 
             connection ! Yield(requestId, payload = p) 
           }

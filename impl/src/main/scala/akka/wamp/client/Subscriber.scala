@@ -56,7 +56,7 @@ trait Subscriber { this: Session =>
     * @param handler is the handler executed on events
     * @return the (future of) subscription 
     */
-  def subscribe(topic: Uri)(handler: EventHandler): Future[Subscription] = {
+  def subscribe(topic: Uri, handler: EventHandler): Future[Subscription] = {
     withPromise[Subscription] { promise =>
       val msg = Subscribe(requestId = nextRequestId(), Subscribe.defaultOptions, topic)
       pendingSubscribers += (msg.requestId -> new PendingSubscription(msg, handler, promise))
