@@ -8,7 +8,7 @@ Easy to download as [SBT](http://www.scala-sbt.org/) library dependency.
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.11" % "0.11.0"
+  "com.github.angiolep" % "akka-wamp_2.11" % "0.12.0"
 )  
 ```
 
@@ -67,9 +67,9 @@ Akka Wamp provides you with a router that can be either embedded into your appli
 Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.11.0.tgz
-tar xvfz akka-wamp-0.11.0.tar.gz
-cd akka-wamp-0.11.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.12.0.tgz
+tar xvfz akka-wamp-0.12.0.tar.gz
+cd akka-wamp-0.12.0
 vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```

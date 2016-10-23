@@ -5,7 +5,7 @@ import akka.wamp.messages._
 import scala.util.Random.{nextDouble => rnd}
 
 /**
-  * == akka-wamp 0.11.0 ==
+  * == akka-wamp 0.12.0 ==
   *
   * [[http://wamp-proto.org WAMP - Web Application Messaging Protocol]] implementation written in Scala with Akka
   */

@@ -73,7 +73,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> HELLO
     f.client.sendMessage("""[1,"default.realm",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.11.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.12.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \
@@ -95,7 +95,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> HELLO
     f.client.sendMessage("""[1,"default.realm",{"roles":{"subscriber":{},"publisher":{},"callee":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.11.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.12.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #2 OPEN
     // \

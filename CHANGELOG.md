@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+## [v0.12.0] _ 2016-10-23
+
 ### Added
 - Router serves static assets out of a configurable directory like a HTTP server [\#38](https://github.com/angiolep/akka-wamp/issues/38)
 - Make Publisher tick a counter at given frequency [\#40](https://github.com/angiolep/akka-wamp/issues/40)
@@ -94,7 +96,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.11.0...HEAD?&diff=split&name=HEAD
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.12.0...HEAD?&diff=split&name=HEAD
+[v0.12.0]: https://github.com/angiolep/akka-wamp/compare/v0.12.0...v0.11.0?&diff=split&name=v0.11.0
 [v0.11.0]: https://github.com/angiolep/akka-wamp/compare/v0.11.0...v0.10.0?&diff=split&name=v0.10.0
 [v0.10.0]: https://github.com/angiolep/akka-wamp/compare/v0.9.0...v0.10.0?diff=split&name=v0.9.0
 [v0.9.0]: https://github.com/angiolep/akka-wamp/compare/v0.8.0...v0.9.0?diff=split&name=v0.8.0
