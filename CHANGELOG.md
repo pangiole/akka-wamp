@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Added
 - Router serves static assets out of a configurable directory like a HTTP server [\#38](https://github.com/angiolep/akka-wamp/issues/38)
+- Make Publisher tick a counter at given frequency [\#40](https://github.com/angiolep/akka-wamp/issues/40)
 
 ### Fixed
 - Router doesn't validate role's feature announcements [\#37](https://github.com/angiolep/akka-wamp/issues/37)

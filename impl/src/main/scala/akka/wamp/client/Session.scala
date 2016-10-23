@@ -1,10 +1,12 @@
 package akka.wamp.client
 
 import akka.actor.Actor.Receive
+import akka.actor.{ActorSystem, Cancellable}
 import akka.wamp._
 import akka.wamp.messages._
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
@@ -49,7 +51,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * @param validator is WAMP types validator
   */
 class Session private[client](val connection: Transport, welcome: Welcome)
-                             (implicit val validator: Validator, val executionContext: ExecutionContext) 
+                             (implicit val system: ActorSystem, val validator: Validator) 
   extends SessionLike 
     with Subscriber 
     with Publisher 
@@ -58,6 +60,8 @@ class Session private[client](val connection: Transport, welcome: Welcome)
     with Scope.SessionScope 
 {
   import connection.handleGoodbye
+
+  implicit val ec = system.dispatcher
   
   protected val log = LoggerFactory.getLogger(classOf[Transport])
 
@@ -135,6 +139,23 @@ class Session private[client](val connection: Transport, welcome: Welcome)
       connection ! Goodbye(details, reason)
     }
     // TODO dispose all pending promises
+  }
+
+  /**
+    * Schedules a task to be run repeatedly with an initial delay and
+    * a frequency.
+    * 
+    * @param initialDelay
+    * @param interval
+    * @param task
+    * @param executor
+    * @return
+    */
+  def schedule[R](initialDelay: FiniteDuration, interval: FiniteDuration, task: (Unit) => R)
+              (implicit executor: ExecutionContext): Cancellable = {
+    this.system.scheduler.schedule(initialDelay, interval, new Runnable {
+      override def run(): Unit = task(); ()
+    })
   }
   
   

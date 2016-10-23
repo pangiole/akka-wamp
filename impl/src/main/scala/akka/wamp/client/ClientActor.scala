@@ -18,15 +18,8 @@ import scala.concurrent.duration._
   * @param promise is the promise of connection to fulfill
   */
 private[client] 
-class ClientActor(
-  url: String, 
-  subprotocol: String,
-  maxAttempts: Int,
-  promise: Promise[Transport]
-) 
-extends Actor
-with ActorLogging
-with ClientContext
+class ClientActor(url: String, subprotocol: String, maxAttempts: Int, promise: Promise[Transport]) 
+  extends Actor with ActorLogging with ClientContext
 {
   import ClientActor._
   
@@ -55,7 +48,7 @@ with ClientContext
       
     case signal @ Connected(handler) =>
       log.debug("=== {}", signal)
-      val transport = new Transport(self, handler)
+      val transport = new Transport(self, handler)(context.system, validator)
       // switch its receive method so to delegate to the transport object
       context.become { 
         case msg => transport.receive(msg) 

@@ -7,28 +7,30 @@ object PubSubApp extends App {
   val client = Client()
 
   implicit val ec = client.executionContext
-
-  val publication = 
-    for {
-      session <- client
-        .openSession(
-          url = "ws://localhost:8080/ws",
-          subprotocol = "wamp.2.json",
-          realm = "default.realm",
-          roles = Set("subscriber"))
-      subscription <- session
-        .subscribe(
-          topic = "myapp.topic1")(
-          event =>
-            event.data.map(println)
-        )
-      publication <- session
-        .publish(
-          topic = "myapp.topic2",
-          ack = false,
-          kwdata = Map("name"->"paolo", "age"->40)
-        )
-    } yield ()
+  for {
+    session <- client
+      .openSession(
+        url = "ws://localhost:8080/ws",
+        subprotocol = "wamp.2.json",
+        realm = "default.realm",
+        roles = Set("subscriber"))
+    subscription <- session
+      .subscribe(
+        topic = "myapp.topic1")(
+        event =>
+          event.data.map(println)
+      )
+    publication <- session
+      .publish(
+        topic = "myapp.topic2",
+        ack = false,
+        kwdata = Map("name"->"paolo", "age"->40)
+      )
+    tickling <- session
+      .tickle(
+        topic = "myapp.ticks"
+      )
+  } yield ()
 }
 ```
 
@@ -72,11 +74,11 @@ import akka.wamp.message._
 
 val subscription: Future[Subscription] = session.flatMap(
   _.subscribe(
-    topic = "myapp.topic") { 
-    event =>
-      log.info(s"${event.publicationId}")
-      event.data.map(println)
-    })
+      topic = "myapp.topic") { 
+      event =>
+        log.info(s"${event.publicationId}")
+        event.data.map(println)
+      })
 ```
 
 A (future of) session can be mapped to a (future of) subscription by just invoking the ``subscribe`` method. It is a curried method with two parameter lists.
@@ -127,13 +129,13 @@ val handler2: EventHandler = { event =>
 
 val subscription1 = session.flatMap(
   _.subscribe(
-    topic = "myapp.topic")(
-    handler1))
+      topic = "myapp.topic")(
+      handler1))
 
 val subscription2 = session.flatMap(
   _.subscribe(
-    topic = "myapp.topic")(
-    handler2))
+      topic = "myapp.topic")(
+      handler2))
 ```
 
 You can subscribe many times to the same topic passing the same or different event handlers. As per WAMP protocol specification, the correspondent subscriptions held by the router will share the same subscription identifier. Therefore, your Akka Wamp client subscriber will: 
@@ -185,15 +187,17 @@ TBD
 
 
 ## Publish events
+Once you got a subscriber session as documented in the [Session Handling](../future/session) section, you can finally publish to a topic:
+
 ```scala
 import akka.Done
 import akka.wamp.serialization._
 
 val publication: Future[Either[Done, Publication]] = session.flatMap(
   _.publish(
-    topic = "myapp.topic",
-    payload = Payload("paolo", 40, true),
-    ack = true
+      topic = "myapp.topic",
+      payload = Payload("paolo", 40, true),
+      ack = true
   ))
 ```
 
@@ -246,3 +250,17 @@ publication.onFailure {
 }
 ```
 
+
+### Tickle
+You can easily publish a tick count to a topic with an initial delay and frequency.
+
+```scala
+import scala.concurrent.duration._
+
+val tickling: Future[Cancelable] = session.flatMap(
+  _.tickle(
+    topic = "myapp.topic.ticks", 
+    delay = Duration.Zero, 
+    interval = 1 second)
+  ))
+```

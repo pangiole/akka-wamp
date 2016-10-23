@@ -33,11 +33,11 @@ import scala.concurrent._
   *
   * @param clientRef is the client actor reference
   * @param transportHandler is transport handler actor reference
-  * @param executionContext is the Akka actor system dispatcher
+  * @param system is the Akka actor system
   * @param validator is the WAMP types validator
   */
 class Transport private[client](clientRef: ActorRef, transportHandler: ActorRef)
-                               (implicit executionContext: ExecutionContext, validator: Validator) 
+                               (implicit system: ActorSystem, validator: Validator) 
 {
   private val log = LoggerFactory.getLogger(classOf[Transport])
 
@@ -142,7 +142,7 @@ class Transport private[client](clientRef: ActorRef, transportHandler: ActorRef)
   private def handleWelcome(promise: Promise[Session]): Receive = {
     case msg: Welcome =>
       log.debug("<-- {}", msg)
-      val session = new Session(this, msg)
+      val session = new Session(this, msg)(system, validator)
       become(session.handle)
       promise.success(session)
   }
