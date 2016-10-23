@@ -10,7 +10,11 @@ import scala.concurrent._
 class CallerSpec extends ClientBaseSpec with MockFactory {
 
 
-  "A caller" should "fail call procedure when session closed" in { f =>
+  "A caller" should "fail calling procedures when transport is disconnected" in { f =>
+    pending
+  }
+  
+  it should "fail calling procedures when session is closed" in { f =>
     f.withSession { session =>
       whenReady(session.close()) { _ =>
         val result = session.call("myapp.procedure")
@@ -22,8 +26,19 @@ class CallerSpec extends ClientBaseSpec with MockFactory {
     }
   }
 
+  
+  it should "handle error when calling procedures not registered yet" in { f =>
+    f.withSession { session =>
+      val result = session.call("myapp.unknown.procedure")
+      whenReady(result.failed) { cause =>
+        cause mustBe a[SessionException]
+        cause.getMessage mustBe "wamp.error.no_such_procedure"
+      }
+    }
+  }
+  
 
-  it should "succeed call procedure and expect result" in { f =>
+  it should "succeed call procedure and handle result" in { f =>
     f.withSession { session1 =>
       val handler = stubFunction[Invocation, Future[Payload]]
       val payload = Future.successful(Payload(List("paolo", 40, true)))

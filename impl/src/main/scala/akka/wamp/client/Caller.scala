@@ -81,7 +81,7 @@ trait Caller { this: Session =>
         pending.promise.success(msg)
       }
       
-    case msg @ Error(Result.tpe, requestId, _, error, _) =>
+    case msg @ Error(Call.tpe, requestId, _, error, _) =>
       log.debug("<-- {}", msg)
       pendingCalls.get(requestId).map { pending =>
         pendingCalls -= requestId

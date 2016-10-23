@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Fixed
 - Router doesn't validate role's feature announcements [\#37](https://github.com/angiolep/akka-wamp/issues/37)
+- Caller doesn't handle Error(wamp.error.no_such_procedure) [\#39](https://github.com/angiolep/akka-wamp/issues/39)
 
 
 ## [v0.11.0] _ 2016-10-16
