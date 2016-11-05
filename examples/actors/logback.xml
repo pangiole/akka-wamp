@@ -1,0 +1,14 @@
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} |-%-5level in %logger{8} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="akka.wamp.client.ConnectionHandler" level="DEBUG"/>
+  <logger name="jvm" level="DEBUG"/>
+
+  <root level="OFF">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>

@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+## [v0.13.0] _ 2016-11-30
+
+- Apply **heavy refactorings** to provide client APIs usable by Java developers on Java8 platform
+- Improve the documentation significantly
+- Provide more useful examples
+ 
+
 ## [v0.12.0] _ 2016-10-23
 
 ### Added
@@ -22,7 +29,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Added
 - ``unregister()`` method can be called on registration directly
 - ``unsubscribe()`` method can be called on subscription directly
-- ``Client.connect()`` method now accepts a maximum number of attempts before giving up
+- ``examples.Client.connect()`` method now accepts a maximum number of attempts before giving up
 
 ### Fixed
 - Default JSON deserializer shall bind ``null`` to ``None``
@@ -45,7 +52,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
-  - Client API now provides ``register``, ``unregister`` and ``call`` operations  
+  - examples.Client API now provides ``register``, ``unregister`` and ``call`` operations  
   - Router now able to register procedures and route calls to clients  
 - Improve Payload Handling and Streaming support
 - Improve tests
@@ -96,7 +103,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.12.0...HEAD?&diff=split&name=HEAD
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.13.0...HEAD?&diff=split&name=HEAD
+[v0.13.0]: https://github.com/angiolep/akka-wamp/compare/v0.13.0...v0.12.0?&diff=split&name=v0.13.0
 [v0.12.0]: https://github.com/angiolep/akka-wamp/compare/v0.12.0...v0.11.0?&diff=split&name=v0.11.0
 [v0.11.0]: https://github.com/angiolep/akka-wamp/compare/v0.11.0...v0.10.0?&diff=split&name=v0.10.0
 [v0.10.0]: https://github.com/angiolep/akka-wamp/compare/v0.9.0...v0.10.0?diff=split&name=v0.9.0

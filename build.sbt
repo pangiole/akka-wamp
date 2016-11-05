@@ -1,34 +1,35 @@
 
-val commonSettings = Seq(
-  scalaVersion := "2.11.8",
-  organization := "com.github.angiolep",
-  version := "0.12.0",
-  description := "WAMP - Web Application Messaging Protocol implementation written in Scala with Akka HTTP"
-)
+val core = project
+  .settings(Common.settings)
+
+val docs = project
+  .settings(Common.settings)
+  .dependsOn(core)
+
+val actors = (project in file("./examples/actors"))
+  .settings(Common.examples)
+  .dependsOn(core)
+
+val futures = (project in file("./examples/futures"))
+  .settings(Common.examples)
+  .dependsOn(core)
+
+val router = (project in file("./examples/router"))
+  .settings(Common.examples)
+  .dependsOn(core)
+
+val streams = (project in file("./examples/streams"))
+  .settings(Common.examples)
+  .dependsOn(core)
 
 
-val akka_wamp_impl = (project in file("./impl"))
-  .settings(commonSettings)
-
-val examples_actor = (project in file("./examples/actor"))
-  .settings(commonSettings)
-  .dependsOn(akka_wamp_impl)
-
-val examples_hello = (project in file("./examples/hello"))
-  .settings(commonSettings)
-  .dependsOn(akka_wamp_impl)
-
-val examples_router = (project in file("./examples/router"))
-  .settings(commonSettings)
-  .dependsOn(akka_wamp_impl)
-
-val examples = project
-  .settings(commonSettings)
+val root = (project in file("."))
+  .settings(Common.settings)
   .aggregate(
-    examples_actor,
-    examples_hello
+    docs,
+    core,
+    actors,
+    futures,
+    router,
+    streams
   )
-
-val akka_wamp = (project in file("."))
-  .settings(commonSettings)
-  .aggregate(akka_wamp_impl, examples)
