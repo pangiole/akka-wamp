@@ -10,6 +10,7 @@ import akka.wamp.client.{Session => SessionDelegate}
 import akka.wamp.messages.{Closed => ClosedDelegate, Event => EventDelegate, Invocation => InvocationDelegate}
 import akka.wamp.serialization.{Payload => PayloadDelegate}
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters.{toJava => asJavaFuture, toScala => asScalaFuture}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -129,7 +130,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @param details are the details to send
     * @return the (future of) closed signal
     */
-  def close(reason: Uri, details: ju.Map[String, Object]): CompletionStage[Closed] = doClose(delegate.close(reason, asScalaMap(details)))
+  def close(reason: Uri, details: ju.Map[String, Object]): CompletionStage[Closed] = doClose(delegate.close(reason, details.asScala.toMap))
 
   /* Excute delegate and convert to Java future */
   private def doClose(fn: => Future[ClosedDelegate]): CompletionStage[Closed] = asJavaFuture(fn.map(_ => new Closed()))
@@ -178,7 +179,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @param args is the list of indexed arguments to be published
     */
   def publish(topic: Uri, args: ju.List[Object]): Unit =
-    delegate.publish(topic, asScalaList(args))
+    delegate.publish(topic, args.asScala.toList)
 
   /**
     * Publish to a topic (fire and forget)
@@ -187,7 +188,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @param kwargs is the dictionary of named arguments to be published
     */
   def publish(topic: Uri, kwargs: ju.Map[String, Object]): Unit =
-    delegate.publish(topic, asScalaMap(kwargs))
+    delegate.publish(topic, kwargs.asScala.toList)
 
 
   /**
@@ -209,7 +210,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @return the (future of) publication acknowledgment
     */
   def publishAck(topic: Uri, args: ju.List[Object]): CompletionStage[Publication] = asJavaFuture {
-    delegate.publishAck(topic, asScalaList(args)).map(p => new Publication(delegate = p))
+    delegate.publishAck(topic, args.asScala.toList).map(p => new Publication(delegate = p))
   }
 
 
@@ -221,7 +222,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @return the (future of) publication acknowledgment
     */
   def publishAck(topic: Uri, kwargs: ju.Map[String, Object]): CompletionStage[Publication] = asJavaFuture {
-    delegate.publishAck(topic, asScalaMap(kwargs)).map(p => new Publication(delegate = p))
+    delegate.publishAck(topic, kwargs.asScala.toMap).map(p => new Publication(delegate = p))
   }
 
 
@@ -271,7 +272,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @return the (future of) result
     */
   def call(procedure: Uri, args: ju.List[Object]): CompletionStage[Result] = asJavaFuture{
-    delegate.call(procedure, asScalaList(args)).map(r => new Result(delegate = r))
+    delegate.call(procedure, args.asScala.toList).map(r => new Result(delegate = r))
   }
 
   /**
@@ -282,17 +283,17 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @return the (future of) result
     */
   def call(procedure: Uri, kwargs: ju.Map[String, Object]): CompletionStage[Result] = asJavaFuture{
-    delegate.call(procedure, asScalaMap(kwargs)).map(r => new Result(delegate = r))
+    delegate.call(procedure, kwargs.asScala.toMap).map(r => new Result(delegate = r))
   }
 
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-  import scala.collection.JavaConverters._
 
-  private def asScalaList(args: ju.List[Object]) = collectionAsScalaIterable(args).toList
+
+  private def asScalaList(args: ju.List[Object]) = args.asScala.toList
   
-  private def asScalaMap(kwargs: ju.Map[String, Object]) = mapAsScalaMap(kwargs).toMap
+  private def asScalaMap(kwargs: ju.Map[String, Object]) = kwargs.asScala.toMap
 
 }

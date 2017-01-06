@@ -4,7 +4,7 @@ import akka.stream.javadsl.Source
 import akka.util.ByteString
 import akka.wamp.serialization.{Payload => PayloadDelegate}
 
-import scala.collection.JavaConverters.{iterableAsScalaIterable => asScalaList, mapAsScalaMap => asScalaMap}
+import scala.collection.JavaConverters._
 import java.{util => ju}
 
 import akka.wamp.serialization
@@ -65,7 +65,7 @@ object Payload {
     * @return the new payload
     */
   def create(args: ju.List[Object]): Payload = {
-    new EagerPayload(delegate = PayloadDelegate.apply(asScalaList(args).toList))
+    new EagerPayload(delegate = PayloadDelegate.apply(args.asScala.toList))
   }
 
   /**
@@ -75,7 +75,7 @@ object Payload {
     * @return the new payload
     */
   def create(kwargs: ju.Map[String, Object]): Payload = {
-    new EagerPayload(delegate = PayloadDelegate.apply(asScalaMap(kwargs).toMap))
+    new EagerPayload(delegate = PayloadDelegate.apply(kwargs.asScala.toMap))
   }
 
 }

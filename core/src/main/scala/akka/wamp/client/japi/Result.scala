@@ -2,7 +2,7 @@ package akka.wamp.client.japi
 
 import akka.wamp.messages.{Result => ResultDelegate}
 
-import scala.collection.JavaConverters.mapAsJavaMap
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
 /**
@@ -32,5 +32,5 @@ class Result(delegate: ResultDelegate)(implicit executionContent: ExecutionConte
   /**
     * Is the dictionary of additional details
     */
-  val details = mapAsJavaMap(delegate.details)
+  val details = delegate.details.asJava
 }

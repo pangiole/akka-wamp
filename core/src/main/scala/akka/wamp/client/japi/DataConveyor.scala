@@ -43,14 +43,14 @@ class DataConveyor private[japi](delegate: DataConveyorDelegate)(implicit execut
     *
     * @return the (future of) indexed args
     */
-  def args: CompletionStage[ju.List[Any]] = asJavaFuture(delegate.args.map(seqAsJavaList))
+  def args: CompletionStage[ju.List[Any]] = asJavaFuture(delegate.args.map(a => a.asJava))
 
   /**
     * Deserializes named arguments from the conveyed payload to an hashmap
     *
     * @return the (future of) named args
     */
-  def kwargs: CompletionStage[ju.Map[String, Any]] = asJavaFuture(delegate.kwargs.map(mapAsJavaMap))
+  def kwargs: CompletionStage[ju.Map[String, Any]] = asJavaFuture(delegate.kwargs.map(a => a.asJava))
 
   /**
     * Deserializes named arguments from the conveyed payload to a user type

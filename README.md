@@ -13,32 +13,53 @@ Akka Wamp provides you with:
 ## Usage
 Easy to download as dependency from Maven central:
 
+#### SBT
 ```scala
-"com.github.angiolep" %% "akka-wamp" % "0.13.0"
+libraryDependencies ++= Seq(
+  "com.github.angiolep" % "akka-wamp_2.12" % "0.13.0"
+)
+```
+
+#### Gradle
+```groovy
+dependencies {
+  compile 'com.github.angiolep:akka-wamp_2.12:0.13.0'
+}
+```
+
+#### Maven
+```xml
+<dependencies>
+  <dependency>
+    <groupId>com.github.angiolep</groupId>
+    <artifactId>akka-wamp_2.12</artifactId>
+    <version>0.13.0</version>
+  </dependency>
+</dependencies>
 ```
 
 ## Docs
-* User's guide, code fragments and dozens of examples are published [here](https://angiolep.github.io/projects/akka-wamp/index.html).
-* API doc is published [here](https://angiolep.github.io/projects/akka-wamp/api/akka/wamp/index.html)
-)
+* User's guide, code fragments and dozens of examples are published [here](https://angiolep.github.io/projects/akka-wamp).
+* API doc is published [here](https://angiolep.github.io/projects/akka-wamp/api/akka/wamp)
+
 
 ## Client APIs
-Connect to a router, open a session, subscribe a topic, receive events, register a procedure and call it in few lines of Scala or Java code.
+Connect to a router, open a session, subscribe to a topic, consume events, register a remote procedure and call it in few lines of Scala or Java code.
 
 * Actors, Futures and Streams based APIs.
-* Lambda handlers support.
+* Lambda consumers and handlers support.
 * Lazy and pluggable deserializers.
 * Java 8 support.
 * ... and much more!
 
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/index.html)
+Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp)
 
 
 ### Java client
-Though written in Scala, Akka Wamp provides simple client APIs for Java developers as well. Compared to others, Akka Wamp will let you write less code for much more functionalities!
+Though written in Scala, Akka Wamp provides simple client APIs for Java developers as well. Compared to other WAMP implementations, Akka Wamp will let you write less code for much more functionalities!
 
 ```java
-import akka.actor.ActorSystem;
+import akka.actor.*;
 import akka.wamp.client.japi.*;
 
 import static java.util.Array.asList;
@@ -80,18 +101,43 @@ public class JavaClient {
 }
 ```
 
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/index.html)
-
 
 ### Scala client
 Akka Wamp provides Scala developer with great support to let them write _"no boilerplate code"_ at all! Just few statements and here it is a fully capable reactive WAMP client ;-)
 
 ```scala
-// ... 
+
+import akka.actor._
+import akka.wamp.client._
+
+object ScalaFuturesApp extends App {
+  
+  val system = ActorSystem()
+  val client = Client(system)
+  implicit val executionContext = system.dispatcher
+
+  client.connect(transport = "default").map { c =>
+    c.open(realm = "hello").map { implicit s =>
+
+      subscribe("mytopic", (arg: Int) => {
+        println(s"got $arg")
+      })
+
+      publish("mytopic", List("Ciao!"))
+
+      call("myproc", List(20, 55)).foreach { res =>
+        res.args.foreach { args =>
+          println(s"20 * 55 = ${args(0)}")
+        }
+      }
+      
+      register("myproc", (a: Int, b: Int) => {
+        a + b
+      })
+    }
+  }
+}
 ```
-
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/client/index.html)
-
 
 ## Router
  
@@ -109,12 +155,10 @@ vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
 
-Please, read the docs for [further details](https://angiolep.github.io/projects/akka-wamp/router.html)
-
 
 ## Limitations
  * Java >= 1.8.0 
- * Scala = 2.11
+ * Scala >= 2.12.1
  * WebSocket transport only (no raw TCP and no SSL/TLS yet) 
  * WAMP Basic Profile only (none of the Advanced Profile features yet)
  * JSON serialization only (no MsgPack yet)
