@@ -1,6 +1,8 @@
 package docs
 
 // #client
+import java.net.URI
+
 import akka.actor._
 import akka.io._
 import akka.wamp._
@@ -18,7 +20,7 @@ class ScalaClientActor extends ClientActor with ActorLogging {
   override def preStart(): Unit = {
     implicit val system = context.system
     val manager = IO(Wamp)
-    manager ! Connect("ws://router.net:8080/wamp", "json")
+    manager ! Connect(new URI("ws://router.net:8080/wamp"), "json")
   }
   
   // #open
@@ -28,7 +30,7 @@ class ScalaClientActor extends ClientActor with ActorLogging {
       // reattempt connection ...
       
       // #open
-    case Connected(conn) =>
+    case Connected(conn, _, _) =>
       this.conn = conn
       context become connected
       // #connect

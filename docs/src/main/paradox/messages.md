@@ -72,7 +72,7 @@ It is the signal message the client receives from the [manager actor](./client/i
 ## Connect
 It's the command message your client application sends to the [manager actor](./client/index.html#extension-manager) to connect to a router. It can be constructed passing the following arguments:
 
-* ``url: String``  
+* ``uri: URI``  
   It is the [URL](https://www.ietf.org/rfc/rfc1738.txt) of the router your client wants to connect to. Akka Wamp supports the following transport protocols:
  
     * ``tcp``  

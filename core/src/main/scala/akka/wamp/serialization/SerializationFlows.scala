@@ -2,7 +2,7 @@ package akka.wamp.serialization
 
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage}
 import akka.stream.scaladsl.Flow
-import akka.wamp.messages.Message
+import akka.wamp.messages.ProtocolMessage
 
 /**
   * Defines Akka Stream flows meant to serialize/deserialize messages 
@@ -13,12 +13,12 @@ trait SerializationFlows {
   /**
     * Serialize from WampMessage object to (textual or binary) WebSocketMessage
     */
-  val serialize: Flow[Message, WebSocketMessage, _]
+  val serialize: Flow[ProtocolMessage, WebSocketMessage, _]
 
   /**
   * Deserialize from (textual or binary) WebSocketMessage to WampMessage object
   */
-  val deserialize: Flow[WebSocketMessage, Message, _]
+  val deserialize: Flow[WebSocketMessage, ProtocolMessage, _]
 }
 
 

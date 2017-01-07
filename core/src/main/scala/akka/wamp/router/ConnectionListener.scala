@@ -1,5 +1,7 @@
 package akka.wamp.router
 
+import java.net.{URI, URL}
+
 import akka.actor._
 import akka.http.scaladsl._
 import akka.stream._
@@ -38,30 +40,27 @@ private class ConnectionListener extends Actor {
     case cmd @ Bind(router, transport) => {
       val binder = sender()
 
-      val webroot = routerConfig.getString("webroot")
       val transportConfig = routerConfig.getConfig(s"transport.$transport")
-      val protocol = transportConfig.getString("protocol")
-      val format = transportConfig.getString("format")
-      val iface = transportConfig.getString("iface")
+      val scheme = transportConfig.getString("scheme")
+      val host = transportConfig.getString("host")
       val port = transportConfig.getInt("port")
-      val upath = transportConfig.getString("upath")
-      
+      val file = transportConfig.getString("file")
+
       val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
         Http(context.system).
-          bind(iface, port)
+          bind(host, port)
 
       // when serverSource fails because of very dramatic situations 
       // such as running out of file descriptors or memory available to the system
       val reactToTopLevelFailures: Flow[Http.IncomingConnection, Http.IncomingConnection, _] =
         Flow[Http.IncomingConnection].
-          watchTermination()((_, termination) => termination.onFailure {
-            case cause => 
-              binder ! CommandFailed(cmd, cause)
+          watchTermination()((_, termination) => termination.failed.foreach { cause =>
+            binder ! CommandFailed(cmd, cause)
           })
 
       val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
         Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, upath, webroot))
+          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, transportConfig))
           handler ! HandleHttpConnection(conn)
         }
 
@@ -72,9 +71,10 @@ private class ConnectionListener extends Actor {
         .onComplete {
           case Success(b) =>
             this.binding = b
-            assert(b.localAddress.getHostString == iface)
+            assert(b.localAddress.getHostString == host)
             val port = b.localAddress.getPort
-            binder ! Bound(self, port)
+            val url = new URI(scheme, null, host, port, s"/$file", null, null)
+            binder ! Bound(self, url)
             
           case Failure(cause) =>
             binder ! CommandFailed(cmd, cause)

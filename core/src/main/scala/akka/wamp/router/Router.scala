@@ -1,17 +1,16 @@
 package akka.wamp.router
 
-
-import akka.actor.{Scope => _, _}
+import akka.actor._
 import akka.wamp._
 import akka.wamp.messages._
 
 import scala.collection.mutable
 
 /**
-  * The router is a peer playing the broker and dealer which is 
-  * responsible for generic call and event routing but do NOT run 
-  * any application code a client would.
-  * 
+  * Represents a client.
+  *
+  * Instances can be created using its companion object.
+  *
   */
 final class Router(val scopes: Map[Symbol, IdScope])
   extends Peer with Broker with Dealer
@@ -75,7 +74,7 @@ final class Router(val scopes: Map[Symbol, IdScope])
     * Handle transports lifecycle signals such as DISCONNECTED
     */
   private def handleConnections: Receive = {
-    case signal @ Connected(handler) =>
+    case signal @ Connected(handler, _, _) =>
       log.debug("[{}]     Connected [{}]", self.path.name, handler.path.name)
       
     case signal @ Disconnected =>
@@ -146,7 +145,7 @@ final class Router(val scopes: Map[Symbol, IdScope])
 
 
   private[router]
-  def withSession(msg: Message, peer: ActorRef)(fn: (Session) => Unit): Unit =
+  def withSession(msg: ProtocolMessage, peer: ActorRef)(fn: (Session) => Unit): Unit =
   {
     sessions.values.find(_.peer == peer) match {
       case Some(session) => {
@@ -184,25 +183,33 @@ final class Router(val scopes: Map[Symbol, IdScope])
 
 
 /**
-  * Router companion object
+  * Factory of [[Router]]'s props instances
   */
 object Router {
   import IdScopes._
 
   private[wamp] case object SimulateShutdown
 
-  /**
-    * Create a Props for an actor of this type
-    *
-    * @param scopes is the [[IdScope]] map used for [[Id]] generation
-    * @return the props
-    */
-  def props(scopes: Map[Symbol, IdScope] = Map(
+  private[wamp] val defaultIdScopes = Map(
     'global  -> new GlobalIdScope {},
     'router  -> new RouterIdScope {},
     'session -> new SessionIdScope{}
-  ))
-  = Props(new Router(scopes))
+  )
+
+  /**
+    * Create a Props for an actor of this type
+    *
+    * @param scopes are the scopes for identifiers' generation
+    * @return the props
+    */
+  def props(scopes: Map[Symbol, IdScope]) = Props(new Router(scopes))
+
+  /**
+    * Create a Props for an actor of this type
+    *
+    * @return the props
+    */
+  def props() = Props(new Router(defaultIdScopes))
 }
 
 

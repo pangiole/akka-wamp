@@ -83,8 +83,7 @@ object Payload {
     * @param kwargs is the dictionary of arguments of arbitrary type
     * @return the new payload
     */
-  @deprecated("Not a good practice")
-  def apply(args: List[Any], kwargs: Map[String, Any]) = {
+  private[serialization] def apply(args: List[Any], kwargs: Map[String, Any]) = {
     new EagerPayload(args, kwargs)
   }
 }

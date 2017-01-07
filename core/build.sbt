@@ -11,7 +11,7 @@ libraryDependencies ++= Seq (
   jackson
 ) ++ Seq(
   akkaHttpTestkit,
-  //akkaStreamTestkit,
+//  akkaStreamTestkit,
   scalatest,
   scalamock,
   pegdown,

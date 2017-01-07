@@ -24,7 +24,7 @@ class ConnectionHandlerBaseSpec
     with MustMatchers with BeforeAndAfterAll
     with ScalatestRouteTest
     with ParallelTestExecution
-    with SequentialIdGenerators
+    with SequentialIdScopes
 {
   val URL = "http://127.0.0.1:8080/wamp"
   
@@ -39,9 +39,8 @@ class ConnectionHandlerBaseSpec
     val wampClient = WSProbe()
 
     val routerConfig = testConfig.getConfig("akka.wamp.router")
-    val webroot = routerConfig.getString("webroot")
-    val upath = routerConfig.getString("transport.default.upath")
-    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, upath, webroot))
+    val transportConfig = routerConfig.getConfig("transport.default")
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, transportConfig))
     
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = handler.underlyingActor.httpRoute

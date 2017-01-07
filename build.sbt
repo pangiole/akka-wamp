@@ -27,9 +27,9 @@ val root = (project in file("."))
   .settings(Common.settings)
   .aggregate(
     docs,
-    core,
     actors,
     futures,
     router,
-    streams
+    streams,
+    core
   )

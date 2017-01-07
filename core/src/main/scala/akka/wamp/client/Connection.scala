@@ -5,6 +5,7 @@ import akka.wamp._
 import akka.wamp.messages._
 
 import scala.concurrent._
+import java.net.URI
 
 /**
   * Represents a connection established by a client to a router.
@@ -36,14 +37,24 @@ import scala.concurrent._
   * }}}
   *
   */
-class Connection private[client](connector: ActorRef)(implicit private[client] val executionContext: ExecutionContext) extends akka.wamp.Connection {
+class Connection private[client](connector: ActorRef, addr: URI, fmt: String)(implicit private[client] val executionContext: ExecutionContext) extends akka.wamp.Connection {
   import Connector._
-  
+
   /* Is this connection disconnected */
   @volatile private[client] var disconnected = false
 
   /* Is this connection's session closed? */
   @volatile private[client] var session: Session = _
+
+  /**
+    * Is the address this client is connected to
+    */
+  val uri = addr
+
+  /**
+    * Is the format messages are encoded with
+    */
+  val format = fmt
 
   /**
     * Opens a session to be attached to the ``"default"``

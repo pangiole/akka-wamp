@@ -9,10 +9,10 @@ trait Serialization {
   
   type T
 
-  def serialize(message: Message): Source[T, _]
+  def serialize(message: ProtocolMessage): Source[T, _]
   
   @throws(classOf[DeserializeException])
-  def deserialize(source: Source[T, _])(implicit validator: Validator, mat: Materializer): Message
+  def deserialize(source: Source[T, _])(implicit validator: Validator, mat: Materializer): ProtocolMessage
 }
 
 

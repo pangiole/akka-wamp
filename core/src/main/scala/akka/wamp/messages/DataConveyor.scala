@@ -34,7 +34,7 @@ import scala.reflect.ClassTag
   *
   * @see [[akka.wamp.client.japi.DataConveyor]]
   */
-trait DataConveyor { this: Message =>
+trait DataConveyor { this: ProtocolMessage =>
   
   /**
     * Is the payload

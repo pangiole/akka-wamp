@@ -5,7 +5,9 @@
 
 package akka.wamp.client
 
-import akka.actor.SupervisorStrategy.{Stop, Restart}
+import java.net.URI
+
+import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorKilledException, DeathPactException, OneForOneStrategy, SupervisorStrategy}
 import akka.wamp.client.ConnectorSupervisor.SpawnConnector
 
@@ -37,7 +39,7 @@ private[client] object ConnectorSupervisor {
 
   /* Commands new connector to be spawned */
   case class SpawnConnector(
-    url: String,
+    uri: URI,
     format: String,
     options: BackoffOptions,
     promise: Promise[Connection]

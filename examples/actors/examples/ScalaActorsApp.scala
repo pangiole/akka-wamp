@@ -1,5 +1,7 @@
 package examples
 
+import java.net.URI
+
 /**
   * Created by paolo on 21/12/2016.
   */
@@ -29,8 +31,8 @@ object ScalaActorsApp extends App {
       case AttemptConnection =>
         if (attempts < MaxAttempts) {
           attempts = attempts + 1
-          log.info("Connection attempt #{} to {}", attempts, RouterUrl)
-          IO(Wamp) ! Connect(RouterUrl, "json")
+          log.info("Connection attempt #{} to {}", attempts, uri)
+          IO(Wamp) ! Connect(uri, "json")
         }
         else {
           log.warning("Max connection attempts reached!")
@@ -41,7 +43,7 @@ object ScalaActorsApp extends App {
         log.warning(ex.getMessage)
         scheduler.scheduleOnce(1 second, self, AttemptConnection)
 
-      case sig @ Connected(conn) =>
+      case sig @ Connected(conn, _, _) =>
         log.info("Connected {}", conn)
         attempts = 0
         context become handleConnection(conn)
@@ -101,7 +103,7 @@ object ScalaActorsApp extends App {
   }
 
   object Client {
-    val RouterUrl = "ws://localhost:8080/wamp"
+    val uri = new URI("ws://localhost:8080/wamp")
     val MaxAttempts = 8
     case object AttemptConnection
   }

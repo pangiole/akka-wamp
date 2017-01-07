@@ -2,7 +2,7 @@ package akka.wamp.client.japi
 
 import akka.wamp.messages.{Invocation => InvocationDelegate}
 
-import scala.collection.JavaConversions.mapAsJavaMap
+import scala.collection.JavaConverters._
 import scala.concurrent._
 
 
@@ -16,6 +16,6 @@ class Invocation(delegate: InvocationDelegate)(implicit executionContent: Execut
   /**
     * Are additional details
     */
-  val details = mapAsJavaMap(delegate.details)
+  val details = delegate.details.asJava
   
 }

@@ -1,5 +1,7 @@
 package akka.wamp.client
 
+import java.net.URI
+
 import akka.http.scaladsl.model.IllegalUriException
 import akka.stream.StreamTcpException
 import com.typesafe.config.ConfigException
@@ -17,19 +19,9 @@ class ClientSpec extends ClientBaseSpec {
     }
   }
 
-
-  it should "fail to connect to a malformed URL" in { f =>
-    val conn = f.client.connect("ws!malformed:9999/uri", "json")
-    whenReady(conn.failed) { ex =>
-      ex mustBe a [ClientException]
-      ex.getCause mustBe a [IllegalUriException]
-      ex.getMessage.lines.next mustBe "Illegal URI reference: Invalid input ':', expected 'EOI', '#', '?', !':' or slashSegments (line 1, column 13): ws!malformed:9999/uri"
-    }
-  }
-
   
   it should "fail to connect when 'unknown' format is given" in { f =>
-    val conn = f.client.connect(f.url, format = "unknown")
+    val conn = f.client.connect(f.uri, format = "unknown")
     whenReady(conn.failed) { ex =>
       ex mustBe a[ClientException]
       ex.getCause mustBe a[IllegalArgumentException]
@@ -39,7 +31,8 @@ class ClientSpec extends ClientBaseSpec {
 
   
   it should "fail to connect when '/wrong/path' is given" in { f =>
-    val conn = f.client.connect(s"${f.url}/wrong/path", "json")
+    val uri = new URI(f.uri.getScheme, null, f.uri.getHost, f.uri.getPort, "/wrong/path", null, null)
+    val conn = f.client.connect(uri, "json")
     whenReady(conn.failed) { ex =>
       ex mustBe a[ClientException]
       ex.getCause mustBe a[IllegalArgumentException]
@@ -52,14 +45,14 @@ class ClientSpec extends ClientBaseSpec {
   
   
   it should "succeed establishing one or more connections to the same router" in { f =>
-    val conn1 = f.client.connect(f.url, "json")
+    val conn1 = f.client.connect(f.uri, "json")
     whenReady(conn1) { c1 =>
       c1.disconnected mustBe false
-      val conn2 = f.client.connect(f.url, "json")
+      val conn2 = f.client.connect(f.uri, "json")
       whenReady(conn2) { c2 =>
         c2 mustNot equal(c1)
         c2.disconnected mustBe false
-        val conn3 = f.client.connect(f.url, "json")
+        val conn3 = f.client.connect(f.uri, "json")
         whenReady(conn3) { c3 =>
           c3 mustNot equal(c2)
           c3.disconnected mustBe false

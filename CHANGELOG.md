@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
-## [v0.13.0] _ 2016-11-30
+## [v0.13.0] _ 2017-01-07
 
 - Apply **heavy refactorings** to provide client APIs usable by Java developers on Java8 platform
 - Improve the documentation significantly

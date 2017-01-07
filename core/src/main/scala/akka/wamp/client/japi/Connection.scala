@@ -45,6 +45,16 @@ class Connection(delegate: ConnectionDelegate) {
   private implicit val executionContext = delegate.executionContext
 
   /**
+    * Is the address this client is connected to
+    */
+  val uri = delegate.uri
+
+  /**
+    * Is the format messages are encoded with
+    */
+  val format = delegate.format
+
+  /**
     * Opens a session to be attached to the ``"default"``
     */
   def open(): CompletionStage[Session] =

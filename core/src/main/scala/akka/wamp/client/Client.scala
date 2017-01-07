@@ -4,6 +4,8 @@
  */
 package akka.wamp.client
 
+import java.net.URI
+
 import akka.actor.{ActorSystem, Props}
 import akka.wamp.{Peer, Uri}
 
@@ -67,20 +69,20 @@ class Client private[client](sstm: ActorSystem) extends Peer {
   /**
     * Connects to a router at the given URL and negotiate the given message format
     *
-    * @param url the URL to connect to (e.g. ``"wss://hostname:8433/router"``)
+    * @param uri the address to connect to (e.g. ``"wss://hostname:8433/router"``)
     * @param format the message format to negotiate (e.g. ``"wamp.2.msgpack"``
     * @return a (future of) connection
     */
-  private[client] def connect(url: String, format: String): Future[Connection] = {
-    connect("default", Some(url), Some(format))
+  private[client] def connect(uri: URI, format: String): Future[Connection] = {
+    connect("default", Some(uri), Some(format))
   }
 
 
-  private def connect(transport:String, url: Option[String], format: Option[String]): Future[Connection] = {
+  private def connect(transport:String, url: Option[URI], format: Option[String]): Future[Connection] = {
     try {
       val transportConfig = config.getConfig(s"transport.$transport")
       connect(
-        url.getOrElse(transportConfig.getString("url")),
+        url.getOrElse(???/*transportConfig.getString("url")*/),
         format.getOrElse(transportConfig.getString("format")),
         new BackoffOptions(
           FiniteDuration(transportConfig.getDuration("min-backoff").toNanos, NANOSECONDS),
@@ -95,9 +97,9 @@ class Client private[client](sstm: ActorSystem) extends Peer {
   }
 
 
-  private def connect(url: String, format: String, options: BackoffOptions): Future[Connection] =  {
+  private def connect(uri: URI, format: String, options: BackoffOptions): Future[Connection] =  {
     val promise = Promise[Connection]
-    supervisor ! SpawnConnector(url, format, options, promise)
+    supervisor ! SpawnConnector(uri, format, options, promise)
     // NOTE: the promise will be fulfilled upon connection establishment
     promise.future
   }

@@ -10,6 +10,8 @@ import akka.wamp.serialization.Payload;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
+import java.net.URI;
+
 import static akka.japi.pf.ReceiveBuilder.match;
 
 public class JavaClientActor extends AbstractClientLoggingActor {
@@ -23,7 +25,7 @@ public class JavaClientActor extends AbstractClientLoggingActor {
   // #connect
   @Override public void preStart() throws Exception {
     ActorRef manager = Wamp.get(getContext().system()).manager();
-    manager.tell(new Connect("ws://router.net:8080/wamp", "json"), self());
+    manager.tell(new Connect(new URI("ws://router.net:8080/wamp"), "json"), self());
   }
   
   // #connect

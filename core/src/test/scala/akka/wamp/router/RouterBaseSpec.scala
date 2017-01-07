@@ -14,7 +14,7 @@ class RouterBaseSpec(_system: ActorSystem = ActorSystem("test"))
     with ImplicitSender
     with ParallelTestExecution
     with LoneElement
-    with SequentialIdGenerators
+    with SequentialIdScopes
 {
   val strictUris = system.settings.config.getBoolean("akka.wamp.router.validate-strict-uris")
   
@@ -26,7 +26,7 @@ class RouterBaseSpec(_system: ActorSystem = ActorSystem("test"))
     val router = TestActorRef[Router](Router.props(scopes))
     try {
       IO(Wamp) ! Bind(router)
-      expectMsgType[Bound](32 seconds)
+      val bound = expectMsgType[Bound](32 seconds)
       val client = TestProbe("client")
       val theFixture = FixtureParam(router, client)
       withFixture(test.toNoArgTest(theFixture))

@@ -90,16 +90,12 @@ object Payload {
 class EagerPayload private[japi](delegate: serialization.EagerPayload) extends Payload(delegate)
 
 
-@deprecated("Not supported yet")
 class LazyPayload extends Payload(null)
 
-@deprecated("Not supported yet")
 class TextLazyPayload extends Payload(null) {
   def unparsed(): Source[String, _] = ???
 }
 
-
-@deprecated("Not supported yet")
 class BinaryLazyPayload extends Payload(null) {
   def unparsed(): Source[ByteString, _] = ???
 }

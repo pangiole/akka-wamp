@@ -1,5 +1,6 @@
 package akka.wamp.client
 
+import java.net.URI
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.Done
@@ -16,34 +17,9 @@ import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-/**
-  * INTERNAL API
-  *
-  * This actor is put in charge of resolving and keeping the given promise of connection 
-  * on behalf of the client:
-  * 
-  * - if the connection cannot be established 
-  * 
-  *   - because the router is unreachable at Internet TCP level
-  *     then this actor keeps reattempting repeatedly 
-  *     
-  *   - because of some unrecoverable exception (such as wrong 
-  *     message format or malformed router address) 
-  *     then the promise is resolved with a failure
-  * 
-  * - else if the connection gets established at some point
-  *   then given promise is resolved successfully 
-  *   and this actor keeps it throughout its life. 
-  *   That means if the connection drops then this actor
-  *   keeps reattempting to reconnect repeatedly. 
-  *
-  * @param url is the URL to connect to
-  * @param format is the format of WAMP messages
-  * @param options are the backoff options
-  * @param promise is the promise of connection
-  */
+
 private[client] 
-class Connector(url: String, format: String, options: BackoffOptions, promise: Promise[Connection])
+class Connector(uri: URI, format: String, options: BackoffOptions, promise: Promise[Connection])
   extends ClientActor with ActorLogging
 {
   import Connector._
@@ -74,7 +50,7 @@ class Connector(url: String, format: String, options: BackoffOptions, promise: P
 
 
   private def connect(): Unit = {
-    context.system.scheduler.scheduleOnce(delay, manager, Connect(url, format))
+    context.system.scheduler.scheduleOnce(delay, manager, Connect(uri, format))
     attemptCount += 1
   }
 
@@ -96,11 +72,11 @@ class Connector(url: String, format: String, options: BackoffOptions, promise: P
           throw ex
       }
 
-    case sig @ Connected(handler) =>
+    case sig @ Connected(handler, url, format) =>
       log.debug("=== Connected(handler = {})", sig)
       router = handler
       attemptCount = 0
-      conn = new Connection(self)
+      conn = new Connection(self, url, format)
       context become connected
       // WARN: share the connection delegate with the client via the promise
       promise.trySuccess(conn)
@@ -480,6 +456,6 @@ private[client] object Connector {
   case class PendingUnregister(request: Unregister, val promise: Promise[Unregistered]) extends PendingRequest { type T = Unregistered }
   case class PendingCall(request: Call, val promise: Promise[Result]) extends PendingRequest { type T = Result }
 
-  def props(url: String, format: String, options: BackoffOptions, promise: Promise[Connection]) =
-    Props(new Connector(url, format, options, promise))
+  def props(uri: URI, format: String, options: BackoffOptions, promise: Promise[Connection]) =
+    Props(new Connector(uri, format, options, promise))
 }

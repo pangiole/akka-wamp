@@ -13,7 +13,6 @@ abstract class ActorSpec(_system: ActorSystem)
     with MustMatchers
     with BeforeAndAfterAll 
     with ParallelTestExecution
-    with RouterAddress
 {
   
   implicit val ec = system.dispatcher

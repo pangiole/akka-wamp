@@ -5,37 +5,18 @@ Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org
 
 Akka Wamp provides you with:
 
-* Simple [Client APIs](client/index.html) designed to be used with [Akka](http://akka.io/) actors, futures and streams.
+* Simple [Client APIs](https://angiolep.github.io/projects/akka-wamp/client) designed to be used with [Akka](http://akka.io/) actors, futures and streams.
 * Object-oriented representations of all WAMP [Messages](./messages.html),
 * Akka IO extenson driver for the [WAMP Protocol](https://tools.ietf.org/html/draft-oberstet-hybi-tavendo-wamp-02).
-* Basic [Router](router/index.html) you can embed in your applications or launch as standalone process.
+* Basic [Router](https://angiolep.github.io/projects/akka-wamp/router) you can embed in your applications or launch as standalone process.
 
 ## Usage
-Easy to download as dependency from Maven central:
+Easy to download as dependency from [Maven central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.github.angiolep%22%20AND%20a%3A%22akka-wamp_2.12%22):
 
-#### SBT
 ```scala
 libraryDependencies ++= Seq(
   "com.github.angiolep" % "akka-wamp_2.12" % "0.13.0"
 )
-```
-
-#### Gradle
-```groovy
-dependencies {
-  compile 'com.github.angiolep:akka-wamp_2.12:0.13.0'
-}
-```
-
-#### Maven
-```xml
-<dependencies>
-  <dependency>
-    <groupId>com.github.angiolep</groupId>
-    <artifactId>akka-wamp_2.12</artifactId>
-    <version>0.13.0</version>
-  </dependency>
-</dependencies>
 ```
 
 ## Docs
@@ -67,9 +48,9 @@ import static java.lang.System.out;
 
 public class JavaClient {
   public static void main(String[] arr) {
-
-    ActorSystem system = ActorSystem.create();
-    Client client = Client.create(system);
+    ActorSystem actorSystem = ActorSystem.create();
+    
+    Client client = Client.create(actorSystem);
     client.connect("default").thenAccept(c -> {
       c.open("myrealm").thenAccept(s -> {
     
@@ -110,7 +91,7 @@ Akka Wamp provides Scala developer with great support to let them write _"no boi
 import akka.actor._
 import akka.wamp.client._
 
-object ScalaFuturesApp extends App {
+object ScalaClient extends App {
   
   val system = ActorSystem()
   val client = Client(system)

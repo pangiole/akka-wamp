@@ -5,14 +5,14 @@
 
 package akka.wamp.client.japi
 
+import java.net.URI
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorSystem
 import akka.wamp.Uri
-import akka.wamp.client.{Client => ClientDelegate, Connection => ConnectionDelegate, Session => SessionDelegate}
+import akka.wamp.client.{Client => ClientDelegate}
 
-import scala.compat.java8.FutureConverters.toJava
-import scala.concurrent.Future
+import scala.compat.java8.FutureConverters.{toJava => asJava}
 
 /**
   * Represents a client.
@@ -46,9 +46,9 @@ class Client private[japi](delegate: ClientDelegate) {
     *
     * @return the (future of) connection
     */
-  def connect(): CompletionStage[Connection] = 
-    doConnect(delegate.connect())
-
+  def connect(): CompletionStage[Connection] = asJava {
+    delegate.connect().map(c => new Connection(delegate = c))
+  }
 
   /**
     * Connects to a router with the given named transport configuration
@@ -56,12 +56,19 @@ class Client private[japi](delegate: ClientDelegate) {
     * @param transport the name of a configured transport
     * @return the (future of) connection
     */
-  def connect(transport: String): CompletionStage[Connection] = 
-    doConnect(delegate.connect(transport))
+  def connect(transport: String): CompletionStage[Connection] = asJava {
+    delegate.connect(transport).map(c => new Connection(delegate = c))
+  }
 
-
-  private def doConnect(fcd: => Future[ConnectionDelegate]): CompletionStage[Connection] = toJava {
-    fcd.map(cd => new Connection(delegate = cd))
+  /**
+    * Connects to a router at the given URL and negotiate the given message format
+    *
+    * @param uri the address to connect to (e.g. ``"wss://hostname:8433/router"``)
+    * @param format the message format to negotiate (e.g. ``"wamp.2.msgpack"``
+    * @return a (future of) connection
+    */
+  private[client] def connect(uri: URI, format: String): CompletionStage[Connection] = asJava {
+    delegate.connect(uri, format).map(c => new Connection(delegate = c))
   }
 
 
@@ -70,8 +77,9 @@ class Client private[japi](delegate: ClientDelegate) {
     *
     * @return the (future of) session
     */
-  def open(): CompletionStage[Session] =
-    doOpen(delegate.open())
+  def open(): CompletionStage[Session] = asJava {
+    delegate.open().map(s => new Session(delegate = s))
+  }
 
 
   /**
@@ -80,8 +88,9 @@ class Client private[japi](delegate: ClientDelegate) {
     * @param realm the realm to attach the session to
     * @return the (future of) session
     */
-  def open(realm: Uri): CompletionStage[Session] =
-    doOpen(delegate.open(realm))
+  def open(realm: Uri): CompletionStage[Session] = asJava {
+    delegate.open(realm).map(s => new Session(delegate = s))
+  }
 
   /**
     * Connects and then opens a new session attached to the given realm and
@@ -91,14 +100,10 @@ class Client private[japi](delegate: ClientDelegate) {
     * @param transport the name of a configured transport
     * @return the (future of) session
     */
-  def open(transport: String, realm: Uri): CompletionStage[Session] = 
-    doOpen(delegate.open(transport, realm))
-
-
-
-  private def doOpen(fsd: => Future[SessionDelegate]): CompletionStage[Session] = toJava {
-    fsd.map(sd => new Session(delegate = sd))
+  def open(transport: String, realm: Uri): CompletionStage[Session] =asJava {
+    delegate.open(transport, realm).map(s => new Session(delegate = s))
   }
+
 }
 
 

@@ -1,5 +1,7 @@
 package akka.wamp
 
+import java.net.URI
+
 import akka.actor._
 import akka.io._
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
@@ -13,7 +15,6 @@ import scala.concurrent.duration._
 // reference.conf is overriding akka.wamp.router.port to enable dynamic port bindings
 class ManagerSpec 
   extends TestKit(ActorSystem("test"))
-    with RouterAddress
     with FlatSpecLike
     with ImplicitSender
     with MustMatchers
@@ -28,7 +29,7 @@ class ManagerSpec
   var router: ActorRef = _
   var listener: ActorRef = _
   var handler: ActorRef = _
-  var url: String = _
+  var uri: URI = _
   
   override protected def beforeAll(): Unit = {
     manager = IO(Wamp)
@@ -41,13 +42,13 @@ class ManagerSpec
     listener = bound.listener
     listener must not be (null)
     // TODO listener mustBe childOf(manager)
-    url = super.url(bound.port)
-    bound.port must be > 0
+    uri = bound.uri
+    uri.getPort must be > 0
   }
 
   
   it should "connect a client" in {
-    manager ! Connect(url, "json")
+    manager ! Connect(uri, "json")
     val connected = expectMsgType[Connected](32 seconds)
     handler = connected.handler
     handler must not be (null)

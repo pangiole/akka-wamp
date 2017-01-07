@@ -42,14 +42,14 @@ class JsonSerialization(jsonFactory: JsonFactory)(implicit materializer: Materia
 
 
   @throws(classOf[DeserializeException])
-  override def deserialize(strSource: Source[String, _])(implicit validator: Validator, materializer: Materializer): Message = {
+  override def deserialize(strSource: Source[String, _])(implicit validator: Validator, materializer: Materializer): ProtocolMessage = {
     implicit val ec = materializer.executionContext
 
     val parser = mkStreamingParser(strSource)
     val mapper = mkObjectMapper()
 
     // Lazily create a Message
-    def mkMessage(maker: => Message) = try { maker } catch { case ex: Throwable => throw new DeserializeException(ex.getMessage, ex)}
+    def mkMessage(maker: => ProtocolMessage) = try { maker } catch { case ex: Throwable => throw new DeserializeException(ex.getMessage, ex)}
 
     // Throw proper exception with message
     def fail(field: String) = throw new DeserializeException(s"Expected $field but ${parser.getCurrentToken} found")
@@ -140,7 +140,7 @@ class JsonSerialization(jsonFactory: JsonFactory)(implicit materializer: Materia
     message
   }
   
-  override def serialize(message: Message): Source[String, _] = {
+  override def serialize(message: ProtocolMessage): Source[String, _] = {
     def toJson(elem: Any): String = {
       elem match {
         case Some(v) => toJson(v)

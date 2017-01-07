@@ -10,8 +10,8 @@ class MsgpackSerialization extends Serialization {
 
   type T = ByteString
 
-  override def serialize(message: Message): Source[ByteString, _] = ???
+  override def serialize(message: ProtocolMessage): Source[ByteString, _] = ???
 
   @throws(classOf[DeserializeException])
-  override def deserialize(source: Source[ByteString, _])(implicit validator: Validator, mat: Materializer): Message = ???
+  override def deserialize(source: Source[ByteString, _])(implicit validator: Validator, mat: Materializer): ProtocolMessage = ???
 }

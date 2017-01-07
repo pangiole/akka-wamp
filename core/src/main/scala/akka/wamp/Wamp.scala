@@ -22,7 +22,7 @@ import akka.wamp.messages._
   *   import akka.wamp.messages._
   *
   *   val manager = IO(Wamp)
-  *   manager ! Connect("wss://host:9999/router", "wamp.2.json")
+  *   manager ! Connect("wss://host:9999/router", "json")
   *
   *   def receive = {
   *     case Connected(handler) =>

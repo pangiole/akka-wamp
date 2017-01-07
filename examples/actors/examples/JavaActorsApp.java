@@ -11,6 +11,7 @@ import scala.concurrent.*;
 import scala.concurrent.duration.*;
 import scala.runtime.BoxedUnit;
 
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import static akka.japi.pf.ReceiveBuilder.match;
@@ -27,7 +28,7 @@ public class JavaActorsApp {
 class Client extends AbstractClientActor {
   private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
   
-  private final String ROUTER_URL = "ws://localhost:8080/wamp";
+  private final URI ROUTER_URI;
   private final Integer MAX_ATTEMPTS = 8;
   private Integer attempts = 0;
   private ActorRef conn;
@@ -35,7 +36,8 @@ class Client extends AbstractClientActor {
   private Long requestId;
   private PartialFunction<Object, BoxedUnit> handleConnection, handleSession;
   
-  Client() {
+  Client() throws Exception {
+    ROUTER_URI = new URI("ws://localhost:8080/wamp");
     final ActorRef manager = Wamp.get(getContext().system()).manager();
     final ExecutionContextExecutor executor = context().dispatcher();
     
@@ -43,8 +45,8 @@ class Client extends AbstractClientActor {
       match(AttemptConnection.class, cmd -> {
         if (attempts < MAX_ATTEMPTS) {
           attempts = attempts + 1;
-          log.info("Connection attempt #{} to {}", attempts, ROUTER_URL);
-          manager.tell(new Connect(ROUTER_URL, "json"), self());
+          log.info("Connection attempt #{} to {}", attempts, ROUTER_URI);
+          manager.tell(new Connect(ROUTER_URI, "json"), self());
         }
         else {
           log.warning("Max connection attempts reached!");
@@ -83,7 +85,7 @@ class Client extends AbstractClientActor {
         log.info("Session #{} open", sessionId);
         context().become(handleSession);
         Runnable runnable = () -> {
-          Message publish = new Publish(nextRequestId(), Publish.defaultOptions(), "myapp.topic", Payload.apply(), validator());
+          ProtocolMessage publish = new Publish(nextRequestId(), Publish.defaultOptions(), "myapp.topic", Payload.apply(), validator());
           conn.tell(publish, self());
         };
         scheduler().schedule(Duration.Zero(), Duration.create(1, TimeUnit.SECONDS), runnable, executor);

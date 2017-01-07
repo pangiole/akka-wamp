@@ -39,10 +39,10 @@ class JsonSerializationFlows(validateStrictUri: Boolean, dropOffendingMessages: 
   /**
     * Serialize from wamp.Message object to textual websocket.Message
     */
-  val serialize: Flow[wamp.Message, websocket.Message, NotUsed] =
-    Flow[wamp.Message].
+  val serialize: Flow[wamp.ProtocolMessage, websocket.Message, NotUsed] =
+    Flow[wamp.ProtocolMessage].
       mapAsync(1) {
-        case message: wamp.Message =>
+        case message: wamp.ProtocolMessage =>
           val s = new JsonSerialization(jsonFactory)
           val textStream = s.serialize(message)
           // TODO Couldn't we return the textStream itself rathter than its reduction?
@@ -54,7 +54,7 @@ class JsonSerializationFlows(validateStrictUri: Boolean, dropOffendingMessages: 
   /**
     * Deserialize textual websocket.Message to wamp.Message object
     */
-  val deserialize: Flow[websocket.Message, wamp.Message, NotUsed] =
+  val deserialize: Flow[websocket.Message, wamp.ProtocolMessage, NotUsed] =
     Flow[websocket.Message]
       .map {
         case TextMessage.Strict(text) =>

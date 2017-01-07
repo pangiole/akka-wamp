@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.ws.{Message => WebSocketMessage, _}
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.wamp.messages.{Disconnected, Message => WampMessage, _}
+import akka.wamp.messages.{Disconnected, ProtocolMessage => WampMessage, _}
 import akka.wamp.serialization._
 
 import scala.concurrent.Future
@@ -51,7 +51,7 @@ class ConnectionHandler(connector: ActorRef)
     * Handle CONNECT and DISCONNECT commands
     */
   override def receive: Receive = {
-    case cmd @ Connect(url, format) =>
+    case cmd @ Connect(uri, format) =>
       context become handleConnecting(cmd)
       try {
         val outgoingSource: Source[WampMessage, ActorRef] =
@@ -59,7 +59,7 @@ class ConnectionHandler(connector: ActorRef)
 
         val webSocketFlow: Flow[WebSocketMessage, WebSocketMessage, Future[WebSocketUpgradeResponse]] =
           Http(context.system)
-            .webSocketClientFlow(WebSocketRequest(url, subprotocol = Some(s"wamp.2.$format")))
+            .webSocketClientFlow(WebSocketRequest(uri.toString, subprotocol = Some(s"wamp.2.$format")))
 
         val incomingSink: Sink[WampMessage, akka.NotUsed] =
           Sink.actorRef[WampMessage](self, onCompleteMessage = Disconnected)
@@ -78,10 +78,10 @@ class ConnectionHandler(connector: ActorRef)
 
         // just like a regular http request we can get 404 NotFound etc.
         // that will be available from upgrade.response
-        upgradeResponse.onSuccess { case upgrade =>
+        upgradeResponse.foreach { case upgrade =>
           if (upgrade.response.status == SwitchingProtocols) {
             context become handleConnected
-            connector ! Connected(self)
+            connector ! Connected(self, uri, format)
           }
         }
       } catch {

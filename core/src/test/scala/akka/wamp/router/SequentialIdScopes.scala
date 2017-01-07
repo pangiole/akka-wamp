@@ -2,7 +2,7 @@ package akka.wamp.router
 
 import akka.wamp.IdScopes.SessionIdScope
 
-trait SequentialIdGenerators {
+trait SequentialIdScopes {
   
   val scopes = Map(
     'global -> new SessionIdScope {},
