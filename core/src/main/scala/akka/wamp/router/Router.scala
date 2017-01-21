@@ -7,14 +7,14 @@ import akka.wamp.messages._
 import scala.collection.mutable
 
 /**
-  * Represents a client.
+  * Represents a router.
   *
   * Instances can be created using its companion object.
   *
   */
-final class Router(val scopes: Map[Symbol, IdScope])
+class Router private[wamp](val idGenerators: Map[Symbol, IdGenerator])
   extends Peer with Broker with Dealer
-  with Actor with ActorLogging  
+  with Actor with ActorLogging
 {
   import Router._
 
@@ -29,22 +29,22 @@ final class Router(val scopes: Map[Symbol, IdScope])
 
   /** IF drop an offending message and resume to the next one */
   private val dropOffendingMessages = config.getBoolean("drop-offending-messages")
-  
-  
+
+
   /** WAMP types validator */
   protected implicit val validator = new Validator(
     config.getBoolean("validate-strict-uris")
   )
-  
+
   /** Akka Execution Content */
   protected implicit val executionContext = context.system.dispatcher
-  
+
 
   /** Details of WELCOME message replied by this router */
   private val welcomeDetails = Dict()
     .withAgent("akka-wamp-0.13.0")
     .withRoles(Roles.router)
-  
+
   /**
     * Map of existing realms.
     *
@@ -55,18 +55,18 @@ final class Router(val scopes: Map[Symbol, IdScope])
     *
     */
   private[router] val realms = mutable.Set[Uri]("default")
-  
+
   /**
     * Map of open sessions
     */
   private[router] val sessions = mutable.Map.empty[Id, Session]
 
   /**
-    * Handle either transports, sessions, subscriptions, publications, 
+    * Handle either transports, sessions, subscriptions, publications,
     * registrations or invocations
     */
   override def receive =
-    handleConnections orElse handleSessions orElse 
+    handleConnections orElse handleSessions orElse
       handleSubscriptions orElse handlePublications orElse
         handleRegistrations orElse handleCalls
 
@@ -76,7 +76,7 @@ final class Router(val scopes: Map[Symbol, IdScope])
   private def handleConnections: Receive = {
     case signal @ Connected(handler, _, _) =>
       log.debug("[{}]     Connected [{}]", self.path.name, handler.path.name)
-      
+
     case signal @ Disconnected =>
       val handler = sender()
       log.debug("[{}]     Disconnected [{}]", self.path.name, handler.path.name)
@@ -162,7 +162,7 @@ final class Router(val scopes: Map[Symbol, IdScope])
 
   private
   def createNewSession(client: ActorRef, details: Dict, realm: Uri) = {
-    val id = scopes('global).nextRequestId(excludes = sessions.keySet.toSet)
+    val id = idGenerators('global).nextId(excludes = sessions.keySet.toSet)
     val roles = details("roles").asInstanceOf[Map[String, Any]].keySet
     val session = new Session(id, client, roles, realm)
     sessions += (id -> session)
@@ -186,30 +186,19 @@ final class Router(val scopes: Map[Symbol, IdScope])
   * Factory of [[Router]]'s props instances
   */
 object Router {
-  import IdScopes._
 
   private[wamp] case object SimulateShutdown
 
-  private[wamp] val defaultIdScopes = Map(
-    'global  -> new GlobalIdScope {},
-    'router  -> new RouterIdScope {},
-    'session -> new SessionIdScope{}
-  )
-
-  /**
-    * Create a Props for an actor of this type
-    *
-    * @param scopes are the scopes for identifiers' generation
-    * @return the props
-    */
-  def props(scopes: Map[Symbol, IdScope]) = Props(new Router(scopes))
-
   /**
     * Create a Props for an actor of this type
     *
     * @return the props
     */
-  def props() = Props(new Router(defaultIdScopes))
+  def props() = Props(new Router(idGenerators = Map(
+    'global  -> new GlobalScopedIdGenerator,
+    'router  -> new RouterScopedIdGenerator,
+    'session -> new SessionScopedIdGenerator
+  )))
 }
 
 

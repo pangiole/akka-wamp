@@ -5,9 +5,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Added
+- Add more unit tests to increase coverage of Java API
+- Router binds multiple listeners to multiple configured endpoints
+
+### Changed
+- Simplify transport configuration
+- Apply minor improvements to Java API
+
+
 ## [v0.13.0] _ 2017-01-07
 
+### Added
 - Apply **heavy refactorings** to provide client APIs usable by Java developers on Java8 platform
+
+### Changed
 - Improve the documentation significantly
 - Provide more useful examples
  
@@ -29,7 +41,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Added
 - ``unregister()`` method can be called on registration directly
 - ``unsubscribe()`` method can be called on subscription directly
-- ``examples.Client.connect()`` method now accepts a maximum number of attempts before giving up
+- ``Client.connect()`` method now accepts a maximum number of attempts before giving up
 
 ### Fixed
 - Default JSON deserializer shall bind ``null`` to ``None``
@@ -52,7 +64,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Added
 - Provide routed RPC capabilities [\#26](https://github.com/angiolep/akka-wamp/issues/26)  
-  - examples.Client API now provides ``register``, ``unregister`` and ``call`` operations  
+  - Client API now provides ``register``, ``unregister`` and ``call`` operations  
   - Router now able to register procedures and route calls to clients  
 - Improve Payload Handling and Streaming support
 - Improve tests

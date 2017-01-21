@@ -19,13 +19,14 @@ import scala.util.{Failure, Success}
 
 
 private[client] 
-class Connector(uri: URI, format: String, options: BackoffOptions, promise: Promise[Connection])
+class Connector(address: URI, format: String, options: BackoffOptions, promise: Promise[Connection])
   extends ClientActor with ActorLogging
 {
   import Connector._
 
   private val manager = IO(Wamp)
   private var conn: Connection = _
+  private var idgen: IdGenerator = _
   private var attemptCount = 0
   private var router: ActorRef = _
 
@@ -50,7 +51,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
 
 
   private def connect(): Unit = {
-    context.system.scheduler.scheduleOnce(delay, manager, Connect(uri, format))
+    context.system.scheduler.scheduleOnce(delay, manager, Connect(address, format))
     attemptCount += 1
   }
 
@@ -124,6 +125,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
     case msg: Welcome =>
       log.debug("<-- {}", msg)
       conn.session = new Session(self, realm, msg)
+      idgen = new SessionScopedIdGenerator
       context become open
       promise.success(conn.session)
 
@@ -172,7 +174,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
   private def handleSubscriptions: Receive = {
 
     case cmd @ SendSubscribe(topic, consumer, promise) =>
-      val req = Subscribe(nextRequestId(), Subscribe.defaultOptions, topic)
+      val req = Subscribe(idgen.nextId(), Subscribe.defaultOptions, topic)
       pendingSubscribes += (req.requestId -> PendingSubscribe(req, consumer, promise))
       log.debug("--> {}", req)
       router ! req
@@ -195,7 +197,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
       }
 
     case cmd @ SendUnsubscribe(subscriptionId, promise) =>
-      val req = Unsubscribe(nextRequestId(), subscriptionId)
+      val req = Unsubscribe(idgen.nextId(), subscriptionId)
       pendingUnsubscribes += (req.requestId -> PendingUnsubscribe(req, promise))
       router ! req
 
@@ -239,12 +241,12 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
   private def handlePublications: Receive = {
 
     case cmd @ SendPublish(topic, payload, None) =>
-      val req = Publish(nextRequestId(), Publish.defaultOptions, topic, payload)
+      val req = Publish(idgen.nextId(), Publish.defaultOptions, topic, payload)
       log.debug("--> {}", req)
       router ! req
 
     case cmd @ SendPublish(topic, payload, Some(promise)) =>
-      val req = Publish(nextRequestId(), Publish.defaultOptions.withAcknowledge(true), topic, payload)
+      val req = Publish(idgen.nextId(), Publish.defaultOptions.withAcknowledge(true), topic, payload)
       pendingPublications += (req.requestId -> PendingPublish(req, promise))
       log.debug("--> {}", req)
       router ! req
@@ -271,7 +273,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
   private def handleRegistrations: Receive = {
 
     case cmd @ SendRegister(procedure, handler, promise) =>
-      val req = Register(nextRequestId(), Register.defaultOptions, procedure)
+      val req = Register(idgen.nextId(), Register.defaultOptions, procedure)
       pendingRegisters += (req.requestId -> new PendingRegister(req, handler, promise))
       log.debug("--> {}", req)
       router ! req
@@ -294,7 +296,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
       }
 
     case cmd @ SendUnregister(registrationId, promise) =>
-      val req = Unregister(nextRequestId(), registrationId)
+      val req = Unregister(idgen.nextId(), registrationId)
       pendingUnregisters += (req.requestId -> PendingUnregister(req, promise))
       router ! req
 
@@ -322,7 +324,7 @@ class Connector(uri: URI, format: String, options: BackoffOptions, promise: Prom
   private def handleCalls: Receive = {
 
     case cmd @ SendCall(procedure, payload, promise) =>
-      val req = Call(nextRequestId(), Call.defaultOptions, procedure, payload)
+      val req = Call(idgen.nextId(), Call.defaultOptions, procedure, payload)
       pendingCalls += (req.requestId -> PendingCall(req, promise))
       log.debug("--> {}", req)
       router ! req
@@ -456,6 +458,6 @@ private[client] object Connector {
   case class PendingUnregister(request: Unregister, val promise: Promise[Unregistered]) extends PendingRequest { type T = Unregistered }
   case class PendingCall(request: Call, val promise: Promise[Result]) extends PendingRequest { type T = Result }
 
-  def props(uri: URI, format: String, options: BackoffOptions, promise: Promise[Connection]) =
-    Props(new Connector(uri, format, options, promise))
+  def props(address: URI, format: String, options: BackoffOptions, promise: Promise[Connection]) =
+    Props(new Connector(address, format, options, promise))
 }

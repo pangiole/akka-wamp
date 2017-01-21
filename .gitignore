@@ -25,3 +25,13 @@ node_modules/
 .idea/
 *.iml
 *.iws
+
+
+# Cryptographic material
+password
+*.jks
+*.crt
+*.csr
+*.p12
+*.key
+

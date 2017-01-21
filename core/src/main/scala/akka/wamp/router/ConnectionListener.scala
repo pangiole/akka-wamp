@@ -1,98 +1,104 @@
 package akka.wamp.router
 
-import java.net.{URI, URL}
+import java.net.URI
+import javax.net.ssl.SSLContext
 
-import akka.actor._
-import akka.http.scaladsl._
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.wamp._
-import akka.wamp.messages._
+import akka.actor.{Actor, ActorRef, Props}
+import akka.http.scaladsl.{ConnectionContext, Http}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Sink}
+import akka.wamp.EndpointConfig
+import akka.wamp.messages.{Bind, CommandFailed, HandleHttpConnection, Unbind, Bound}
 
-import scala.concurrent._
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-/**
-  * INTERNAL API
-  * 
-  * The connection listener actor spawned by the [[Manager]]
-  * each time it executes [[Bind]] commands
-  */
-private class ConnectionListener extends Actor {
-  
-  /** The execution context */
-  private implicit val ec = context.system.dispatcher
+/*
+ * Is the connection listener actor spawned by the [[Manager]]
+ * each time it executes the [[Bind]] command
+ */
+private[router]
+class ConnectionListener(binder: ActorRef, router: ActorRef, endpoint: String, sslContext: SSLContext)
+  extends Actor with EndpointConfig {
 
-  /** The actor materializer for Akka Stream */
+  implicit val actorSystem = context.system
+  implicit val executionContext = actorSystem.dispatcher
   // TODO close the materializer at some point
-  private implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
-  private var binding: Http.ServerBinding = _
+  val config = actorSystem.settings.config.getConfig("akka.wamp.router")
+  val (address, format) = endpointConfig(endpoint, config)
 
-  /** Router config **/
-  private val routerConfig = context.system.settings.config.getConfig("akka.wamp.router")
-  
-  
-  /**
-    * Handle BIND and UNBIND commands
-    */
-  override def receive: Receive = {
-    case cmd @ Bind(router, transport) => {
-      val binder = sender()
+  // actor mutable variables
+  var serverBinding: Option[Http.ServerBinding] = None
+  var boundURI: URI = _
 
-      val transportConfig = routerConfig.getConfig(s"transport.$transport")
-      val scheme = transportConfig.getString("scheme")
-      val host = transportConfig.getString("host")
-      val port = transportConfig.getInt("port")
-      val file = transportConfig.getString("file")
 
-      val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-        Http(context.system).
-          bind(host, port)
+  override def preStart(): Unit = {
+    val connectionSource =
+      address.getScheme match {
+        case "ws" =>
+          Http(actorSystem).bind(address.getHost, address.getPort)
+        case "wss" =>
+          Http(actorSystem).bind(address.getHost, address.getPort, connectionContext = ConnectionContext.https(sslContext))
+        case scheme =>
+          // TODO write a test for this scenario
+          throw new Exception(s"Scheme $scheme not supported")
+      }
 
-      // when serverSource fails because of very dramatic situations 
-      // such as running out of file descriptors or memory available to the system
-      val reactToTopLevelFailures: Flow[Http.IncomingConnection, Http.IncomingConnection, _] =
-        Flow[Http.IncomingConnection].
-          watchTermination()((_, termination) => termination.failed.foreach { cause =>
-            binder ! CommandFailed(cmd, cause)
-          })
+    // when serverSource fails because of very dramatic situations
+    // such as running out of file descriptors or memory available to the system
+    val reactToTopLevelFailures: Flow[Http.IncomingConnection, Http.IncomingConnection, _] =
+    Flow[Http.IncomingConnection].
+      watchTermination()((_, termination) => termination.failed.foreach { ex =>
+        binder ! CommandFailed(cmd = Bind(router, endpoint), ex)
+      })
 
-      val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
-        Sink.foreach { conn =>
-          val handler = context.actorOf(ConnectionHandler.props(router, routerConfig, transportConfig))
-          handler ! HandleHttpConnection(conn)
-        }
+    val handleConnection: Sink[Http.IncomingConnection, Future[akka.Done]] =
+      Sink.foreach { conn =>
+        val handler = context.actorOf(ConnectionHandler.props(router, boundURI, format, config))
+        handler ! HandleHttpConnection(conn)
+      }
 
-      serverSource
-        .via(reactToTopLevelFailures)
-        .to(handleConnection)
-        .run()
-        .onComplete {
-          case Success(b) =>
-            this.binding = b
-            assert(b.localAddress.getHostString == host)
-            val port = b.localAddress.getPort
-            val url = new URI(scheme, null, host, port, s"/$file", null, null)
-            binder ! Bound(self, url)
-            
-          case Failure(cause) =>
-            binder ! CommandFailed(cmd, cause)
-        }
-    }
+    connectionSource
+      .via(reactToTopLevelFailures)
+      .to(handleConnection)
+      .run()
+      .onComplete {
+        case Success(binding) =>
+          this.serverBinding = Some(binding)
+          this.boundURI = new URI(address.getScheme, null, binding.localAddress.getHostString, binding.localAddress.getPort, address.getPath, null, null)
+          binder ! Bound(self, boundURI)
 
-    case cmd @ Unbind =>
-      this.binding.unbind()
-      context.stop(self)
+        case Failure(ex) =>
+          binder ! CommandFailed(cmd = Bind(router, endpoint), ex)
+      }
   }
+
+
+  override def receive: Receive = {
+    case cmd @ Unbind =>
+      this.serverBinding.foreach(b => {
+        b.unbind()
+        context.stop(self)
+      })
+  }
+
+
+  /*
+  override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case _: ActorInitializationException => Stop
+    case _: ActorKilledException         => Stop
+    case _: DeathPactException           => Stop
+    case _: Exception                    => Restart
+  }
+  */
+
 }
 
-/**
-  * INTERNAL API
-  */
+
+
 private[wamp] object ConnectionListener {
-  /**
-    * Factory for [[ConnectionListener]] instances
-    */
-  def props() = Props(new ConnectionListener())
+  def props(binder: ActorRef, router: ActorRef, endpoint: String, sslContext: SSLContext) =
+    Props(new ConnectionListener(binder, router, endpoint, sslContext))
 }

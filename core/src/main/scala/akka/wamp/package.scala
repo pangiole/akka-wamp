@@ -1,7 +1,10 @@
 package akka
 
 import akka.wamp.messages._
+import com.typesafe.config.Config
+import java.net.URI
 
+import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
 import scala.util.Random.{nextDouble => rnd}
 
 /**
@@ -157,6 +160,43 @@ package object wamp {
       */
     def withAcknowledge(ack: Boolean = true): Dict = {
       dict + ("acknowledge" -> ack)
+    }
+  }
+
+
+  /**
+    * Implicitly wraps a TypeSafe [[Config]] to provide additional utility methods
+    *
+    * @param config
+    */
+  implicit class RichConfig(config: Config) {
+
+    /**
+      * Reads the given configuration path as [[URI]]
+      *
+      * @param path is the path expression
+      * @return the configured URI
+      */
+    def getURI(path: String): URI = {
+      new URI(config.getString(path))
+    }
+  }
+
+
+  private[wamp] class BackoffOptions(
+    val minBackoff: FiniteDuration,
+    val maxBackoff: FiniteDuration,
+    val randomFactor: Double
+  )
+
+
+  private[wamp] trait EndpointConfig {
+    def endpointConfig(name: String, config: Config): (URI, String) = {
+      val c = config.getConfig(s"endpoint.$name").withFallback(config.getConfig("endpoint.local"))
+      (
+        c.getURI("address"),
+        c.getString("format")
+      )
     }
   }
 }

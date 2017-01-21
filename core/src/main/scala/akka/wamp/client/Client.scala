@@ -7,6 +7,7 @@ package akka.wamp.client
 import java.net.URI
 
 import akka.actor.{ActorSystem, Props}
+import akka.wamp.{EndpointConfig, BackoffOptions}
 import akka.wamp.{Peer, Uri}
 
 import scala.concurrent.duration.{FiniteDuration, NANOSECONDS}
@@ -30,66 +31,67 @@ import scala.concurrent.{Future, Promise}
   *
   * @see [[akka.wamp.client.japi.Client]]
   */
-class Client private[client](sstm: ActorSystem) extends Peer {
+class Client private[client](sstm: ActorSystem) extends Peer with EndpointConfig {
 
   /** Is this client's actor system */
-  val system: ActorSystem = sstm
+  val actorSystem: ActorSystem = sstm
 
   import ConnectorSupervisor._
-  import system.dispatcher
+  import actorSystem.dispatcher
 
   /* Is the supervisor of all connectors */
-  private val supervisor = system.actorOf(Props[ConnectorSupervisor], name = "wamp.client")
+  private val supervisor = actorSystem.actorOf(Props[ConnectorSupervisor], name = "wamp.client")
 
-  /**
-    * Is this client configuration
-    */
-  val config = system.settings.config.getConfig("akka.wamp.client")
+
+  val config = actorSystem.settings.config.getConfig("akka.wamp.client")
 
 
   /**
-    * Connects to a router with the ``"default"`` transport configuration
-    * 
+    * Connects to a router with the ``"local"`` endpoint configuration
+    *
     * @return the (future of) connection
     */
   def connect(): Future[Connection] = {
-    connect(transport = "default")
+    connect(endpoint = "local")
   }
 
   /**
-    * Connects to a router with the given named transport configuration
+    * Connects to a router with the given named endpoint configuration
     *
-    * @param transport the name of a configured transport
+    * @param endpoint is the name of the configured endpoint to connect to
     * @return the (future of) connection
     */
-  def connect(transport: String): Future[Connection] = {
-    connect(transport, url = None, format = None)
+  def connect(endpoint: String): Future[Connection] = {
+    connect(endpoint, address = None, format = None)
   }
 
   /**
     * Connects to a router at the given URL and negotiate the given message format
     *
-    * @param uri the address to connect to (e.g. ``"wss://hostname:8433/router"``)
-    * @param format the message format to negotiate (e.g. ``"wamp.2.msgpack"``
+    * @param address is the address to connect to (e.g. ``"wss://hostname:8433/router"``)
+    * @param format is the message format to negotiate (e.g. ``"wamp.2.msgpack"``
     * @return a (future of) connection
     */
-  private[client] def connect(uri: URI, format: String): Future[Connection] = {
-    connect("default", Some(uri), Some(format))
+  def connect(address: String, format: String): Future[Connection] = {
+    connect("local", Some(new URI(address)), Some(format))
   }
 
 
-  private def connect(transport:String, url: Option[URI], format: Option[String]): Future[Connection] = {
+  private def connect(endpoint: String, address: Option[URI], format: Option[String]): Future[Connection] = {
     try {
-      val transportConfig = config.getConfig(s"transport.$transport")
-      connect(
-        url.getOrElse(???/*transportConfig.getString("url")*/),
-        format.getOrElse(transportConfig.getString("format")),
+      val (addr, fmt) = endpointConfig(endpoint, config)
+      val promise = Promise[Connection]
+      val cmd = SpawnConnector(
+        address.getOrElse(addr),
+        format.getOrElse(fmt),
         new BackoffOptions(
-          FiniteDuration(transportConfig.getDuration("min-backoff").toNanos, NANOSECONDS),
-          FiniteDuration(transportConfig.getDuration("max-backoff").toNanos, NANOSECONDS),
-          transportConfig.getDouble("random-factor")
-        )
-      )
+          FiniteDuration(config.getDuration("min-backoff").toNanos, NANOSECONDS),
+          FiniteDuration(config.getDuration("max-backoff").toNanos, NANOSECONDS),
+          config.getDouble("random-factor")
+        ),
+        promise)
+      supervisor ! cmd
+      promise.future
     } catch {
       case cause: Throwable =>
         Future.failed[Connection](new ClientException(cause.getMessage, cause))
@@ -97,42 +99,35 @@ class Client private[client](sstm: ActorSystem) extends Peer {
   }
 
 
-  private def connect(uri: URI, format: String, options: BackoffOptions): Future[Connection] =  {
-    val promise = Promise[Connection]
-    supervisor ! SpawnConnector(uri, format, options, promise)
-    // NOTE: the promise will be fulfilled upon connection establishment
-    promise.future
-  }
-
   /**
-    * Connects and then opens a new session attached to the ``"default"``
+    * Connects and then opens a new session attached to the ``"local"``
     *
     * @return the (future of) session
     */
   def open(): Future[Session] = {
-    open("default", transport = "default")
+    open(realm = "default", endpoint = "local")
   }
 
   /**
     * Connects and then opens a new session attached to the given realm.
     *
-    * @param realm the realm to attach the session to
+    * @param realm is the realm to attach the session to
     * @return the (future of) session
     */
   def open(realm: Uri): Future[Session] = {
-    open(realm, transport = "default")
+    open(realm, endpoint = "local")
   }
 
   /**
     * Connects and then opens a new session attached to the given realm and
-    * named transport
+    * named endpoint configuration
     *
-    * @param realm the realm to attach the session to
-    * @param transport the name of a configured transport
+    * @param realm is the realm to attach the session to
+    * @param endpoint is the name of a configured endpoint
     * @return the (future of) session
     */
-  def open(realm: Uri, transport: String): Future[Session] = {
-    connect(transport).flatMap(conn => conn.open(realm))
+  def open(realm: Uri, endpoint: String): Future[Session] = {
+    connect(endpoint).flatMap(conn => conn.open(realm))
   }
 
 
@@ -163,10 +158,8 @@ object Client {
   /**
     * Creates a new client with the given actor system
     *
-    * @param system the actor system
+    * @param actorSystem is the actor system
     * @return a new client instance
     */
-  def apply(system: ActorSystem): Client = new Client(system)
-
-
+  def apply(actorSystem: ActorSystem): Client = new Client(actorSystem)
 }

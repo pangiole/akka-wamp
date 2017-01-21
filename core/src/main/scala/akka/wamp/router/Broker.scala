@@ -30,7 +30,7 @@ trait Broker { this: Router =>
           * "PUBLISH.Options.acknowledge|bool"
           */
         val ack = options.get("acknowledge") == Some(true)
-        val publicationId = scopes('global).nextRequestId(excludes = publications.toSet)
+        val publicationId = idGenerators('global).nextId(excludes = publications.toSet)
         subscriptions.values.toList.filter(_.topic == topic) match {
           case Nil =>
             /**
@@ -74,7 +74,7 @@ trait Broker { this: Router =>
             /**
               * No subscribers have subscribed to the given topic yet.
               */
-            val subscriptionId = scopes('router).nextRequestId(excludes = subscriptions.toMap.keySet)
+            val subscriptionId = idGenerators('router).nextId(excludes = subscriptions.toMap.keySet)
             subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(session.peer), topic))
             session.peer ! Subscribed(requestId, subscriptionId)
           }

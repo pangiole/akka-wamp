@@ -4,19 +4,22 @@
 * [Messages](messages.md)
 * [Payloads](payloads.md)
 * [Logging](logging.md)
+* [TLS/SSL](tls.md)
 
 @@@
 
 
 # Akka Wamp
-Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written for both [Scala](http://scala-lang.org/) and [Java](http://www.java.com) developers that wish to use [Akka](http://akka.io/) abstractions to write concurrent and reactive applications that are easy to reason about.
+[![Build Status][travis-image]][travis-url] [![CodeCov Status][codecov-image]][codecov-url] [![Gitter][gitter-image]][gitter-url] 
 
-It provides you with
+Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written to let both [Scala](http://scala-lang.org/) and [Java](http://www.java.com) developers build the next generation of reactive web services on top of [Akka](http://akka.io/) abstractions.
 
-* object-oriented representations of WAMP [messages](./messages.html),
-* intuitive [Client APIs](client/index.html) designed to be used with actors, futures and streams,
-* basic [Router](router/index.html) you can embed in your server application or launch as standalone.
+Akka Wamp provides you with:
 
+* Simple [Client APIs](https://angiolep.github.io/projects/akka-wamp/client) designed to be used with [Akka](http://akka.io/) actors, futures and streams.
+* Object-oriented representations of all WAMP [Messages](./messages.html),
+* Akka IO extenson driver for the WAMP Protocol.
+* Basic [Router](https://angiolep.github.io/projects/akka-wamp/router) you can embed in your applications or launch as standalone process.
 
 ## Usage
 Make your Scala or Java build depend on the latest version of akka-wamp:
@@ -31,16 +34,26 @@ gradle
 :    @@snip [pom.xml](./build.gradle)
 
 
-Then read on [Client APIs](client/index.html) for further details.
-
-## Requirements
-* Java >= 1.8 
-* Scala >= 2.11
-
-
 ## Limitations
-* WebSocket transport only (no raw TCP and no SSL/TLS yet) 
-* WAMP Basic Profile only (no Advanced Profile yet)
-* JSON serialization only (no MsgPack yet)
+ * Java >= 1.8.0 
+ * Scala >= 2.12.1
+ * WebSocket transport only (no raw TCP and no SSL/TLS yet) 
+ * WAMP Basic Profile only (none of the Advanced Profile features yet)
+ * JSON serialization only (no MsgPack yet)
+ * Not yet ready for production
 
 
+## Disclaimer
+> This SOFTWARE PRODUCT is provided by THE PROVIDER "as is" and "with all faults." THE PROVIDER makes no representations or warranties of any kind concerning the safety, suitability, lack of viruses, inaccuracies, typographical errors, or other harmful components of this SOFTWARE PRODUCT. There are inherent dangers in the use of any software, and you are solely responsible for determining whether this SOFTWARE PRODUCT is compatible with your equipment and other software installed on your equipment. You are also solely responsible for the protection of your equipment and backup of your data, and THE PROVIDER will not be liable for any damages you may suffer in connection with using, modifying, or distributing this SOFTWARE PRODUCT
+
+[travis-image]: https://travis-ci.org/angiolep/akka-wamp.svg?branch=master
+[travis-url]: https://travis-ci.org/angiolep/akka-wamp
+
+[codecov-image]: https://codecov.io/gh/angiolep/akka-wamp/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/angiolep/akka-wamp
+        
+[gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
+[gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
+
+[download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
+[download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion

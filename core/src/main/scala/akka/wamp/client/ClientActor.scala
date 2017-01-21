@@ -2,9 +2,9 @@ package akka.wamp.client
 
 import akka.actor._
 import akka.wamp._
-import IdScopes._
 
-trait ClientActor extends Actor with SessionIdScope {
+
+trait ClientActor extends Actor {
 
   /** The Akka Wamp Client API configuration */
   val config = context.system.settings.config.getConfig("akka.wamp.client")

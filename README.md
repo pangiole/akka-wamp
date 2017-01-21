@@ -7,7 +7,7 @@ Akka Wamp provides you with:
 
 * Simple [Client APIs](https://angiolep.github.io/projects/akka-wamp/client) designed to be used with [Akka](http://akka.io/) actors, futures and streams.
 * Object-oriented representations of all WAMP [Messages](./messages.html),
-* Akka IO extenson driver for the [WAMP Protocol](https://tools.ietf.org/html/draft-oberstet-hybi-tavendo-wamp-02).
+* Akka IO extenson driver for the WAMP Protocol.
 * Basic [Router](https://angiolep.github.io/projects/akka-wamp/router) you can embed in your applications or launch as standalone process.
 
 ## Usage
@@ -51,18 +51,18 @@ public class JavaClient {
     ActorSystem actorSystem = ActorSystem.create();
     
     Client client = Client.create(actorSystem);
-    client.connect("default").thenAccept(c -> {
-      c.open("myrealm").thenAccept(s -> {
+    client.connect("endpoint").thenAccept(c -> {
+      c.open("realm").thenAccept(s -> {
     
-        s.publish("mytopic", asList("Ciao!"));
+        s.publish("topic", asList("Ciao!"));
     
-        s.subscribe("mytopic", (event) -> {
+        s.subscribe("topic", (event) -> {
           event.args().thenAccept(args -> {
             out.println("got " + args.get(0));
           });
         });
     
-        s.register("myproc", (invoc) -> {
+        s.register("procedure", (invoc) -> {
           return invoc.args().thenApply(args -> {
             Integer a = (Integer) args.get(0);
             Integer b = (Integer) args.get(1);
@@ -71,7 +71,7 @@ public class JavaClient {
           });
         });
     
-        s.call("myproc", asList(20, 55)).thenAccept(res -> {
+        s.call("procedure", asList(20, 55)).thenAccept(res -> {
           res.args().thenAccept(args -> {
             out.println("20 * 55 = " + args.get(0));  
           });
@@ -97,22 +97,22 @@ object ScalaClient extends App {
   val client = Client(system)
   implicit val executionContext = system.dispatcher
 
-  client.connect(transport = "default").map { c =>
-    c.open(realm = "hello").map { implicit s =>
+  client.connect("endpoint").map { c =>
+    c.open("realm").map { implicit s =>
 
-      subscribe("mytopic", (arg: Int) => {
+      subscribe("topic", (arg: Int) => {
         println(s"got $arg")
       })
 
-      publish("mytopic", List("Ciao!"))
+      publish("topic", List("Ciao!"))
 
-      call("myproc", List(20, 55)).foreach { res =>
+      call("procedure", List(20, 55)).foreach { res =>
         res.args.foreach { args =>
           println(s"20 * 55 = ${args(0)}")
         }
       }
       
-      register("myproc", (a: Int, b: Int) => {
+      register("procedure", (a: Int, b: Int) => {
         a + b
       })
     }
@@ -144,6 +144,7 @@ vim ./conf/application.conf
  * WAMP Basic Profile only (none of the Advanced Profile features yet)
  * JSON serialization only (no MsgPack yet)
  * Not yet ready for production
+ 
 
 ## Changelog
 Please, read [CHANGELOG.md](CHANGELOG.md)

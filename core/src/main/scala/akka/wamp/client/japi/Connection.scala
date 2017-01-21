@@ -11,7 +11,7 @@ import scala.concurrent.Future
 /**
   * Represents a connection established by a client to a router.
   *
-  * Instances can be obtained by invoking the [[Client!.connect()*]] method.
+  * Instances can be obtained by invoking the '''Client.connect()''' method.
   * {{{
   *   Client client = ...
   *   CompletionStage<Connection> conn =

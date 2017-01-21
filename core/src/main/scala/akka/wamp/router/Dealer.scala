@@ -57,7 +57,7 @@ trait Dealer { this: Router =>
             /**
               * No callees have registered to provide the given procedure yet.
               */
-            val registrationId = scopes('router).nextRequestId()
+            val registrationId = idGenerators('router).nextId()
             registrations += (registrationId -> new Registration(registrationId, session.peer, procedure))
             session.peer ! Registered(requestId, registrationId)
           }
@@ -135,7 +135,7 @@ trait Dealer { this: Router =>
               */
             
             // send the INVOCATION message with a different requestId
-            val id = scopes('session).nextRequestId()
+            val id = idGenerators('session).nextId()
             val invocation = Invocation(id, registration.id, Invocation.defaultDetails, call.payload)
             invocations += invocation.requestId -> new OutstandingInvocation(caller, call)
             registration.callee ! invocation

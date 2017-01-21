@@ -5,31 +5,45 @@ import akka.io._
 import akka.wamp._
 import akka.wamp.messages._
 
+import scala.collection.JavaConverters._
 
-class EmbeddedRouter(factory: ActorRefFactory)(implicit system: ActorSystem) extends Actor with ActorLogging {
+private class Binder(router: ActorRef) extends Actor with ActorLogging {
+  implicit val actorSystem = context.system
+  val config = actorSystem.settings.config
+  val manager = IO(Wamp)
 
   override def preStart(): Unit = {
-    val router = factory.actorOf(Router.props(), "router")
-    val manager = IO(Wamp)
-    manager ! Bind(router)
+    config.getObject("akka.wamp.router.endpoint")
+      .unwrapped()
+      .asScala
+      .foreach { case (endpoint, _) =>
+        manager ! Bind(router, endpoint)
+      }
   }
 
   override def receive: Receive = {
-    case signal @ CommandFailed(cmd, ex) =>
+    case sig @ CommandFailed(cmd, ex) =>
       log.warning(s"$cmd failed because of $ex")
 
-    case signal @ Bound(listener, url) =>
+    case sig @ Bound(_, url) =>
       log.debug(s"Bound to $url")
-    // ...
-    // listener ! Unbind
   }
 }
 
+
+/**
+  * The factory of an embedded router actor and its listeners
+  */
 object EmbeddedRouter {
-  def createAndBind(factory: ActorRefFactory)(implicit system: ActorSystem): ActorRef = {
-    factory.actorOf(Props(new EmbeddedRouter(factory)))
-  }
-  def createAndBind(implicit system: ActorSystem): ActorRef = {
-    system.actorOf(Props(new EmbeddedRouter(system)))
+  /**
+    * Creates an embedded router actor and spins as many listeners
+    * as many configured endpoints for it
+    *
+    * @param actorSystem is the Akka Actor System
+    * @return the embedded router
+    */
+  def createAndBind(actorSystem: ActorSystem): ActorRef = {
+    val router = actorSystem.actorOf(Router.props(), "router")
+    actorSystem.actorOf(Props(new Binder(router)))
   }
 }

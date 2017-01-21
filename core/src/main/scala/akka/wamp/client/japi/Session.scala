@@ -96,7 +96,7 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /** Is this session unique identifier as sent by the router */
-  val id = delegate.id
+  val id: Long = delegate.id
 
   /** Are addtional details about this session as sent by the router */
   val details = delegate.details

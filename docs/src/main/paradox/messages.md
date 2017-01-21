@@ -57,7 +57,7 @@ It is the message the client receives from the router upon session opening failu
 <a name="CommandFailed"></a>
 
 ## CommandFailed
-It is the signal message the client receives from the [manager actor](./client/index.html#extension-manager) whatever command (e.g. [Connect](#Connect) or [Bind](#Bind)) fails. It can be deconstructed with:
+It is the signal the client receives from the [manager actor](./client/index.html#extension-manager) whatever command (e.g. [Connect](#Connect) or [Bind](#Bind)) fails. It can be deconstructed with:
 
 * ``cmd: Command``  
   It is the original command that was failed
@@ -101,7 +101,7 @@ Though documented here, the actual Akka Wamp version does provide neither ``tcp`
 <a name="Connected"></a>
 
 ## Connected
-It's the signal message the client receives from the [manager actor](./client/index.html#extension-manager) upon successful connection to a router. It can be deconstructed with:
+It's the signal the client receives from the [manager actor](./client/index.html#extension-manager) upon successful connection to a router. It can be deconstructed with:
 
 * ``conn: ActorRef``  
   It is the connection handler actor reference the client shall hold. That's where further messages addressed to the router shall be sent to.
@@ -112,7 +112,7 @@ It's the signal message the client receives from the [manager actor](./client/in
 <a name="Disconnected"></a>
 
 ## Disconnected
-It's the signal message the client receives from the [manager actor](./client/index.html#extension-manager) upon disconnection from the router side.
+It's the signal the client receives from the [manager actor](./client/index.html#extension-manager) upon disconnection from the router side.
 
 
 

@@ -1,13 +1,12 @@
 package akka.wamp.client
 
-import java.net.URI
-
 import akka.actor._
 import akka.io.IO
 import akka.testkit._
 import akka.wamp.messages._
 import akka.wamp._
 import akka.wamp.router._
+import SequentialIdGenerators.testIdGenerators
 import org.scalatest._
 import org.scalatest.concurrent._
 
@@ -20,7 +19,7 @@ class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
   
   implicit val defaultPatience = PatienceConfig(timeout = 32 seconds, interval = 100 millis)
 
-  case class FixtureParam(client: Client, router: TestActorRef[Router], uri: URI) {
+  case class FixtureParam(client: Client, router: TestActorRef[Router], uri: String) {
     // establish a new connection to test with
     def withConnection(testCode: Connection => Unit) = {
       whenReady(client.connect(uri, "json")) { conn =>
@@ -39,21 +38,14 @@ class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
     }
   }
 
-  import IdScopes._
 
   override def withFixture(test: OneArgTest) = {
-    // TODO why following scopes are important for unit test?
-    val scopes = Map(
-      'global -> new SessionIdScope {},
-      'router -> new SessionIdScope {},
-      'session -> new SessionIdScope {}
-    )
-    val router = TestActorRef[Router](Router.props(scopes))
+    val router = TestActorRef[Router](Props(new Router(testIdGenerators)))
     try {
-      IO(Wamp) ! Bind(router)
+      IO(Wamp) ! Bind(router, "local")
       val bound = expectMsgType[Bound](32 seconds)
       val client = new Client(system)
-      val theFixture = FixtureParam(client, router, bound.uri)
+      val theFixture = FixtureParam(client, router, bound.uri.toString)
       withFixture(test.toNoArgTest(theFixture))
     }
     finally {

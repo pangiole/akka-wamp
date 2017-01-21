@@ -5,7 +5,6 @@
 
 package akka.wamp.client.japi
 
-import java.net.URI
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorSystem
@@ -32,17 +31,17 @@ import scala.compat.java8.FutureConverters.{toJava => asJava}
   * @see [[akka.wamp.client.Client]]
   */
 class Client private[japi](delegate: ClientDelegate) {
-  import delegate.system.dispatcher
+  import delegate.actorSystem.dispatcher
 
   /** Is this client configuration */
   val config = delegate.config
 
 
   /** Is this client actory system */
-  val system = delegate.system
+  val system = delegate.actorSystem
 
   /**
-    * Connects to a router with the ``"default"`` transport configuration
+    * Connects to a router listening at the ``"local"`` endpoint
     *
     * @return the (future of) connection
     */
@@ -51,29 +50,30 @@ class Client private[japi](delegate: ClientDelegate) {
   }
 
   /**
-    * Connects to a router with the given named transport configuration
+    * Connects to a router listening at the given endpoint
     *
-    * @param transport the name of a configured transport
+    * @param endpoint is the name of a configured endpoint
     * @return the (future of) connection
     */
-  def connect(transport: String): CompletionStage[Connection] = asJava {
-    delegate.connect(transport).map(c => new Connection(delegate = c))
+  def connect(endpoint: String): CompletionStage[Connection] = asJava {
+    delegate.connect(endpoint).map(c => new Connection(delegate = c))
   }
 
   /**
-    * Connects to a router at the given URL and negotiate the given message format
+    * Connects to a router listening at the given address and
+    * providing the given message format
     *
-    * @param uri the address to connect to (e.g. ``"wss://hostname:8433/router"``)
-    * @param format the message format to negotiate (e.g. ``"wamp.2.msgpack"``
+    * @param address is the address to connect to (e.g. ``"wss://host.net:8433/router"``)
+    * @param format is the message format to negotiate (e.g. ``"wamp.2.msgpack"``
     * @return a (future of) connection
     */
-  private[client] def connect(uri: URI, format: String): CompletionStage[Connection] = asJava {
-    delegate.connect(uri, format).map(c => new Connection(delegate = c))
+  def connect(address: String, format: String): CompletionStage[Connection] = asJava {
+    delegate.connect(address, format).map(c => new Connection(delegate = c))
   }
 
 
   /**
-    * Connects and then opens a new session attached to the ``"default"``
+    * Connects and then opens a new session attached to the ``"default"`` realm
     *
     * @return the (future of) session
     */
@@ -94,14 +94,14 @@ class Client private[japi](delegate: ClientDelegate) {
 
   /**
     * Connects and then opens a new session attached to the given realm and
-    * named transport
+    * named endpoint
     *
+    * @param endpoint is the name of a configured endpoint
     * @param realm the realm to attach the session to
-    * @param transport the name of a configured transport
     * @return the (future of) session
     */
-  def open(transport: String, realm: Uri): CompletionStage[Session] =asJava {
-    delegate.open(transport, realm).map(s => new Session(delegate = s))
+  def open(endpoint: String, realm: Uri): CompletionStage[Session] =asJava {
+    delegate.open(endpoint, realm).map(s => new Session(delegate = s))
   }
 
 }

@@ -66,7 +66,7 @@ final object Hello {
   * @param details is the session details
   */
 final case class Welcome(
-  sessionId: Id,
+  sessionId: Long,
   details: Dict = Welcome.defaultDetails)
   (implicit validator: Validator)
   extends ProtocolMessage
@@ -148,7 +148,7 @@ final object Goodbye {
   */
 final case class Error(
   requestType: Int,
-  requestId: Id,
+  requestId: Long,
   details: Dict = Error.defaultDict,
   error: Uri,
   payload: Payload = Payload())
@@ -190,7 +190,7 @@ final object Error {
   * @param payload  is the payload bearing application data
   */
 final case class Publish(
-  requestId: Id,
+  requestId: Long,
   options: Dict = Publish.defaultOptions,
   topic: Uri,
   payload: Payload = Payload())
@@ -219,8 +219,8 @@ final object Publish {
   * @param publicationId is a identifier chosen by the router for the publication
   */
 final case class Published(
-  requestId: Id,
-  publicationId: Id)
+  requestId: Long,
+  publicationId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -246,7 +246,7 @@ final object Published {
   * @param topic is the topic the Subscribe  wants to subscribe to
   */
 final case class Subscribe(
-  requestId: Id,
+  requestId: Long,
   options: Dict = Subscribe.defaultOptions,
   topic: Uri)
   (implicit validator: Validator)
@@ -274,8 +274,8 @@ final object Subscribe {
   * @param subscriptionId is an identifier chosen by the Broker for the subscription
   */
 final case class Subscribed(
-  requestId: Id,
-  subscriptionId: Id)
+  requestId: Long,
+  subscriptionId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -297,8 +297,8 @@ final object Subscribed {
   * @param subscriptionId is the identifier for the subscription to unsubscribe from, originally handed out by the Broker to the Subscriber
   */
 final case class Unsubscribe(
-  requestId: Id,
-  subscriptionId: Id)
+  requestId: Long,
+  subscriptionId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -322,7 +322,7 @@ final object Unsubscribe {
   * @param requestId is the identifier from the original Subscribed request
   */
 final case class Unsubscribed(
-  requestId: Id)
+  requestId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -348,8 +348,8 @@ final object Unsubscribed {
   * @param payload is the payload bearing application data
   */
 final case class Event(
-  subscriptionId: Id,
-  publicationId: Id,
+  subscriptionId: Long,
+  publicationId: Long,
   details: Dict = Event.defaultOptions,
   payload: Payload = Payload())
   (implicit validator: Validator, executionContent: ExecutionContext)
@@ -388,7 +388,7 @@ final object Event {
   * @param procedure is the procedure the Callee wants to register
   */
 final case class Register(
-  requestId: Id,
+  requestId: Long,
   options: Dict = Register.defaultOptions,
   procedure: Uri)
   (implicit validator: Validator)
@@ -416,8 +416,8 @@ final object Register {
   * @param registrationId is an identifier chosen by the dealer for the registration
   */
 final case class Registered(
-  requestId: Id,
-  registrationId: Id)
+  requestId: Long,
+  registrationId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -442,8 +442,8 @@ final object Registered {
   * @param registrationId is the identifier for the registration to revoke, originally handed out by the dealer to the callee.
   */
 final case class Unregister(
-  requestId: Id,
-  registrationId: Id)
+  requestId: Long,
+  registrationId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -467,7 +467,7 @@ final object Unregister {
   * @param requestId is the identifier from the original Subscribed request
   */
 final case class Unregistered(
-  requestId: Id)
+  requestId: Long)
   (implicit validator: Validator)
   extends ProtocolMessage
 {
@@ -495,7 +495,7 @@ final object Unregistered {
   * @param payload is the payload bearing application data
   */
 final case class Call(
-  requestId: Id,
+  requestId: Long,
   options: Dict = Call.defaultOptions,
   procedure: Uri,
   payload: Payload = Payload())
@@ -530,8 +530,8 @@ final object Call {
   * @param payload is the payload bearing application data
   */
 final case class Invocation (
-  requestId: Id,
-  registrationId: Id,
+  requestId: Long,
+  registrationId: Long,
   details: Dict = Invocation.defaultDetails,
   payload: Payload = Payload())
   (implicit validator: Validator, executionContext: ExecutionContext)
@@ -563,7 +563,7 @@ final object Invocation {
   * @param payload is the payload conveyed by this message
   */
 final case class Yield(
-  requestId: Id,
+  requestId: Long,
   options: Dict = Yield.defaultOptions,
   payload: Payload = Payload())
   (implicit validator: Validator)
@@ -600,7 +600,7 @@ final object Yield {
   * @param payload is the payload bearing application data
   */
 final case class Result(
-  requestId: Id,
+  requestId: Long,
   details: Dict = Result.defaultDetails,
   payload: Payload = Payload())
   (implicit validator: Validator, ec: ExecutionContext)

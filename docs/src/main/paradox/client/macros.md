@@ -40,10 +40,10 @@ This macro expands to an [invocation handler](./futures.html#invocation-handler)
 
 ### Deserialization
 
-Incoming arguments match lambda parameters by applying the logic described in this section. Be ``rank`` the number of supplied lambda parameters, ``args`` the incoming list of indexed arguments and ``kwargs`` the (optional) incoming dictionary of named arguments, then Akka Wamp:
+Incoming arguments match lambda parameters by applying the logic described in this section. Be ``arity`` the number of supplied lambda parameters, ``args`` the incoming list of indexed arguments and ``kwargs`` the (optional) incoming dictionary of named arguments, then Akka Wamp:
 
 * Prefers to match ``args`` as first choice and ``kwargs`` as second.
-* Selects either of ``args`` or ``kwargs`` depending on their length. The arguments having length different than rank will be discarded.
+* Selects either of ``args`` or ``kwargs`` depending on their length. That having length different than arity will be discarded.
 * ``args`` must match data types of same position parameters. ``kwargs`` must match parameter names too.
 * If neither ``args`` nor ``kwargs`` match parameters then deserialization fails with ``ClientException``
 

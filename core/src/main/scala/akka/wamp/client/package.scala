@@ -58,7 +58,6 @@ package object client {
 
   import akka.Done
   import akka.actor._
-  import akka.wamp.IdScopes.SessionIdScope
   import akka.wamp.client.Connector._
   import akka.wamp.messages._
   import akka.wamp.serialization.Payload
@@ -154,7 +153,7 @@ package object client {
     * @see [[akka.wamp.client.japi.Session]]
     */
   class Session private[client](protected val connector: ActorRef, rlm: Uri, welcome: Welcome)
-    extends akka.wamp.Session with SessionIdScope
+    extends akka.wamp.Session
   {
 
     /** Is this session unique identifier as sent by the router */

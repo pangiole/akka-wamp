@@ -57,7 +57,7 @@ class Connection private[client](connector: ActorRef, addr: URI, fmt: String)(im
   val format = fmt
 
   /**
-    * Opens a session to be attached to the ``"default"``
+    * Opens a session to be attached to the ``"default"`` realm
     */
   def open(): Future[Session] = open(Hello.defaultRealm)
 

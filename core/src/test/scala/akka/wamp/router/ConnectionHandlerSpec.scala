@@ -16,12 +16,12 @@ import akka.stream.scaladsl._
 class ConnectionHandlerSpec extends ConnectionHandlerBaseSpec
 {
   "The default router.ConnectionHandler" should "reject websocket requests if no format matches" in { f =>
-    WS(URL, clientSideHandler = Flow[WebSocketMessage]) ~> f.httpRoute ~> check {
+    WS(url, clientSideHandler = Flow[WebSocketMessage]) ~> f.httpRoute ~> check {
       rejections.collect {
         case UnsupportedWebSocketSubprotocolRejection(p) => p
       }.toSet mustBe Set("wamp.2.json")
     }
-    WS(URL, clientSideHandler = Flow[WebSocketMessage], List("other")) ~> Route.seal(f.httpRoute) ~> check {
+    WS(url, clientSideHandler = Flow[WebSocketMessage], List("other")) ~> Route.seal(f.httpRoute) ~> check {
       status mustBe StatusCodes.BadRequest
       responseAs[String] mustBe "None of the websocket subprotocols offered in the request are supported. Supported are 'wamp.2.json'."
       header("Sec-WebSocket-Protocol").get.value() mustBe "wamp.2.json"
@@ -31,10 +31,10 @@ class ConnectionHandlerSpec extends ConnectionHandlerBaseSpec
 
   
   it should "reject any non-websocket requests" in { fixture =>
-    Get(URL) ~> fixture.httpRoute ~> check {
+    Get(url) ~> fixture.httpRoute ~> check {
       rejection mustBe ExpectedWebSocketRequestRejection
     }
-    Get(URL) ~> Route.seal(fixture.httpRoute) ~> check {
+    Get(url) ~> Route.seal(fixture.httpRoute) ~> check {
       status mustBe StatusCodes.BadRequest
       responseAs[String] mustBe "Expected WebSocket Upgrade request"
     }

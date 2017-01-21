@@ -34,10 +34,10 @@ The following table summarizes which are the incoming messages behaving like ``D
 If you do not need to fully control the deserialization process then you can easily access to incoming data as follows:
 
 Scala
-:    @@snip [ScalaClient.scala](../scala/docs/ScalaClient.scala){ #incoming-arguments }
+:    @@snip [ScalaClient](../scala/docs/FuturesScalaClient.scala){ #incoming-arguments }
 
 Java
-:    @@snip [JavaClient.java](../java/docs/JavaClient.java){ #incoming-arguments }
+:    @@snip [FuturesJavaClient](../java/docs/FuturesJavaClient.java){ #incoming-arguments }
 
 Data conveyed by incoming messages are accessible as:
 
@@ -72,10 +72,10 @@ Value          | JSON / MsgPack  | Scala / Java
 If you want full control of the deserializing process the you can access to the **unparsed** data as follows:
 
 Scala
-:    @@snip [ScalaClient.scala](../scala/docs/ScalaClient.scala){ #incoming-payload }
+:    @@snip [ScalaClient](../scala/docs/FuturesScalaClient.scala){ #incoming-payload }
 
 Java
-:    @@snip [JavaClient.java](../java/docs/JavaClient.java){ #incoming-payload }
+:    @@snip [FuturesJavaClient](../java/docs/FuturesJavaClient.java){ #incoming-payload }
 
 Unparsed data is represented as Akka Stream sources you're put in charge to consume with whatever parser you might prefer to use for whatever format you know incoming data could have been arranged with (e.g. UBJSON, YAML, XML, ProtoBuf, etc.)
 
@@ -91,10 +91,10 @@ TBD
 TBD
 
 Scala
-:    @@snip [ScalaClient.scala](../scala/docs/ScalaClient.scala){ #outgoing-arguments }
+:    @@snip [ScalaClient](../scala/docs/FuturesScalaClient.scala){ #outgoing-arguments }
 
 Java
-:    @@snip [JavaClient.java](../java/docs/JavaClient.java){ #outgoing-arguments }
+:    @@snip [FuturesJavaClient](../java/docs/FuturesJavaClient.java){ #outgoing-arguments }
 
 
 ### Streams

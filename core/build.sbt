@@ -14,6 +14,7 @@ libraryDependencies ++= Seq (
 //  akkaStreamTestkit,
   scalatest,
   scalamock,
+  mockito,
   pegdown,
   junit
 ).map(_ % Test)

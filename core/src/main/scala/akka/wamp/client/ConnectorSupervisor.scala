@@ -9,17 +9,17 @@ import java.net.URI
 
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorKilledException, DeathPactException, OneForOneStrategy, SupervisorStrategy}
+import akka.wamp.BackoffOptions
 import akka.wamp.client.ConnectorSupervisor.SpawnConnector
 
 import scala.concurrent.Promise
-import scala.concurrent.duration.FiniteDuration
 
 /* Spawns and supervises all connector actors */
 private[client] class ConnectorSupervisor extends Actor {
 
   override def receive: Receive = {
-    case SpawnConnector(url, format, options, promise) =>
-      context.actorOf(Connector.props(url, format, options, promise))
+    case SpawnConnector(address, format, options, promise) =>
+      context.actorOf(Connector.props(address, format, options, promise))
   }
 
   override def supervisorStrategy: SupervisorStrategy =
@@ -39,16 +39,10 @@ private[client] object ConnectorSupervisor {
 
   /* Commands new connector to be spawned */
   case class SpawnConnector(
-    uri: URI,
+    address: URI,
     format: String,
     options: BackoffOptions,
     promise: Promise[Connection]
   )
 
-  /* Are the backoff options.*/
-  private[client] class BackoffOptions(
-    val minBackoff: FiniteDuration,
-    val maxBackoff: FiniteDuration,
-    val randomFactor: Double
-  )
 }

@@ -37,7 +37,7 @@ class ManagerSpec
   }
 
   "The IO(Wamp) manager" should "bind a router to the default transport" in {
-    manager ! Bind(router, transport = "default")
+    manager ! Bind(router, endpoint = "local")
     val bound = expectMsgType[Bound](32 seconds)
     listener = bound.listener
     listener must not be (null)

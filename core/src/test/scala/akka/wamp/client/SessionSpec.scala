@@ -1,13 +1,7 @@
 package akka.wamp.client
 
-import akka.Done
-import akka.wamp.messages._
 import akka.wamp.router.Router.SimulateShutdown
-import akka.wamp.serialization.Payload
 import org.scalamock.scalatest.MockFactory
-
-import scala.concurrent._
-import scala.concurrent.duration._
 
 class SessionSpec extends ClientBaseSpec with MockFactory {
 

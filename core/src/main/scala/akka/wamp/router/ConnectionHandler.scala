@@ -15,30 +15,13 @@ import akka.wamp.serialization.JsonSerializationFlows
 import com.typesafe.config.Config
 
 
-/*
-  * This connection connects two peers and provides a WebSocket channel
-  * over which JSON messages for a session can flow in both directions.
-  *
-  */
-private 
-class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig: Config)
-  extends Actor 
-    with ActorLogging 
+private[router]
+class ConnectionHandler(routerRef: ActorRef, uri: URI, format: String, routerConfig: Config) extends Actor  with ActorLogging
 {
   implicit val mat = ActorMaterializer()
   // TODO close the materializer at some point
 
-
-  val scheme = transportConfig.getString("scheme")
-  val host = transportConfig.getString("host")
-  val port = transportConfig.getInt("port")
-  val file = transportConfig.getString("file")
-  val uri = new URI(scheme, null, host, port, s"/$file", null, null)
-
-  val format = transportConfig.getString("format")
-
   val webroot = routerConfig.getString("webroot")
-
 
   // TODO [Provide msgpack format](https://github.com/angiolep/akka-wamp/issues/12)
   val serializationFlows = new JsonSerializationFlows(
@@ -49,7 +32,7 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
 
   /** The second peer to connect */
   var peer: ActorRef = _
-  
+
   val websocketHandler: Flow[WebSocketMessage, WebSocketMessage, ActorRef] = {
 
     // A stream source that will be materialized as an actor and
@@ -101,8 +84,8 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
 
   val httpRoute: Route = {
     get {
-      path(file) {
-        handleWebSocketMessagesForProtocol(websocketHandler, "wamp.2.json")
+      path(uri.getPath.drop(1)) {
+        handleWebSocketMessagesForProtocol(websocketHandler, s"wamp.2.$format")
         // TODO add handler for msgpack
       }
     } ~
@@ -122,38 +105,38 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
       via(reactToConnectionFailure).
       via(httpRoute)
   }
-  
-  
+
+
   override def preStart(): Unit = {
     log.debug("[{}]     Starting", self.path.name)
   }
 
-  
+
   def receive: Receive = {
     case cmd @ HandleHttpConnection(conn) =>
       log.debug("[{}]     Handling HTTP connection {}", self.path.name, conn.localAddress)
       conn.handleWith(httpFlow)
-      
+
     case signal @ Connected(p, url, format) =>
       peer = p
       log.debug("[{}]     Connected WAMP [{}]", self.path.name, peer.path.name)
-      router ! Connected(self, url, format)
+      routerRef ! Connected(self, url, format)
 
-    case msg: ProtocolMessage if (sender() == router) =>
+    case msg: ProtocolMessage if (sender() == routerRef) =>
       log.debug("[{}] --> {}", self.path.name, msg)
       peer ! msg
-      
+
     case msg: ProtocolMessage /* if (sender() == peer) */ =>
       log.debug("[{}] <-- {}", self.path.name, msg)
-      router ! msg
-      
+      routerRef ! msg
+
     case signal @ Disconnected =>
       // NOTE:
-      //    It happens when the AKKA STREAM completes 
-      //    (e.g. when the underlying WebSocket disconnects 
+      //    It happens when the AKKA STREAM completes
+      //    (e.g. when the underlying WebSocket disconnects
       //          from client side)
       log.debug("[{}] !!! Disconnected [{}]", self.path.name, peer.path.name)
-      router ! Disconnected
+      routerRef ! Disconnected
       self ! PoisonPill
 
     case status @ stream.Failure(ex) =>
@@ -161,7 +144,7 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
       //    It happens when exceptions are thrown and
       //    the above AKKA STREAM completes with failure
       log.warning("[{}] !!! Stream.Failure [{}: {}]", self.path.name, ex.getClass.getName, ex.getMessage)
-      router ! Disconnected
+      routerRef ! Disconnected
       self ! PoisonPill
 
     case cmd @ Disconnect =>
@@ -170,7 +153,7 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
       //    (e.g. upon receive offending messages)
       peer ! PoisonPill
       //    ... and Disconnected signal will 
-      //    be emitted as consequence.  
+      //    be emitted as consequence.
   }
 
   override def postStop(): Unit = {
@@ -179,15 +162,8 @@ class ConnectionHandler(router: ActorRef, routerConfig: Config, transportConfig:
 }
 
 
+private[router]
 object ConnectionHandler {
-  /**
-    * Create a Props for an actor of this type
-    *
-    * @param router is the first peer to connect
-    * @param routerConfig is the router configuration
-    * @param transportConfig is the transport configuration
-    * @return
-    */
-  def props(router: ActorRef, routerConfig: Config, transportConfig: Config) =
-    Props(new ConnectionHandler(router, routerConfig, transportConfig))
+  def props(router: ActorRef, uri: URI, format: String, routerConfig: Config) =
+    Props(new ConnectionHandler(router, uri, format, routerConfig))
 }

@@ -19,17 +19,17 @@ class JsonMessageSpec
 
   "An Error object message" should behave like argumentsConveyor(s, prefix="""[8,34,9007199254740992,{},"wamp.error.no_such_subscription"""")
 
-//  "A Publish object message" should behave like argumentsConveyor(s, prefix="""[16,9007199254740992,{"acknowledge":true},"myapp.topic"""")
-//
-//  "An Event object message" should behave like argumentsConveyor(s, prefix="""[36,1,1,{}""")
-//
-//  "An Invocation object message" should behave like argumentsConveyor(s, prefix="""[68,1,1,{}""")
-//
-//  "A Call object message" should behave like argumentsConveyor(s, prefix="""[48,1,{},"myapp.procedure"""")
-//
-//  "A Yield object message" should behave like argumentsConveyor(s, prefix="""[70,1,{}""")
-//
-//  "A Result object message" should behave like argumentsConveyor(s, prefix="""[50,1,{}""")
+  "A Publish object message" should behave like argumentsConveyor(s, prefix="""[16,9007199254740992,{"acknowledge":true},"myapp.topic"""")
+
+  "An Event object message" should behave like argumentsConveyor(s, prefix="""[36,1,1,{}""")
+
+  "An Invocation object message" should behave like argumentsConveyor(s, prefix="""[68,1,1,{}""")
+
+  "A Call object message" should behave like argumentsConveyor(s, prefix="""[48,1,{},"myapp.procedure"""")
+
+  "A Yield object message" should behave like argumentsConveyor(s, prefix="""[70,1,{}""")
+
+  "A Result object message" should behave like argumentsConveyor(s, prefix="""[50,1,{}""")
 }
 
 
@@ -65,7 +65,6 @@ trait JsonMessageBehaviours { this: JsonMessageSpec =>
 
 
     it should "convey arguments deserializable to a provided user type" in {
-      pending
       val json = single(prefix).concat(single(""" ,  [],{"name":"paolo", "age": 99, "male":   true}]"""))
       val message = s.deserialize(json)
       message match {
@@ -82,7 +81,6 @@ trait JsonMessageBehaviours { this: JsonMessageSpec =>
 
 
     it should "convey arguments deserializable to default types" in {
-      pending
       //                                         0    1         2           3    4        5   6     7                                                     8
       val json = single(prefix).concat(single(""",  [null,2147483647,2147483648,1.45,"string",true,false,[null,2147483647,2147483648,1.45,"string",true,false],{"key0":null,"key1":2147483647,"key2":2147483648,"key3":1.45,"key4":"string","key5":true,"key6":false}],{"arg0":null,"arg1":2147483647,"arg2":2147483648,"arg3":1.45,"arg4":"string","arg5":true,"arg6":false,"arg7":[null,2147483647,2147483648,1.45,"string",true,false],"arg8":{"key0":null,"key1":2147483647,"key2":2147483648,"key3":1.45,"key4":"string","key5":true,"key6":false}}]"""))
       val message = s.deserialize(json)
@@ -135,7 +133,6 @@ trait JsonMessageBehaviours { this: JsonMessageSpec =>
 
 
     it should "convey unparsed textual payload" in {
-      pending
       val suffix = single(",???]")
       val json = single(prefix).concat(suffix)
       val message = s.deserialize(json)

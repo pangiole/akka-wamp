@@ -48,7 +48,7 @@ object Macros {
 
 
   private def subscribe(c: Context)(topic: c.Expr[String], lambda: c.universe.Function): String = {
-    val (tpc, rank, args, kwargs) = inspect(c)(topic, lambda)
+    val (tpc, arity, args, kwargs) = inspect(c)(topic, lambda)
     val code = s"""
        | import akka.Done
        | import akka.wamp.client._
@@ -57,7 +57,7 @@ object Macros {
        | implicitly[Session].subscribe($tpc, event => {
        |   val errmsg = "Couldn't invoke lambda consumer for ${tpc.replace('"',''')}"
        |   event.args.flatMap { args =>
-       |     if (args.size == $rank) {
+       |     if (args.size == $arity) {
        |       try {
        |         $lambda.apply(${args.mkString(",")})
        |         Future(Done)
@@ -68,7 +68,7 @@ object Macros {
        |     }
        |     else {
        |       event.kwargs.map { kwargs =>
-       |         if (kwargs.size == $rank) {
+       |         if (kwargs.size == $arity) {
        |           try {
        |             $lambda.apply(${kwargs.mkString(",")})
        |             Done
@@ -109,7 +109,7 @@ object Macros {
 
 
   private def register(c: Context)(procedure: c.Expr[String], lambda: c.universe.Function): String = {
-    val (prc, rank, args, kwargs) = inspect(c)(procedure, lambda)
+    val (prc, arity, args, kwargs) = inspect(c)(procedure, lambda)
     val code = s"""
        | import akka.wamp.client._
        | import akka.wamp.serialization._
@@ -118,7 +118,7 @@ object Macros {
        | implicitly[Session].register($prc, invoc => {
        |   val errmsg = "Couldn't invoke lambda consumer for ${prc.replace('"',''')}"
        |   invoc.args.flatMap { args =>
-       |     if (args.size == $rank) {
+       |     if (args.size == $arity) {
        |       try {
        |         Future(Payload(List(
        |          $lambda.apply(${args.mkString(",")})
@@ -130,7 +130,7 @@ object Macros {
        |     }
        |     else {
        |       invoc.kwargs.map { kwargs =>
-       |         if (kwargs.size == $rank) {
+       |         if (kwargs.size == $arity) {
        |           try {
        |             Payload(List(
        |               $lambda.apply(${kwargs.mkString(",")})

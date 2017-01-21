@@ -1,57 +1,57 @@
 package akka.wamp.router
 
+import SequentialIdGenerators.testIdGenerators
+import java.net.URI
+
+import akka.actor.Props
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.testkit._
 import akka.testkit._
-import akka.wamp.Validator
-import akka.wamp.serialization.JsonSerializationFlows
 import org.scalatest._
 
-/**
-  * The SUT - System Under Test of this tests suite is meant to be 
-  * the ``router.Connection.httpRoute``
+/*
+  * The SUT - System Under Test of this suite is the ``ConnectionHandler.httpRoute` object!
   * 
-  * Test methods of this suite are setup with fresh fixture instance
-  * providing the SUT and any necessary DOC - Depends-on Components
-  * Custom test doubles are NOT replacing DOCs in this tests suite,
-  * but rather Akka TestKit facilities are being used.
+  * Test methods are setup with a "Fresh Fixture" instance which provides both the SUT and
+  * any necessary DOC - Depends-on Components
+  *
+  * Custom test doubles are NOT replacing DOCs in this tests suite, but rather Akka TestKit
+  * facilities are being used.
   * 
-  * httpRoute is wrapped by ``testkit.Route.seal()`` when HTTP rejections
-  * need to be checked
+  * httpRoute is wrapped by ``testkit.Route.seal()`` when HTTP rejections need to be checked
   */
 class ConnectionHandlerBaseSpec 
   extends fixture.FlatSpec 
     with MustMatchers with BeforeAndAfterAll
     with ScalatestRouteTest
     with ParallelTestExecution
-    with SequentialIdScopes
 {
-  val URL = "http://127.0.0.1:8080/wamp"
-  
-  def withWsClient(route: Route)(testScenario: (WSProbe) => Unit) = {
-    
-  }
+  val url = "http://127.0.0.1:8080/wamp"
+  val format = "json"
+  val uri = new URI(url)
 
   case class FixtureParam(httpRoute: Route, client: WSProbe)
-  
-  override def withFixture(test: OneArgTest) = {
-    val wampRouter = TestActorRef[Router](Router.props(scopes))
-    val wampClient = WSProbe()
 
-    val routerConfig = testConfig.getConfig("akka.wamp.router")
-    val transportConfig = routerConfig.getConfig("transport.default")
-    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(wampRouter, routerConfig, transportConfig))
-    
+  override def withFixture(test: OneArgTest) = {
+    val router = TestActorRef[Router](Props(new Router(testIdGenerators)))
+    val client = WSProbe()
+
+    val handler = TestActorRef[ConnectionHandler](ConnectionHandler.props(
+      router, uri, format,
+      testConfig.getConfig("akka.wamp.router")
+    ))
+
     // httpRoute is the SUT - System Under Test
     val httpRoute: Route = handler.underlyingActor.httpRoute
-    val theFixture = FixtureParam(httpRoute, wampClient)
+
+    val theFixture = FixtureParam(httpRoute, client)
     try {
-      WS(URL, wampClient.flow, List("wamp.2.json")) ~> httpRoute ~> check {
+      WS(url, client.flow, List(s"wamp.2.$format")) ~> httpRoute ~> check {
         withFixture(test.toNoArgTest(theFixture))
       }
     }
     finally {
-      system.stop(wampRouter)
+      system.stop(router)
     }
   }
 

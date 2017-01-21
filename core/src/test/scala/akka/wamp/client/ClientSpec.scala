@@ -21,7 +21,7 @@ class ClientSpec extends ClientBaseSpec {
 
   
   it should "fail to connect when 'unknown' format is given" in { f =>
-    val conn = f.client.connect(f.uri, format = "unknown")
+    val conn = f.client.connect(f.uri.toString, format = "unknown")
     whenReady(conn.failed) { ex =>
       ex mustBe a[ClientException]
       ex.getCause mustBe a[IllegalArgumentException]
@@ -31,7 +31,7 @@ class ClientSpec extends ClientBaseSpec {
 
   
   it should "fail to connect when '/wrong/path' is given" in { f =>
-    val uri = new URI(f.uri.getScheme, null, f.uri.getHost, f.uri.getPort, "/wrong/path", null, null)
+    val uri = f.uri + "/wrong/path"
     val conn = f.client.connect(uri, "json")
     whenReady(conn.failed) { ex =>
       ex mustBe a[ClientException]
