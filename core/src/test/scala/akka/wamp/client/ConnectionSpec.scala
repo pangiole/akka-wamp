@@ -95,7 +95,7 @@ class ConnectionSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.pa
         session1.id mustBe 1
         session1.realm mustBe "default"
         session1.details mustBe Map(
-          "agent" -> "akka-wamp-0.13.0",
+          "agent" -> "akka-wamp-0.14.0",
           "roles" -> Map("broker" -> Map(), "dealer" -> Map())
         )
       }

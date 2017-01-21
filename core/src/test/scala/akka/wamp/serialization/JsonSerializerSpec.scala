@@ -19,9 +19,9 @@ class JsonSerializerSpec extends SerializingBaseSpec
 
   
   it should "serialize Welcome object messages" in {
-    val message = Welcome(1233242, Dict().withAgent("akka-wamp-0.13.0").withRoles("broker"))
+    val message = Welcome(1233242, Dict().withAgent("akka-wamp-0.14.0").withRoles("broker"))
     whenReduced(s.serialize(message)) { json =>
-      json mustBe """[2,1233242,{"agent":"akka-wamp-0.13.0","roles":{"broker":{}}}]"""
+      json mustBe """[2,1233242,{"agent":"akka-wamp-0.14.0","roles":{"broker":{}}}]"""
     }
   }
 
