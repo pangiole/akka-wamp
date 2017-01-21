@@ -245,7 +245,7 @@ package object client {
       * @param args is the list of indexed arguments to be published
       */
     def publish(topic: Uri, args: List[Any]): Unit =  {
-      doPublishAck(topic, Payload(args))
+      doPublish(topic, Payload(args))
     }
 
     /**

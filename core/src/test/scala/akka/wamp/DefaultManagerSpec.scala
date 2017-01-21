@@ -10,10 +10,11 @@ import akka.wamp.router.Router
 import org.scalatest._
 
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 
 
 // reference.conf is overriding akka.wamp.router.port to enable dynamic port bindings
-class ManagerSpec 
+class DefaultManagerSpec
   extends TestKit(ActorSystem("test"))
     with FlatSpecLike
     with ImplicitSender
@@ -25,18 +26,23 @@ class ManagerSpec
   //       by each test method to the next one.
   //       Therefore, you cannot mixin ParallelTestExecution!
 
-  var manager: ActorRef = _
+  var manager: TestActorRef[Manager] = _
   var router: ActorRef = _
   var listener: ActorRef = _
   var handler: ActorRef = _
   var uri: URI = _
   
   override protected def beforeAll(): Unit = {
-    manager = IO(Wamp)
     router = system.actorOf(Router.props())
   }
 
-  "The IO(Wamp) manager" should "bind a router to the default transport" in {
+  "The default IO(Wamp) manager" should "be initialized with TLS/SSL keys stores" in {
+    manager = TestActorRef(Manager.props())
+    val sslContext = manager.underlyingActor.sslContext
+    sslContext.getProtocol mustBe "TLS"
+  }
+
+  it should "bind a router to the default transport" in {
     manager ! Bind(router, endpoint = "local")
     val bound = expectMsgType[Bound](32 seconds)
     listener = bound.listener

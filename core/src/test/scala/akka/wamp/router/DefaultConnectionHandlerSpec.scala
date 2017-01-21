@@ -13,7 +13,7 @@ import akka.stream.scaladsl._
   * (NO custom settings) by exercising it with various JSON messages covering
   * the most common scenarios (session handling, subscriptions, publications, etc.)
   */
-class ConnectionHandlerSpec extends ConnectionHandlerBaseSpec
+class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
 {
   "The default router.ConnectionHandler" should "reject websocket requests if no format matches" in { f =>
     WS(url, clientSideHandler = Flow[WebSocketMessage]) ~> f.httpRoute ~> check {

@@ -21,16 +21,6 @@ private[client] class ConnectorSupervisor extends Actor {
     case SpawnConnector(address, format, options, promise) =>
       context.actorOf(Connector.props(address, format, options, promise))
   }
-
-  override def supervisorStrategy: SupervisorStrategy =
-    OneForOneStrategy()
-      {
-        case _: ActorInitializationException => Stop
-        case _: ActorKilledException         => Stop
-        case _: DeathPactException           => Stop
-        case _: Exception                    => Restart
-      }
-    
 }
 
 
