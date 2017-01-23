@@ -55,8 +55,6 @@ import scala.language.experimental.macros
   */
 package object client {
 
-
-  import akka.Done
   import akka.actor._
   import akka.wamp.client.Connector._
   import akka.wamp.messages._
@@ -213,7 +211,7 @@ package object client {
       * @param consumer is the event consumer which will consume incoming events
       * @return the (future of) subscription
       */
-    def subscribe(topic: Uri, consumer: (Event) => Future[Done]): Future[Subscription] = {
+    def subscribe(topic: Uri, consumer: (Event) => Unit): Future[Subscription] = {
       withPromise[Subscription] { promise =>
         connector ! SendSubscribe(topic, consumer, promise)
       }
@@ -320,12 +318,12 @@ package object client {
     /**
       * Registers the given invocation handler as the given procedure
       *
-      * @param procedure is the procedure to register as
+      * @param procedure is the procedure to register
       * @param handler is the invocation handler which will handle incoming invocations
       * @return the (future of) registration
       * @see [[akka.wamp.client]]
       */
-    def register(procedure: Uri, handler: (Invocation) => Future[Payload]): Future[Registration] = {
+    def register(procedure: Uri, handler: (Invocation) => Any): Future[Registration] = {
       withPromise[Registration] { promise =>
         connector ! SendRegister(procedure, handler, promise)
       }
@@ -509,7 +507,7 @@ package object client {
   /**
     * Subscribe a 0-parameters lambda handler as the given procedure.
     *
-    * @param procedure is the procedure to register as
+    * @param procedure is the procedure to register
     * @param lambda is the lambda handler to register
     * @return the (future) of registration
     */
@@ -518,7 +516,7 @@ package object client {
   /**
     * Subscribe a 1-parameter lambda handler as the given procedure.
     *
-    * @param procedure is the procedure to register as
+    * @param procedure is the procedure to register
     * @param lambda is the lambda handler to register
     * @return the (future) of registration
     */

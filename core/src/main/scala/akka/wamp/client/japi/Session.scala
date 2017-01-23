@@ -146,12 +146,9 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @param consumer is the event consumer which will consume incoming events
     * @return the (future of) subscription
     */
-  def subscribe(topic: Uri, consumer: juf.Function[Event, CompletionStage[Done]]): CompletionStage[Subscription] = {
-    val delegateConsumer: (EventDelegate) => Future[Done] = (event) => {
-      val done: Future[Done] = asScalaFuture(
-        consumer.apply(new Event(delegate = event))
-      )
-      done
+  def subscribe(topic: Uri, consumer: juf.Consumer[Event]): CompletionStage[Subscription] = {
+    val delegateConsumer: (EventDelegate) => Unit = (event) => {
+      consumer.accept(new Event(delegate = event))
     }
     asJavaFuture(
       delegate.subscribe(topic, delegateConsumer).map { subscription =>
@@ -236,12 +233,9 @@ class Session private[japi](delegate: SessionDelegate)(implicit ec: ExecutionCon
     * @param handler is the invocation handler which will handle incoming invocations
     * @return the (future of) registration
     */
-  def register(procedure: Uri, handler: juf.Function[Invocation, CompletionStage[Payload]]): CompletionStage[Registration] = {
-    val invocationHandler: (InvocationDelegate) => Future[PayloadDelegate] = (invocation) => {
-      val payload: Future[Payload] = asScalaFuture(
-        handler.apply(new Invocation(delegate = invocation))
-      )
-      payload.map(p => p.delegate)
+  def register(procedure: Uri, handler: juf.Function[Invocation, Object]): CompletionStage[Registration] = {
+    val invocationHandler: (InvocationDelegate) => Any = (invocation) => {
+      handler.apply(new Invocation(delegate = invocation))
     }
     asJavaFuture(
       delegate.register(procedure, invocationHandler).map { registration =>

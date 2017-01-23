@@ -19,7 +19,7 @@ class SubscriberSpec extends ClientBaseSpec with MockFactory {
   "A client.Subscriber" should "fail to subscribe when session is closed" in { f =>
     f.withSession { session =>
       whenReady(session.close()) { _ =>
-        val subscription = session.subscribe("mytopic", (_:Event) => Future(Done))
+        val subscription = session.subscribe("mytopic", (_:Event) => ())
         whenReady(subscription.failed) { ex =>
           ex mustBe a[ClientException]
           ex.getMessage mustBe "Session closed"
@@ -31,7 +31,7 @@ class SubscriberSpec extends ClientBaseSpec with MockFactory {
 
   it should "succeed to subscribe an event consumer to a topic" in { f =>
     f.withSession { implicit session1 =>
-      val consumer = stubFunction[Event, Future[Done]]
+      val consumer = stubFunction[Event, Unit]
       val subscription = session1.subscribe("mytopic", consumer)
       whenReady(subscription) { subscription =>
         subscription.topic mustBe "mytopic"
@@ -147,7 +147,7 @@ class SubscriberSpec extends ClientBaseSpec with MockFactory {
 
   it should "succeed unsubscribe from topic" in { f =>
     f.withSession { session =>
-      val consumer = stubFunction[Event, Future[Done]]
+      val consumer = stubFunction[Event, Unit]
       val subscription = session.subscribe("mytopic", consumer)
       whenReady(subscription) { subscription =>
         whenReady(subscription.unsubscribe()) { unsubscribed =>
@@ -160,7 +160,7 @@ class SubscriberSpec extends ClientBaseSpec with MockFactory {
 
   it should "fail unsubscribe from topic when session closed" in { f =>
     f.withSession { session =>
-      val subscription = session.subscribe("mytopic", (event: Event) => Future(Done))
+      val subscription = session.subscribe("mytopic", (event: Event) => ())
       whenReady(subscription) { subscription =>
         whenReady(session.close()) { _ =>
           val unsubscribed = subscription.unsubscribe()

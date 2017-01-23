@@ -16,7 +16,6 @@ import com.typesafe.config.*;
 
 import akka.event.LoggingAdapter;
 import java.util.concurrent.*;
-import akka.Done;
 import java.util.function.*;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -69,22 +68,20 @@ public class FuturesJavaClient {
 
 
     // #event-consumer
-    Function<Event, CompletionStage<Done>> consumer =
+    Consumer<Event> consumer =
       event -> {
         Long publicationId = event.publicationId();
         Long subscriptionId = event.subscriptionId();
         Map<String, Object> details = event.details();
-        return event.args().thenApply(args -> {
+        List<Object> args = event.args();
+        Map<String, Object> kwargs = event.kwargs();
 
-          // so something with arguments ...
-
-          return Done.getInstance();
-        });
+        // so something with arguments ...
       };
     // #event-consumer
 
     // #subscribe
-    // Function<Event, CompletionStage<Done>> consumer = ...;
+    // Consumer<Event> consumer = ...;
     CompletionStage<Subscription> subscription =
         session.thenCompose(s -> s.subscribe("mytopic", consumer));
     // #subscribe
@@ -124,17 +121,17 @@ public class FuturesJavaClient {
 
 
     // #invocation-handler
-    Function<Invocation, CompletionStage<Payload>> handler =
+    Function<Invocation, Object> handler =
       invocation -> {
         Long registrationId = invocation.registrationId();
         Map<String, Object> details = invocation.details();
-        return invocation.args().thenApply(args -> {
+        List<Object> args = invocation.args();
+        Map<String, Object> kwargs = invocation.kwargs();
 
-          // do something with arguments ...
+        // do something with arguments ...
 
-          Object res = null;
-          return Payload.create(asList(res));
-        });
+        Object res = null;
+        return res;
       };
     // #invocation-handler
 
@@ -175,9 +172,9 @@ public class FuturesJavaClient {
 
     // #incoming-arguments
     // Payload conveyors are messages such as events, invocations, errors, etc.
-    CompletionStage<List<Object>> args = conveyor.args();
-    CompletionStage<Map<String, Object>> kwargs = conveyor.kwargs();
-    CompletionStage<UserType> user = conveyor.kwargs(UserType.class);
+    List<Object> args = conveyor.args();
+    Map<String, Object> kwargs = conveyor.kwargs();
+    UserType user = conveyor.kwargs(UserType.class);
     // #incoming-arguments
 
     // #outgoing-arguments

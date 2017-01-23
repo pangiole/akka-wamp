@@ -59,9 +59,9 @@ class FuturesScalaClient {
 
 
   {
-    val consumer: (Event => Future[Done]) = ???
+    val consumer: (Event => Unit) = ???
     // #subscribe
-    // val consumer: (Event) => Future[Done]  = ...
+    // val consumer: (Event) => Unit  = ...
     val subscription: Future[Subscription] =
       session.flatMap(s => s.subscribe("mytopic", consumer))
     // #subscribe
@@ -78,17 +78,15 @@ class FuturesScalaClient {
 
   {
   // #event-consumer
-  val consumer: (Event) => Future[Done] =
+  val consumer: (Event) => Unit =
     event => {
       val publicationId = event.publicationId
       val subscriptionId = event.subscriptionId
       val details = event.details
-      event.args.map { args =>
+      val args = event.args
+      val kwargs = event.kwargs
 
-        // do something with arguments ...
-
-        Done
-      }
+      // do something with arguments ...
     }
   // #event-consumer
   }
@@ -127,7 +125,7 @@ class FuturesScalaClient {
   // #result
 
   // #register
-  // val handler: (Invocation) => Future[Payload] = ...
+  // val handler: (Invocation) => Any = ...
   val registration: Future[Registration] =
     session.flatMap(s => s.register("myprocedure", handler))
   // #register
@@ -146,17 +144,17 @@ class FuturesScalaClient {
   }
 
   // #invocation-handler
-  val handler: (Invocation) => Future[Payload] =
+  val handler: (Invocation) => Any =
     (invocation) => {
       val registrationId = invocation.registrationId
       val details = invocation.details
-      invocation.args.map ( args => {
+      val args = invocation.args
+      val kwargs = invocation.kwargs
 
-        // do something with arguments ...
+      // do something with arguments ...
 
-        val res = ???
-        Payload(List(res))
-      })
+      val res = ???
+      res
     }
   // #invocation-handler
 
@@ -196,9 +194,9 @@ class FuturesScalaClient {
   // #incoming-arguments
   // val conveyor: Event = ...
 
-  val args: Future[List[Any]] = conveyor.args
-  val kwargs: Future[Map[String, Any]] = conveyor.kwargs
-  val user: Future[UserType] = conveyor.kwargs[UserType]
+  val args: List[Any] = conveyor.args
+  val kwargs: Map[String, Any] = conveyor.kwargs
+  val user: UserType = conveyor.kwargs[UserType]
   
   class UserType(val name: String, val age: Int /*, ... */)
   // #incoming-arguments

@@ -227,9 +227,11 @@ class Connector(address: URI, format: String, options: BackoffOptions, promise: 
       log.debug("<-- {}", evt)
       subscriptions.get(subscriptionId) match {
         case Some(sb) =>
-          sb.consumer.apply(evt).onComplete {
-            case Success(_)  => ()
-            case Failure(ex) => log.warning("!!! {}: {}", ex.getClass.getName, ex.getMessage)
+          try {
+            sb.consumer.apply(evt)
+          } catch {
+            case ex: Throwable =>
+              log.warning("!!! {}: {}", ex.getClass.getName, ex.getMessage)
           }
         case None =>
           log.warning("!!! Unknown subscriptionId {}", subscriptionId)
@@ -353,12 +355,14 @@ class Connector(address: URI, format: String, options: BackoffOptions, promise: 
     case req @ Invocation(requestId, registrationId, _, _) =>
       log.debug("<-- {}", req)
       registrations.get(registrationId) match {
-        case Some(registration) => registration.handler.apply(req).onComplete {
-           case Success(p) =>
-             router ! Yield(requestId, payload = p)
-           case Failure(ex) =>
-             router ! Error(Invocation.tpe, requestId, Error.defaultDict, "akka.wamp.error.callee_exception", Payload(List(ex.getMessage)))
-         }
+        case Some(registration) =>
+          val f = Future(Payload(List(registration.handler.apply(req))))
+          f.onComplete {
+            case Success(p) =>
+              router ! Yield(requestId, payload = p)
+            case Failure(ex) =>
+              router ! Error(Invocation.tpe, requestId, Error.defaultDict, "akka.wamp.error.callee_exception", Payload(List(ex.getMessage)))
+          }
         case None =>
           log.warning("!!! Unknown registrationId {}", registrationId)
       }
@@ -442,19 +446,19 @@ private[client] object Connector {
   case class SendDisconnect(promise: Promise[Disconnected]) extends Command
   case class SendHello(realm: Uri, promise: Promise[Session]) extends Command
   case class SendGoodbye(promise: Promise[Closed]) extends Command
-  case class SendSubscribe(topic: String, consumer: (Event) => Future[Done], promise: Promise[Subscription]) extends Command
+  case class SendSubscribe(topic: String, consumer: (Event) => Unit, promise: Promise[Subscription]) extends Command
   case class SendUnsubscribe(subscriptionId: Id, promise: Promise[Unsubscribed]) extends Command
   case class SendPublish(topic: Uri, payload: Payload, promise: Option[Promise[Publication]]) extends Command
-  case class SendRegister(procedure: Uri, handler: (Invocation) => Future[Payload], promise: Promise[Registration]) extends Command
+  case class SendRegister(procedure: Uri, handler: (Invocation) => Any, promise: Promise[Registration]) extends Command
   case class SendUnregister(registrationId: Id, promise: Promise[Unregistered]) extends Command
   case class SendCall(procedure: Uri, payload: Payload, promise: Promise[Result]) extends Command
 
   trait PendingRequest { type T; val promise: Promise[T] }
 
-  case class PendingSubscribe(request: Subscribe, consumer: (Event) => Future[Done], val promise: Promise[Subscription]) extends PendingRequest { type T = Subscription }
+  case class PendingSubscribe(request: Subscribe, consumer: (Event) => Unit, val promise: Promise[Subscription]) extends PendingRequest { type T = Subscription }
   case class PendingUnsubscribe(request: Unsubscribe, val promise: Promise[Unsubscribed]) extends PendingRequest { type T = Unsubscribed }
   case class PendingPublish(request: Publish, val promise: Promise[Publication]) extends PendingRequest { type T = Publication }
-  case class PendingRegister(request: Register, handler: (Invocation) => Future[Payload], val promise: Promise[Registration]) extends PendingRequest { type T = Registration }
+  case class PendingRegister(request: Register, handler: (Invocation) => Any, val promise: Promise[Registration]) extends PendingRequest { type T = Registration }
   case class PendingUnregister(request: Unregister, val promise: Promise[Unregistered]) extends PendingRequest { type T = Unregistered }
   case class PendingCall(request: Call, val promise: Promise[Result]) extends PendingRequest { type T = Result }
 

@@ -86,11 +86,9 @@ object ActorsScalaClient extends App {
 
       case evt @ Event(subId, _, _, _) =>
         if (subId == subscriptionId)
-          evt.args.map { args =>
-            if (args(0).toString == "Everybody out!") {
-              context become handleDisconnecting
-              conn ! Disconnect
-            }
+          if (evt.args(0).toString == "Everybody out!") {
+            context become handleDisconnecting
+            conn ! Disconnect
           }
 
       case sig @ Disconnected =>

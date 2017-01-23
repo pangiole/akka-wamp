@@ -134,11 +134,11 @@ class EagerPayload private[wamp](val args: List[Any], val kwargs: Map[String, An
   */
 sealed trait LazyPayload[+T] extends Payload {
 
-  private[wamp] def args: Future[List[Any]]
+  private[wamp] def args: List[Any]
 
-  private[wamp] def kwargs: Future[Map[String, Any]]
+  private[wamp] def kwargs: Map[String, Any]
 
-  private[wamp] def kwargs[T](implicit ctag: ClassTag[T]): Future[T]
+  private[wamp] def kwargs[T](implicit ctag: ClassTag[T]): T
 
   /**
     * Returns the unparsed content as stream source

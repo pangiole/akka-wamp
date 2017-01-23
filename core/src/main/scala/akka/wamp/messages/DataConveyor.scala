@@ -2,7 +2,6 @@ package akka.wamp.messages
 
 import akka.wamp.serialization.{EagerPayload, LazyPayload, Payload}
 
-import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /**
@@ -46,8 +45,8 @@ trait DataConveyor { this: ProtocolMessage =>
     * 
     * @return the (future of) indexed args
     */
-  def args: Future[List[Any]] = payload match {
-    case p: EagerPayload   => Future.successful(p.args)
+  def args: List[Any] = payload match {
+    case p: EagerPayload   => p.args
     case p: LazyPayload[_] => p.args
   }
 
@@ -56,8 +55,8 @@ trait DataConveyor { this: ProtocolMessage =>
     *
     * @return the (future of) named args
     */
-  def kwargs: Future[Map[String, Any]] = payload match {
-    case p: EagerPayload   => Future.successful(p.kwargs)
+  def kwargs: Map[String, Any] = payload match {
+    case p: EagerPayload   => p.kwargs
     case p: LazyPayload[_] => p.kwargs
   }
 
@@ -68,7 +67,7 @@ trait DataConveyor { this: ProtocolMessage =>
     * @tparam T is the user type
     * @return the (future of) named args
     */
-  def kwargs[T](implicit ctag: ClassTag[T]): Future[T] = payload match {
+  def kwargs[T](implicit ctag: ClassTag[T]): T = payload match {
     case p: EagerPayload   => throw new IllegalStateException
     case p: LazyPayload[_] => p.kwargs[T]
   }

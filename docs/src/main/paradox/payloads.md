@@ -24,7 +24,7 @@ The following table summarizes which are the incoming messages behaving like ``D
  PayloadConveyor  | Client     | Consumer/Handler                  
 ------------------|------------|------------------------------------ 
  ``Event``        | Subscriber | ``(Event) => Unit``         
- ``Invocation``   | Callee     | ``(Invocation) => Future[Payload]``      
+ ``Invocation``   | Callee     | ``(Invocation) => Any``      
  ``Result``       | Caller     | ``(Result) => Unit``            
  ``Error``        | _all_      | _n.a._                         
     

@@ -61,9 +61,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
         f.withSession { ssn2 =>
           val result = ssn2.call("myproc")
           whenReady(result) { rs =>
-            whenReady(rs.args) { a =>
-              a(0) mustBe "done"
-            }
+            rs.args(0) mustBe "done"
           }
         }
       }
@@ -82,9 +80,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
         f.withSession { ssn2 =>
           val result = ssn2.call("myproc", List("paolo"))
           whenReady(result) { rs =>
-            whenReady(rs.args) { a =>
-              a(0) mustBe "paolo"
-            }
+            rs.args(0) mustBe "paolo"
           }
         }
       }
@@ -103,9 +99,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
         f.withSession { ssn2 =>
           val result = ssn2.call("myproc", List("paolo", 99))
           whenReady(result) { rs =>
-            whenReady(rs.args) { a =>
-              a(0) mustBe 104
-            }
+            rs.args(0) mustBe 104
           }
         }
       }
@@ -124,9 +118,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
         f.withSession { ssn2 =>
           val result = ssn2.call("myproc", List("paolo", 99, true))
           whenReady(result) { rs =>
-            whenReady(rs.args) { a =>
-              a(0) mustBe 0
-            }
+            rs.args(0) mustBe 0
           }
         }
       }
@@ -145,9 +137,7 @@ class CalleeSpec extends ClientBaseSpec with MockFactory {
         f.withSession { ssn2 =>
           val result = ssn2.call("myproc", List("liliana", 93, false, 0.5))
           whenReady(result) { rs =>
-            whenReady(rs.args) { a =>
-              a(0) mustBe 50
-            }
+            rs.args(0) mustBe 50
           }
         }
       }

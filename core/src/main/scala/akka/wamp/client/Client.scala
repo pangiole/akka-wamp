@@ -69,7 +69,7 @@ class Client private[client](sstm: ActorSystem) extends Peer with EndpointConfig
     * Connects to a router at the given URL and negotiate the given message format
     *
     * @param address is the address to connect to (e.g. ``"wss://hostname:8433/router"``)
-    * @param format is the message format to negotiate (e.g. ``"wamp.2.msgpack"``
+    * @param format is the format of messages as exchanged the wire (e.g. ``"msgpack"``)
     * @return a (future of) connection
     */
   def connect(address: String, format: String): Future[Connection] = {

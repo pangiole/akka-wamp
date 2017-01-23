@@ -50,41 +50,36 @@ object Macros {
   private def subscribe(c: Context)(topic: c.Expr[String], lambda: c.universe.Function): String = {
     val (tpc, arity, args, kwargs) = inspect(c)(topic, lambda)
     val code = s"""
-       | import akka.Done
        | import akka.wamp.client._
        | import scala.concurrent._
        |
        | implicitly[Session].subscribe($tpc, event => {
        |   val errmsg = "Couldn't invoke lambda consumer for ${tpc.replace('"',''')}"
-       |   event.args.flatMap { args =>
-       |     if (args.size == $arity) {
+       |   val args = event.args
+       |   if (args.size == $arity) {
+       |     try {
+       |       $lambda.apply(${args.mkString(",")})
+       |     }
+       |     catch {
+       |       case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
+       |     }
+       |   }
+       |   else {
+       |     val kwargs = event.kwargs
+       |     if (kwargs.size == $arity) {
        |       try {
-       |         $lambda.apply(${args.mkString(",")})
-       |         Future(Done)
+       |         $lambda.apply(${kwargs.mkString(",")})
        |       }
        |       catch {
        |         case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
        |       }
        |     }
        |     else {
-       |       event.kwargs.map { kwargs =>
-       |         if (kwargs.size == $arity) {
-       |           try {
-       |             $lambda.apply(${kwargs.mkString(",")})
-       |             Done
-       |           }
-       |           catch {
-       |             case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
-       |           }
-       |         }
-       |         else {
-       |           val cause = "unexpected number of arguments"
-       |           throw new ClientException(errmsg+": "+cause, new IllegalArgumentException(cause))
-       |         }
-       |       }
+       |       val cause = "unexpected number of arguments"
+       |       throw new ClientException(errmsg+": "+cause, new IllegalArgumentException(cause))
        |     }
-       |   }}
-       | )
+       |   }
+       | })
        """.stripMargin
     code
   }
@@ -117,34 +112,28 @@ object Macros {
        |
        | implicitly[Session].register($prc, invoc => {
        |   val errmsg = "Couldn't invoke lambda consumer for ${prc.replace('"',''')}"
-       |   invoc.args.flatMap { args =>
-       |     if (args.size == $arity) {
+       |   val args = invoc.args
+       |   if (args.size == $arity) {
+       |     try {
+       |       $lambda.apply(${args.mkString(",")})
+       |     }
+       |     catch {
+       |       case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
+       |     }
+       |   }
+       |   else {
+       |     val kwargs = invoc.kwargs
+       |     if (kwargs.size == $arity) {
        |       try {
-       |         Future(Payload(List(
-       |          $lambda.apply(${args.mkString(",")})
-       |         )))
+       |         $lambda.apply(${kwargs.mkString(",")})
        |       }
        |       catch {
        |         case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
        |       }
        |     }
        |     else {
-       |       invoc.kwargs.map { kwargs =>
-       |         if (kwargs.size == $arity) {
-       |           try {
-       |             Payload(List(
-       |               $lambda.apply(${kwargs.mkString(",")})
-       |             ))
-       |           }
-       |           catch {
-       |             case ex: Throwable => throw new ClientException(errmsg+": "+ex.getMessage, ex)
-       |           }
-       |         }
-       |         else {
-       |           val cause = "unexpected number of arguments"
-       |           throw new ClientException(errmsg+": "+cause, new IllegalArgumentException(cause))
-       |         }
-       |       }
+       |       val cause = "unexpected number of arguments"
+       |       throw new ClientException(errmsg+": "+cause, new IllegalArgumentException(cause))
        |     }
        |   }
        | })

@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-TBD
+
+### Changed
+- Simplify access to ``args`` and ``kwargs`` from client APIs
+
 
 ## [v0.14.0] _ 2017-01-21
 

@@ -1,12 +1,10 @@
 package akka.wamp.client.japi
 
-import java.util.concurrent.CompletionStage
 import java.{util => ju}
 
 import akka.wamp.messages.{DataConveyor => DataConveyorDelegate}
 
 import scala.collection.JavaConverters._
-import scala.compat.java8.FutureConverters.{toJava => asJavaFuture}
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
@@ -19,9 +17,9 @@ import scala.reflect.ClassTag
   *   // DataConveyor message = ...
   *
   *   // Default deserializers
-  *   CompletionStage<List<Object>> args = message.args();
-  *   CompletionStage<Map<String, Object>> kwargs = message.kwargs();
-  *   CompletionStage<UserType> user = message.kwargs(UserType.class);
+  *   List<Object> args = message.args();
+  *   Map<String, Object> kwargs = message.kwargs();
+  *   UserType user = message.kwargs(UserType.class);
   *
   *   // Custom deserializers
   *   Payload payload = message.payload();
@@ -43,14 +41,14 @@ class DataConveyor private[japi](delegate: DataConveyorDelegate)(implicit execut
     *
     * @return the (future of) indexed args
     */
-  def args: CompletionStage[ju.List[Any]] = asJavaFuture(delegate.args.map(a => a.asJava))
+  def args: ju.List[Any] = delegate.args.asJava
 
   /**
     * Deserializes named arguments from the conveyed payload to an hashmap
     *
     * @return the (future of) named args
     */
-  def kwargs: CompletionStage[ju.Map[String, Any]] = asJavaFuture(delegate.kwargs.map(a => a.asJava))
+  def kwargs: ju.Map[String, Any] = delegate.kwargs.asJava
 
   /**
     * Deserializes named arguments from the conveyed payload to a user type
@@ -58,5 +56,5 @@ class DataConveyor private[japi](delegate: DataConveyorDelegate)(implicit execut
     * @tparam T is the user type
     * @return the (future of) kwargs
     */
-  def kwargs[T](clazz: Class[T]): CompletionStage[T] = asJavaFuture(delegate.kwargs[T](ClassTag(clazz)))
+  def kwargs[T](clazz: Class[T]): T = delegate.kwargs[T](ClassTag(clazz))
 }

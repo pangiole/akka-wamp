@@ -49,32 +49,25 @@ import static java.lang.System.out;
 public class JavaClient {
   public static void main(String[] arr) {
     ActorSystem actorSystem = ActorSystem.create();
-    
     Client client = Client.create(actorSystem);
+    
     client.connect("endpoint").thenAccept(c -> {
       c.open("realm").thenAccept(s -> {
     
         s.publish("topic", asList("Ciao!"));
     
         s.subscribe("topic", (event) -> {
-          event.args().thenAccept(args -> {
-            out.println("got " + args.get(0));
-          });
+          out.println("got " + event.args().get(0));
         });
     
         s.register("procedure", (invoc) -> {
-          return invoc.args().thenApply(args -> {
-            Integer a = (Integer) args.get(0);
-            Integer b = (Integer) args.get(1);
-            Integer result = a + b;
-            return Payload.create(asList(result));
-          });
+          Integer a = (Integer) invoc.args().get(0);
+          Integer b = (Integer) invoc.args().get(1);
+          return a + b;
         });
     
         s.call("procedure", asList(20, 55)).thenAccept(res -> {
-          res.args().thenAccept(args -> {
-            out.println("20 * 55 = " + args.get(0));  
-          });
+          out.println("20 * 55 = " + res.args().get(0));  
         });
       });
     });
@@ -97,8 +90,8 @@ object ScalaClient extends App {
   val client = Client(system)
   implicit val executionContext = system.dispatcher
 
-  client.connect("endpoint").map { c =>
-    c.open("realm").map { implicit s =>
+  client.connect("endpoint").map { conn =>
+    conn.open("realm").map { implicit session =>
 
       subscribe("topic", (arg: Int) => {
         println(s"got $arg")
@@ -107,9 +100,7 @@ object ScalaClient extends App {
       publish("topic", List("Ciao!"))
 
       call("procedure", List(20, 55)).foreach { res =>
-        res.args.foreach { args =>
-          println(s"20 * 55 = ${args(0)}")
-        }
+        println(s"20 * 55 = ${res.args(0)}")
       }
       
       register("procedure", (a: Int, b: Int) => {

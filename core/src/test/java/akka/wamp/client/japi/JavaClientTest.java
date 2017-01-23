@@ -5,7 +5,6 @@
 
 package akka.wamp.client.japi;
 
-import akka.Done;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -24,6 +23,7 @@ import org.junit.runners.MethodSorters;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static akka.wamp.router.SequentialIdGenerators.testIdGenerators;
@@ -96,13 +96,12 @@ public class JavaClientTest {
 
   @Test
   public void test3_publish_subscribe() throws Exception {
-    Function<Event, CompletionStage<Done>> handler = mock(Function.class);
-    when(handler.apply(any())).thenReturn(CompletableFuture.completedFuture(Done.getInstance()));
-    subscription = session.subscribe("mytopic", handler).toCompletableFuture().get(SIXTEEN, SECONDS);
+    Consumer<Event> consumer = mock(Consumer.class);
+    subscription = session.subscribe("mytopic", consumer).toCompletableFuture().get(SIXTEEN, SECONDS);
     // TODO assertThat(subscription.id(), is(1L));
     assertThat(subscription.topic(), is("mytopic"));
     session.publish("mytopic", asList("paolo", 99, true));
-    verify(handler, timeout(SIXTEEN * 1000).only()).apply(any());
+    verify(consumer, timeout(SIXTEEN * 1000).only()).accept(any());
   }
 
 

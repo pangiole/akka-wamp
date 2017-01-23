@@ -15,13 +15,13 @@ class JsonTextLazyPayload private[serialization](val unparsed: Source[String, _]
   import scala.collection.mutable
 
   override
-  private[wamp] def args: Future[List[Any]] = parsed.map { case (args, _) => args }
+  private[wamp] def args: List[Any] = parsed._1
   
   override
-  private[wamp] def kwargs: Future[Map[String, Any]] = parsed.map { case (_, kwargs) => kwargs }
+  private[wamp] def kwargs: Map[String, Any] = parsed._2
 
   override
-  private[wamp] def kwargs[T](implicit ctag: ClassTag[T]): Future[T] = Future {
+  private[wamp] def kwargs[T](implicit ctag: ClassTag[T]): T = {
     def parse() = {
       if (parser.nextToken() == START_ARRAY) {
         parse_getValueAsArray()
@@ -40,7 +40,7 @@ class JsonTextLazyPayload private[serialization](val unparsed: Source[String, _]
   }
 
   lazy
-  private val parsed: Future[(List[Any], Map[String, Any])] = Future {
+  private val parsed: (List[Any], Map[String, Any]) = {
     var args = List.empty[Any]
     var kwargs = Map.empty[String, Any]
     if (parser.nextToken() == START_ARRAY) {

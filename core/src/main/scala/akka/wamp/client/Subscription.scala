@@ -1,6 +1,5 @@
 package akka.wamp.client
 
-import akka.Done
 import akka.wamp.Uri
 import akka.wamp.messages.{Event, Subscribed, Unsubscribed}
 
@@ -32,7 +31,7 @@ import scala.concurrent.Future
 class Subscription private[client] (
   tpc: Uri,
   session: Session,
-  private[client] val consumer: (Event) => Future[Done],
+  private[client] val consumer: (Event) => Unit,
   private[client] val ack: Subscribed) {
 
   /** Is the subscription identifier as sent from the router */

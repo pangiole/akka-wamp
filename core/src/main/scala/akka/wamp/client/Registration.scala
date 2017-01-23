@@ -40,7 +40,7 @@ import scala.concurrent.Future
 class Registration private[client](
   prcdr: Uri,
   session: Session,
-  private[client] val handler: (Invocation) => Future[Payload],
+  private[client] val handler: (Invocation) => Any,
   private[client] val ack: Registered) {
 
   /** Is the registration identifier */

@@ -2,13 +2,14 @@
 Akka Wamp provides you with
  
 * object-oriented representations of WAMP [Messages](./messages.html),
-* this Futures API built atop of the [Akka Wamp Actors API](./actors.html) and the [Akka Futures API](http://doc.akka.io/docs/akka/current/scala/futures.html)
+* this Futures API built atop of  [Akka Wamp Actors](./actors.html) and the [Akka Futures](http://doc.akka.io/docs/akka/current/scala/futures.html)
  
-All operations are provided as __direct method calls__ returning composable futures. the client can write your own client applications, in either Scala or Java, so to connect to routers, open sessions to attach realms, publish or subscribe to topics, consume events, register or call remote procedures and handle invocations.
+All operations are provided as __direct method calls__ returning composable futures. You can write your client applications, in either Scala or Java, so to connect to routers, open sessions to attach realms, publish or subscribe to topics, consume events, register or call remote procedures and handle invocations in few liens of code.
 
 @@@ note
-This shall be considered an __higher level API__ when compared to [Akka Wamp Actors API](./actors.html) as it doesn't require you to know anything about how WAMP [Messages](../messages.html) are exchanged by peers.
+This shall be considered an __higher level API__ when compared to [Akka Wamp Actors](./actors.html) as it doesn't require you to know anything about how WAMP [Messages](../messages.html) are exchanged by peers.
 @@@
+
 
 
 ## Client
@@ -38,12 +39,15 @@ Java
 Just invoke the ``connect`` method and pass the following arguments:
 
 * ``endpoint: String``  
-  Is the name of a configured endpoint (default is ``"local"``).
+  Is the name of a configured endpoint (default is ``"local"``). Read the configuration section further below.
    
 or the following arguments:
 
-* ``uri: URI``
-* ``format: String``
+* ``address: String``  
+  Is the address to connect to (e.g. ``"wss://hostname:8433/router"``)
+  
+* ``format: String``  
+  Is the format of messages as exchanged the wire (e.g. ``"msgpack"``)
 
 
 ### Configuration
