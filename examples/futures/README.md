@@ -12,7 +12,7 @@ run
 ```
 
 
-## FuturesSecuredClient
+## TL/SSL
 It requires you to generate the necessary TLS/SSL cryptographic material. Just call the provided ``mkcerts.sh`` AFTER doing the same for the [examples/router](../router/README.md) project. 
 
 ```bash

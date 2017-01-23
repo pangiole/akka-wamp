@@ -1,10 +1,6 @@
-/*
- * This file is subject to the terms and conditions defined in
- * file 'LICENSE.md', which is part of this source code package.
- */
 
-import akka.actor.ActorSystem
-import akka.wamp.client.{Client, subscribe}
+import akka.actor._
+import akka.wamp.client._
 
 object FuturesScalaClient extends App {
 
@@ -19,17 +15,15 @@ object FuturesScalaClient extends App {
         println(s"got $arg")
       })
 
-//      publish("topic", List("Ciao!"))
+      publish("topic", List("Ciao!"))
 
-//      call("procedure", List(20, 55)).foreach { res =>
-//        res.args.foreach { args =>
-//          println(s"20 * 55 = ${args(0)}")
-//        }
-//      }
+      call("procedure", List(20, 55)).foreach { res =>
+        println(s"20 * 55 = ${res.args(0)}")
+      }
 
-//      register("procedure", (a: Int, b: Int) => {
-//        a + b
-//      })
+      register("procedure", (a: Int, b: Int) => {
+        a + b
+      })
     }
   }
 }

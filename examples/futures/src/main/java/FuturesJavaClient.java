@@ -39,8 +39,7 @@ public class FuturesJavaClient {
           Integer a = (Integer) args.get(0);
           Integer b = (Integer) args.get(1);
           Integer result = a + b;
-          // TODO Simplify Java API
-          return CompletableFuture.completedFuture(Payload.create(asList(result)));
+          return result;
         });
 
         s.call("procedure", asList(20, 55)).thenAccept(res -> {
