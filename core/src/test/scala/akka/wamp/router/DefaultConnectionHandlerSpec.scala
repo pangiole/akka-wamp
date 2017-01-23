@@ -45,7 +45,7 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
     // --> HELLO
     f.client.sendMessage("""[1,"myrealm",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.14.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     // TODO how to verify EVENT messages are received? 
@@ -78,7 +78,7 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
     // --> HELLO
     f.client.sendMessage("""[1,"myrealm",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.14.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \

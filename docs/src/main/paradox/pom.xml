@@ -2,7 +2,7 @@
     <dependency>
         <groupId>com.github.angiolep</groupId>
         <artifactId>akka-wamp_2.12</artifactId>
-        <version>0.14.0</version>
+        <version>0.15.0</version>
     </dependency>
     <!-- .... -->
 </dependencies>

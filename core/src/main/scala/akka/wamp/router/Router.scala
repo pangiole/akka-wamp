@@ -42,7 +42,7 @@ class Router private[wamp](val idGenerators: Map[Symbol, IdGenerator])
 
   /** Details of WELCOME message replied by this router */
   private val welcomeDetails = Dict()
-    .withAgent("akka-wamp-0.14.0")
+    .withAgent("akka-wamp-0.15.0")
     .withRoles(Roles.router)
 
   /**

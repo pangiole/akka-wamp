@@ -15,7 +15,7 @@ Easy to download as dependency from [Maven central](https://search.maven.org/#se
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.12" % "0.14.0"
+  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.0"
 )
 ```
 
@@ -120,9 +120,9 @@ Akka Wamp provides you with a basic router that can be either embedded into your
 Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.14.0.tgz
-tar xvfz akka-wamp-0.14.0.tar.gz
-cd akka-wamp-0.14.0
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.15.0.tgz
+tar xvfz akka-wamp-0.15.0.tar.gz
+cd akka-wamp-0.15.0
 vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
