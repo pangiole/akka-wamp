@@ -92,10 +92,17 @@ class EagerPayload private[japi](delegate: serialization.EagerPayload) extends P
 
 class LazyPayload extends Payload(null)
 
+/**
+  * Represents a lazy payload with textual content
+  */
 class TextLazyPayload extends Payload(null) {
-  def unparsed(): Source[String, _] = ???
+  // def unparsed(): Source[String, _] = ???
 }
 
+/**
+  * Represents a lazy payload with binary content
+  */
 class BinaryLazyPayload extends Payload(null) {
-  def unparsed(): Source[ByteString, _] = ???
+
+  // def unparsed(): Source[ByteString, _] = ???
 }

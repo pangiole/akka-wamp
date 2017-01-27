@@ -7,7 +7,7 @@ import scala.language.experimental.macros
   *
   * Please refer to the official
   * <a href="https://angiolep.github.io/projects/akka-wamp/index.html">Akka Wamp User's Guide</a>
-  * published online for further details.
+  * for further details.
   *
   *
   * == Actors ==
@@ -17,7 +17,7 @@ import scala.language.experimental.macros
   *
   * == Futures ==
   *
-  * Is the high level Client API
+  * Is the high level Client API we encourage you to use.
   *
   * {{{
   * import akka.actor._
@@ -48,10 +48,10 @@ import scala.language.experimental.macros
   *
   * == Streams ==
   *
-  * TBD
+  * Working in progress.
+  *
   *
   * @see [[akka.wamp.client.japi]] for Java API
-  *
   */
 package object client {
 

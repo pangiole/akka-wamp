@@ -10,28 +10,27 @@ frame2                  frame1
 '-------------'        '-------------`---------'     
 ```
 
-Payloads are always at the end of messages so that routers don't have to parse them. Infact, routers are not required to inspect payload contents to do their job, which is all about routing messages.
+Payloads are always at the end of messages so that routers don't have to parse them. In fact, routers are not required to inspect payload contents to do their job, which is all about routing messages.
 
-![payloads](payloads.png)
+![messages](messages.png)
 
 ## Incoming data
 
-Akka Wamp provides you with efficient streaming parsers which do not fully deserialize incoming data into memory. Rather, it provides you with __lazy__ representations to defer deserialization to the very last moment. The lazy representations in question are ``TextLazyPayload`` for textual data and ``BinaryLazyPayload`` for binary data.
+Akka Wamp provides you with efficient streaming parsers that defer deserialization of incoming data to the very last moment. 
 
+The following table lists incoming [Message](./messages.html)s behaving as ``DataConveyor``s with the correspondent consumers/handlers and client roles you shall provide to extract the data.
 
-The following table summarizes which are the incoming messages behaving like ``DataConveyor``s, which client roles can receive those messages and which consumer/handlers you shall provide to read their incoming data from the lazy payloads above.
-
- PayloadConveyor  | Client     | Consumer/Handler                  
-------------------|------------|------------------------------------ 
- ``Event``        | Subscriber | ``(Event) => Unit``         
- ``Invocation``   | Callee     | ``(Invocation) => Any``      
- ``Result``       | Caller     | ``(Result) => Unit``            
- ``Error``        | _all_      | _n.a._                         
+ DataConveyor     | Consumer/Handler        | Client     
+------------------|-------------------------|------------
+ ``Event``        | ``(Event) => Unit``     | Subscriber 
+ ``Invocation``   | ``(Invocation) => Any`` | Callee     
+ ``Result``       | ``(Result) => Unit``    | Caller     
+ ``Error``        | _n.a._                  | _all_      
     
 
  
 ### Arguments
-If you do not need to fully control the deserialization process then you can easily access to incoming data as follows:
+The easiest way to access data conveyed by incoming messages is as follows:
 
 Scala
 :    @@snip [ScalaClient](../scala/docs/FuturesScalaClient.scala){ #incoming-arguments }
@@ -39,19 +38,19 @@ Scala
 Java
 :    @@snip [FuturesJavaClient](../java/docs/FuturesJavaClient.java){ #incoming-arguments }
 
-Data conveyed by incoming messages are accessible as:
+Just access the following members:
 
-* ``args: Future[List[Any]]``  
-  a (future of) list of indexed arguments   
+* ``args: List[Any]``  
+  a list of indexed arguments   
       
-* ``kwargs: Future[Map[String, Any]]``   
-  a (future of) dictionary of named arguments
+* ``kwargs: Map[String, Any]``   
+  a dictionary of named arguments
        
-* ``kwargs[T]: Future[T]``  
-   a (future of) user defined type
+* ``kwargs[T]: T``  
+   a user defined type
 
 #### Data types
-Akka Wamp will take care of the deserialization process either with [Jackson JSON Parser](https://github.com/FasterXML/jackson-module-scala) for textual format or [MsgPack Parser](https://github.com/msgpack/msgpack-scala) for binary format. Those default parsers will apply the following data type bindings:
+Akka Wamp will take care of the deserialization process either with [Jackson JSON Parser](https://github.com/FasterXML/jackson-module-scala) for textual format or [MsgPack Parser](https://github.com/msgpack/msgpack-scala) for binary format. The default parsers will apply the following data type bindings:
 
 Value          | JSON / MsgPack  | Scala / Java
 ---------------|-----------------|------------------------
@@ -62,14 +61,14 @@ Value          | JSON / MsgPack  | Scala / Java
 ``[]``         | array           | scala.collection.immutable.``List[Any]`` 
                |                 | java.util.``List<Object>``
 ``{}``         | object          | scala.collection.immutable.``Map[String, Any]``
-               |                 | java.util.``Map<String, Object>``
+               |                 | java.util.``Map<String, Object>`§`
 ``true``       | boolean         | java.lang.``Boolean``
 ``false``      | boolean         | java.lang.``Boolean``
 ``null``       | null            | ``null``
 
 
 ### Unparsed
-If you want full control of the deserializing process the you can access to the **unparsed** data as follows:
+If you want full control of the deserialization process then you'll have to access to the **unparsed** data as follows:
 
 Scala
 :    @@snip [ScalaClient](../scala/docs/FuturesScalaClient.scala){ #incoming-payload }
@@ -99,3 +98,4 @@ Java
 
 ### Streams
 TBD
+
