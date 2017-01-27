@@ -68,6 +68,7 @@ public class FuturesJavaClient {
 
 
     // #event-consumer
+    Long freeVar = 0l;
     Consumer<Event> consumer =
       event -> {
         Long publicationId = event.publicationId();
@@ -76,7 +77,7 @@ public class FuturesJavaClient {
         List<Object> args = event.args();
         Map<String, Object> kwargs = event.kwargs();
 
-        // so something with arguments ...
+        // so something with incoming args and free vars ...
       };
     // #event-consumer
 
@@ -171,7 +172,8 @@ public class FuturesJavaClient {
     // #incoming-payload
 
     // #incoming-arguments
-    // Payload conveyors are messages such as events, invocations, errors, etc.
+    // Data conveyors are messages such as events, invocations, errors, etc.
+
     List<Object> args = conveyor.args();
     Map<String, Object> kwargs = conveyor.kwargs();
     UserType user = conveyor.kwargs(UserType.class);

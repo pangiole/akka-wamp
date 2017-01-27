@@ -156,13 +156,14 @@ Scala
 Java
 :    @@snip [FuturesJavaClient](../../java/docs/FuturesJavaClient.java){ #subscribe }
 
+
 Just invoke the ``subscribe`` method with the following arguments:
   
   * ``topic: Uri``  
     Is the topic to subscribe to
     
   * ``consumer``  
-    Is a consumer as explained further below.
+    Is a consumer callback as explained further below.
     
 The client can provide callbacks to be invoked upon future completion so to test against success or failure.
  
@@ -174,7 +175,10 @@ Java
  
  
 ### Consumer
-The client can subscribe any function able to consume incoming events. It can be either an event consumer or a lambda consumer as explained further below.
+The client can subscribe any callback function given either as an event consumer or as _lambda_ consumer.
+
+Please note that, as this API is build atop of [Akka Wamp Actors](../client/actors.html), your callback function will be invoked in the same thread which delivers the [Event](../messages.html) message from underlying actor's mailbox. Therefore, it is safe to close your callback over free variables as there's no risk to have multiple threads executing the handler at the same time.
+
 
 #### Lambda Consumer
 The client can subscribe a lambda consumer that accepts as many parameters as it would expect to be conveyed by incoming events.
@@ -275,7 +279,9 @@ Java
 
 
 ### Handler
-The client can register any function able to handle incoming invocations. It can be either an invocation handler or a lambda handler as explained further below.
+The client can register any callback function given either as an invocation handler or as _lambda_ handler.
+
+Please note that, as this API is build atop of [Akka Wamp Actors](../actors.html), your callback function will be invoked in the same thread which delivers the [Invocation](../messages.html) message from underlying actor's mailbox. Therefore, it is safe to close your callback over free variables as there's no risk to have multiple threads executing the handler at the same time.
 
 #### Lambda Handler
 The client can register a lambda handler that accepts as many parameters as you would expect to be conveyed by incoming invocations. 

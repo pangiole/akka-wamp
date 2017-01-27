@@ -78,6 +78,7 @@ class FuturesScalaClient {
 
   {
   // #event-consumer
+  var freeVar: Long = 0
   val consumer: (Event) => Unit =
     event => {
       val publicationId = event.publicationId
@@ -86,7 +87,7 @@ class FuturesScalaClient {
       val args = event.args
       val kwargs = event.kwargs
 
-      // do something with arguments ...
+      // so something with incoming args and free vars ...
     }
   // #event-consumer
   }
@@ -192,7 +193,7 @@ class FuturesScalaClient {
 
 
   // #incoming-arguments
-  // val conveyor: Event = ...
+  // Data conveyors are messages such as events, invocations, errors, etc.
 
   val args: List[Any] = conveyor.args
   val kwargs: Map[String, Any] = conveyor.kwargs

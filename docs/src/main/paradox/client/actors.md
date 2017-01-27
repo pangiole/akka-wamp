@@ -12,6 +12,7 @@ All operations are implemented with __message passing__ instead of direct method
 This shall be considered a __lower level API__ when compared to other Akka Wamp Client APIs such as those providing [Futures](./futures.html) and [Streams](./streams.html) abstractions.
 @@@
 
+
 ## Client
 
 Scala
