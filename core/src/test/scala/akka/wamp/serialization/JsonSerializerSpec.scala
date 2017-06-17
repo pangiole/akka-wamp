@@ -6,7 +6,7 @@ import akka.wamp.messages._
 import com.fasterxml.jackson.core.JsonFactory
 
 
-class JsonSerializerSpec extends SerializingBaseSpec 
+class JsonSerializerSpec extends SerializingBaseSpec
 {
   val s = new JsonSerialization(new JsonFactory())
 
@@ -17,15 +17,15 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Welcome object messages" in {
-    val message = Welcome(1233242, Dict().withAgent("akka-wamp-0.15.0").withRoles("broker"))
+    val message = Welcome(1233242, Dict().withAgent("akka-wamp-0.15.1").withRoles("broker"))
     whenReduced(s.serialize(message)) { json =>
-      json mustBe """[2,1233242,{"agent":"akka-wamp-0.15.0","roles":{"broker":{}}}]"""
+      json mustBe """[2,1233242,{"agent":"akka-wamp-0.15.1","roles":{"broker":{}}}]"""
     }
   }
 
-  
+
   it should "serialize Goodbye object messages" in {
     val message = Goodbye(Dict(), "wamp.error.goobye_and_out")
     whenReduced(s.serialize(message)) { json =>
@@ -33,7 +33,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Abort object messages" in {
     val message = Abort(Dict("message" -> s"The realm 'unknown' does not exist."), "wamp.error.no_such_realm")
     whenReduced(s.serialize(message)) { json =>
@@ -41,7 +41,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Error object messages" in {
     val message1 = Error(Subscribe.tpe, 12345, Error.defaultDict, "wamp.error.no_such_subscription")
     whenReduced(s.serialize(message1)) { json =>
@@ -81,7 +81,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Published object messages" in {
     val message = Published(713845233, 5512315)
     whenReduced(s.serialize(message)) { json =>
@@ -89,7 +89,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Subscribe object messages" in {
     val message = Subscribe(1, options = Dict(), "myapp.topic")
     whenReduced(s.serialize(message)) { json =>
@@ -97,7 +97,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Subscribed object messages" in {
     val message = Subscribed(713845233, 5512315)
     whenReduced(s.serialize(message)) { json =>
@@ -105,7 +105,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Unsubscribe object messages" in {
     val message = Unsubscribe(85346237, 984348843)
     whenReduced(s.serialize(message)) { json =>
@@ -113,7 +113,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Unsubscribed object messages" in {
     val message = Unsubscribed(85346237)
     whenReduced(s.serialize(message)) { json =>
@@ -121,7 +121,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Event object messages" in {
     val message1 = Event(12345, 67890)
     whenReduced(s.serialize(message1)) { json =>
@@ -141,7 +141,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Register object messages" in {
     val message = Register(1, Dict(), "myapp.procedure")
     whenReduced(s.serialize(message)) { json =>
@@ -149,7 +149,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Registered object messages" in {
     val message = Registered(713845233, 5512315)
     whenReduced(s.serialize(message)) { json =>
@@ -157,7 +157,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Unregister object messages" in {
     val message = Unregister(85346237, 43784343)
     whenReduced(s.serialize(message)) { json =>
@@ -165,7 +165,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Unregistered object messages" in {
     val message = Unregistered(85346237)
     whenReduced(s.serialize(message)) { json =>
@@ -173,7 +173,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Call object messages" in {
     val message1 = Call(12345, Call.defaultOptions, "myapp.procedure1")
     whenReduced(s.serialize(message1)) { json =>
@@ -193,7 +193,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Invocation object messages" in {
     val message1 = Invocation(9, 12345, Invocation.defaultDetails)
     whenReduced(s.serialize(message1)) { json =>
@@ -213,7 +213,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Yield object messages" in {
     val message1 = Yield(9, Yield.defaultOptions)
     whenReduced(s.serialize(message1)) { json =>
@@ -233,7 +233,7 @@ class JsonSerializerSpec extends SerializingBaseSpec
     }
   }
 
-  
+
   it should "serialize Result object messages" in {
     val message1 = Result(9, Result.defaultDetails)
     whenReduced(s.serialize(message1)) { json =>
@@ -255,18 +255,18 @@ class JsonSerializerSpec extends SerializingBaseSpec
       json mustBe s"""[50,9,{},$argsJson,$kwargsJson]"""
     }
   }
-  
+
   def whenReduced(source: Source[String, _])(testCode: (String) => Unit): Unit = {
     whenReady(source.runReduce(_ + _)) { text =>
       testCode(text)
     }
   }
 
-  
+
   val args = List("paolo", 40, 1234567890, 34.56, List("array"), Map("key"->"value"), true, false, None)
-  
+
   val argsJson = """["paolo",40,1234567890,34.56,["array"],{"key":"value"},true,false,null]"""
-  
+
   val kwargs = Dict("string"->"paolo","int"->40,"long"->1234567890,"double"->34.56,"array"->List("array"),"object"->Map("key"->"value"),"true"->true,"false"->false,"null"->None)
 
   //val kwargsJson = """{"string":"paolo","int":40,"long":1234567890,"double":34.56,"array":["array"],"object":{"key":"value"},"true":true,"false":false,"null":null}"""

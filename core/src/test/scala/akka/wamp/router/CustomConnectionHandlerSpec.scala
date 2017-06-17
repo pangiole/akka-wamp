@@ -14,10 +14,10 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
       |   }
       | }
     """.stripMargin
- 
-  
+
+
   "A router.ConnectionHandler configured with custom settings" should "drop offending messages and resume" in { f =>
-    // TODO --> bad messages 
+    // TODO --> bad messages
 
     // TODO --> bad ABORT : no HELLO yet
     // f.client.sendMessage("""[3,{},"wamp.error.close_realm"]""")
@@ -48,11 +48,11 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // ~~~ dropped
 
     // TODO  --> bad INVOCATION : no session
-    
+
     // TODO  --> bad YIELD : no session
-    
+
     // TODO  --> bad RESULT : no session
-    
+
     // --> bad HELLO : invalid realm URI
     f.client.sendMessage("""[1,"invalid..realm",{"roles":{"subscriber":{}}}]""")
     // ~~~ dropped
@@ -73,7 +73,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> HELLO
     f.client.sendMessage("""[1,"default",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.1","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \
@@ -95,7 +95,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> HELLO
     f.client.sendMessage("""[1,"default",{"roles":{"subscriber":{},"publisher":{},"callee":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,2,{"agent":"akka-wamp-0.15.1","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #2 OPEN
     // \
@@ -111,7 +111,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> bad PUBLISH : invalid topic URI
     f.client.sendMessage("""[16,2,{"acknowledge":true},"invalid..topic"]""")
     // ~~~ dropped
-    
+
     // --> PUBLISH(#3)
     f.client.sendMessage("""[16,3,{"acknowledge":true},"myapp.topic"]""")
     // <-- PUBLISHED
@@ -122,7 +122,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> bad REGISTER : invalid procedure URI
     f.client.sendMessage("""[64,4,{},"invalid..procedure"]""")
     // ~~~ dropped
-    
+
     // --> REGISTER(#5)
     f.client.sendMessage("""[64,5,{},"myapp.procedure.itself"]""")
     // <-- REGISTERED
@@ -131,7 +131,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     // --> bad CALL : invalid procedure URI
     f.client.sendMessage("""[48,6,{},"invalid..procedure"]""")
     // ~~~ dropped
-    
+
     // --> CALL(#7)
     f.client.sendMessage("""[48,7,{},"myapp.procedure.itself",["args0",1],{"key":"value"}]""")
     // <-- INVOCATION(#1)
@@ -141,7 +141,7 @@ class CustomConnectionHandlerSpec extends ConnectionHandlerBaseSpec {
     f.client.sendMessage("""[70,1,{},[{"prop","res"}]]""")
     // <-- RESULT(#7)
     f.client.expectMessage("""[50,7,{},[{"prop","res"}]]""")
-    
+
     // --> GOODBYE
     f.client.sendMessage("""[6,{},"wamp.error.close_realm"]""")
     // <-- GOODBYE

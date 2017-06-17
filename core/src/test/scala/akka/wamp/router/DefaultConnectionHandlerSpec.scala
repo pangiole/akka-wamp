@@ -6,10 +6,10 @@ import akka.http.scaladsl.server._
 import akka.stream.scaladsl._
 
 /**
-  * It tests the ``router.ConnectionHandler`` behaviour with its 
-  * 
+  * It tests the ``router.ConnectionHandler`` behaviour with its
+  *
   *   DEFAULT configuration
-  * 
+  *
   * (NO custom settings) by exercising it with various JSON messages covering
   * the most common scenarios (session handling, subscriptions, publications, etc.)
   */
@@ -29,7 +29,7 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
   }
 
 
-  
+
   it should "reject any non-websocket requests" in { fixture =>
     Get(url) ~> fixture.httpRoute ~> check {
       rejection mustBe ExpectedWebSocketRequestRejection
@@ -39,17 +39,17 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
       responseAs[String] mustBe "Expected WebSocket Upgrade request"
     }
   }
-  
+
 
   it should "complete publish/subscribe in optimal scenario" in { f =>
     // --> HELLO
     f.client.sendMessage("""[1,"myrealm",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.1","roles":{"broker":{},"dealer":{}}}]""")
 
     // TODO https://github.com/angiolep/akka-wamp/issues/11
-    // TODO how to verify EVENT messages are received? 
-    
+    // TODO how to verify EVENT messages are received?
+
     // SESSION #1 OPEN
     // \
     // --> SUBSCRIBE(#1)
@@ -72,13 +72,13 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
     f.client.expectNoMessage()
   }
 
-  
-  
+
+
   it should "complete remote procedure call in optimal scenario" in { f =>
     // --> HELLO
     f.client.sendMessage("""[1,"myrealm",{"roles":{"publisher":{}}}]""")
     // <-- WELCOME
-    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.0","roles":{"broker":{},"dealer":{}}}]""")
+    f.client.expectMessage("""[2,1,{"agent":"akka-wamp-0.15.1","roles":{"broker":{},"dealer":{}}}]""")
 
     // SESSION #1 OPEN
     // \
@@ -106,7 +106,7 @@ class DefaultConnectionHandlerSpec extends ConnectionHandlerBaseSpec
 
     f.client.expectNoMessage()
   }
-  
+
 
   it should "disconnect upon offending messages" in { f =>
     pending

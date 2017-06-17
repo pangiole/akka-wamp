@@ -25,7 +25,7 @@ class ConnectionSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.pa
     }
   }
 
-  
+
   it should "fail to open session when it turns out to have been disconnected from client side" in { f =>
     f.withConnection { conn =>
       whenReady(conn.disconnect()) { _ =>
@@ -37,7 +37,7 @@ class ConnectionSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.pa
     }
   }
 
-  
+
   it should "fail to open session if it turns out to have been disconnected from router side" in { f =>
     // TODO https://github.com/angiolep/akka-wamp/issues/11
     pending
@@ -74,7 +74,7 @@ class ConnectionSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.pa
     }
   }
 
-  
+
   it should "fail to open multiple sessions on the same connection" in { f =>
     f.withConnection { conn =>
       val session1 = conn.open()
@@ -88,14 +88,14 @@ class ConnectionSpec extends ClientBaseSpec(ActorSystem("test", ConfigFactory.pa
     }
   }
 
-  
+
   it should "succeed open multiple sessions on distinct connections" in { f =>
     f.withConnection { conn1 =>
       whenReady(conn1.open()) { session1 =>
         session1.id mustBe 1
         session1.realm mustBe "default"
         session1.details mustBe Map(
-          "agent" -> "akka-wamp-0.15.0",
+          "agent" -> "akka-wamp-0.15.1",
           "roles" -> Map("broker" -> Map(), "dealer" -> Map())
         )
       }
