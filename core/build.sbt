@@ -73,4 +73,4 @@ mappings in Universal <+= (packageBin in Compile, sourceDirectory ) map {
     conf -> "conf/application.conf"
 }
 
-bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf""""
+bashScriptExtraDefines += """addApp "${app_home}/../conf/application.conf" """

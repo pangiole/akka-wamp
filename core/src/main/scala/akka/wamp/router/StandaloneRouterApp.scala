@@ -1,16 +1,23 @@
 package akka.wamp.router
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory => cf}
 import akka.actor.ActorSystem
+import java.nio.file.Paths
 
 object StandaloneRouterApp extends  App {
 
-  val file = System.getProperty("config.file")
-  val config =
-    if (file == null) ConfigFactory.load()
-    else ConfigFactory.load(file)
+  val jvmProps = cf.systemProperties()
 
-  val systemProperties = ConfigFactory.systemProperties()
-  val actorSystem = ActorSystem("wamp", systemProperties.withFallback(config))
+  val external =
+    if (args != null && args.size > 0)
+      cf.parseFile(Paths.get(args(0)).normalize.toFile)
+    else
+      cf.empty()
+
+  val default = cf.load()
+
+  val config = ( jvmProps /: (external :: default :: Nil))( _ withFallback _)
+
+  val actorSystem = ActorSystem("wamp", config.resolve())
   EmbeddedRouter.createAndBind(actorSystem)
 }

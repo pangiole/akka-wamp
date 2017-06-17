@@ -7,7 +7,7 @@ object Common {
     scalaVersion := "2.12.1",
     scalacOptions := Seq("-unchecked", "-deprecation"),
     organization := "com.github.angiolep",
-    version := "0.15.0",
+    version := "0.15.1",
     description := "WAMP - Web Application Messaging Protocol implementation written in Scala/Java8 with Akka HTTP"
   )
 
