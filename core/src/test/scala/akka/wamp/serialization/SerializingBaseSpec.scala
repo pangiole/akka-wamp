@@ -16,7 +16,7 @@ class SerializingBaseSpec
     with TryValues
     with OptionValues
     with EitherValues
-    with ScalaFutures
+    with ScalaFutures with IntegrationPatience
     with ParallelTestExecution
     with BeforeAndAfterAll
 {

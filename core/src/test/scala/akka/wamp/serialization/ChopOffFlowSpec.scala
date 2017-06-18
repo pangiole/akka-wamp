@@ -9,11 +9,12 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.TestKit
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.{FlatSpecLike, MustMatchers}
 
 class ChopOffFlowSpec extends TestKit( ActorSystem("test"))
-  with FlatSpecLike with MustMatchers with  ScalaFutures {
+  with FlatSpecLike with MustMatchers
+  with ScalaFutures with IntegrationPatience {
 
   implicit val mat = ActorMaterializer()
 

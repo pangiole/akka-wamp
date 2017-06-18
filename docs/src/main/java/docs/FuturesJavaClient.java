@@ -161,12 +161,12 @@ public class FuturesJavaClient {
     // Event conveyor = ...
     if (conveyor.payload() instanceof TextLazyPayload) {
       TextLazyPayload p = (TextLazyPayload) conveyor.payload();
-      Source<String, ?> unparsed = p.unparsed();
+      // TODO Source<String, ?> unparsed = p.unparsed();
       // parse textual source ...
     }
     else if (conveyor.payload() instanceof BinaryLazyPayload) {
       BinaryLazyPayload p = (BinaryLazyPayload) conveyor.payload();
-      Source<ByteString, ?> unparsed = p.unparsed();
+      // TODO Source<ByteString, ?> unparsed = p.unparsed();
       // parse binary source ...
     }
     // #incoming-payload
