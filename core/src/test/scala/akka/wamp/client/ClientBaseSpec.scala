@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 class ClientBaseSpec(_system: ActorSystem = ActorSystem("test"))
   extends ActorSpec(_system)
     with ParallelTestExecution
-    with ScalaFutures {
+    with ScalaFutures with IntegrationPatience {
   
   implicit val defaultPatience = PatienceConfig(timeout = 32 seconds, interval = 100 millis)
 
