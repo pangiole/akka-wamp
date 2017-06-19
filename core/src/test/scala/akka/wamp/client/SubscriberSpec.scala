@@ -5,11 +5,9 @@
 
 package akka.wamp.client
 
-import akka.Done
 import akka.wamp.messages.Event
 import org.scalamock.scalatest.MockFactory
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 
