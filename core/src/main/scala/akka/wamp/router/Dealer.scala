@@ -52,13 +52,13 @@ trait Dealer { this: Router =>
   private[router] def handleRegistrations: Receive = {
     case msg @ Register(requestId, options, procedure) =>
       withSession(msg, sender()) { session =>
-        registrations.values.toList.filter(_.procedure == procedure) match {
+        registrations.values.toList.filter(reg => (reg.procedure == procedure && reg.realm == session.realm)) match {
           case Nil => {
             /**
               * No callees have registered to provide the given procedure yet.
               */
             val registrationId = idGenerators('router).nextId()
-            registrations += (registrationId -> new Registration(registrationId, session.peer, procedure))
+            registrations += (registrationId -> new Registration(registrationId, session.peer, procedure, session.realm))
             session.peer ! Registered(requestId, registrationId)
           }
           case registration :: Nil => {
@@ -111,8 +111,8 @@ trait Dealer { this: Router =>
   private[router] def handleCalls: Receive = {
     case call: Call =>
       val caller = sender()
-      withSession(call, caller) { _ =>
-        registrations.values.find(_.procedure == call.procedure) match {
+      withSession(call, caller) { session =>
+        registrations.values.find(reg => (reg.procedure == call.procedure && reg.realm == session.realm)) match {
           case Some(registration) =>
             /**
               *   ,------.          ,------.          ,------.

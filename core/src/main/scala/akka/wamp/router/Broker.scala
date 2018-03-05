@@ -31,7 +31,7 @@ trait Broker { this: Router =>
           */
         val ack = options.get("acknowledge") == Some(true)
         val publicationId = idGenerators('global).nextId(excludes = publications.toSet)
-        subscriptions.values.toList.filter(_.topic == topic) match {
+        subscriptions.values.toList.filter(sub => (sub.topic == topic && sub.realm == session.realm)) match {
           case Nil =>
             /**
               * Actually, no subscribers has subscribed to the given topic.
@@ -69,13 +69,13 @@ trait Broker { this: Router =>
   private[router] def handleSubscriptions: Receive = {
     case message@Subscribe(requestId, options, topic) =>
       withSession(message, sender()) { session =>
-        subscriptions.values.toList.filter(_.topic == topic) match {
+        subscriptions.values.toList.filter(sub => (sub.topic == topic && sub.realm == session.realm)) match {
           case Nil => {
             /**
               * No subscribers have subscribed to the given topic yet.
               */
             val subscriptionId = idGenerators('router).nextId(excludes = subscriptions.toMap.keySet)
-            subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(session.peer), topic))
+            subscriptions += (subscriptionId -> new Subscription(subscriptionId, Set(session.peer), topic, session.realm))
             session.peer ! Subscribed(requestId, subscriptionId)
           }
           case subscription :: Nil => {
