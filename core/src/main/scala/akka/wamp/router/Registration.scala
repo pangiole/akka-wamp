@@ -10,5 +10,4 @@ import akka.wamp._
   * @param callee is the callee actor reference
   * @param procedure is the registered procedure identifier
   */
-case class Registration(id: Id, callee: ActorRef, procedure: Uri)
-
+case class Registration(id: Id, callee: ActorRef, procedure: Uri, realm: Uri)

@@ -10,5 +10,4 @@ import akka.wamp._
   * @param subscribers are the subscriber actors references
   * @param topic is the subscribed topic identifier
   */
-case class Subscription(id: Id, subscribers: Set[ActorRef], topic: Uri)
-
+case class Subscription(id: Id, subscribers: Set[ActorRef], topic: Uri, realm: Uri)
