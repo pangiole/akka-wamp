@@ -4,14 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [Unreleased]
-- ...
+## Unreleased
+
+### Fixed
+- Not compatible with akka 2.5.2 as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/47)
+
+- Routing occurs between sessions that have joined any realm as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/45)
 
 
 ## [v0.15.1] _ 2017-06-17
 
 ### Fixed
-- Standalone router could not read ``$WAMP_HOME/conf/application.conf`` as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/46) 
+- Standalone router could not read ``$WAMP_HOME/conf/application.conf`` as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/46)
 
 
 ## [v0.15.0] _ 2017-01-23
@@ -41,7 +45,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Changed
 - Improve the documentation significantly
 - Provide more useful examples
- 
+
 
 ## [v0.12.0] _ 2016-10-23
 
@@ -78,7 +82,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Fixed
 - Both router and client shall validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
 
-    
+
 ## [v0.9.0] _ 2016-09-29    
 
 ### Added
@@ -101,7 +105,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)
-- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/) 
+- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/)
 
 
 ## [v0.7.0] _ 2016-09-12

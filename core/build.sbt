@@ -6,12 +6,13 @@ mainClass in Compile := Some("akka.wamp.router.StandaloneRouterApp")
 
 libraryDependencies ++= Seq (
   akkaHttp,
+  akkaStream,
   akkaSlf4j,
   logback,
   jackson
 ) ++ Seq(
   akkaHttpTestkit,
-//  akkaStreamTestkit,
+  //akkaStreamTestkit,
   scalatest,
   scalamock,
   mockito,
