@@ -165,14 +165,14 @@ package object wamp {
 
 
   /**
-    * Implicitly wraps a TypeSafe [[Config]] to provide additional utility methods
+    * Implicitly wraps a TypeSafe Config to provide additional utility methods
     *
     * @param config
     */
   implicit class RichConfig(config: Config) {
 
     /**
-      * Reads the given configuration path as [[URI]]
+      * Reads the given configuration path as URI
       *
       * @param path is the path expression
       * @return the configured URI

@@ -16,7 +16,7 @@ class CustomRouterSpec extends CustomRouterBaseSpec {
     f.router ! Hello("default", Dict().withRoles("publisher")); receiveOne(0.seconds)
     f.router.underlyingActor.sessions must have size(1)
     f.router ! Hello("default", Dict().withRoles("subscriber"))
-    expectNoMsg
+    expectNoMessage
     f.router.underlyingActor.sessions must have size(1)
   }
 

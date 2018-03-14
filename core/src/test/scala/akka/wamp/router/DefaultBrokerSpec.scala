@@ -370,6 +370,6 @@ class DefaultBrokerSpec extends RouterBaseSpec {
      */
     client1.expectMsg(Event(1, 5, Dict(), payload))
     client2.expectMsg(Event(1, 5, Dict(), payload))
-    client3.expectNoMsg(0.second)
+    client3.expectNoMessage(0.second)
   }
 }

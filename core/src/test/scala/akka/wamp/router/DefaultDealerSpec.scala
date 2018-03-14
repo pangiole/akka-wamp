@@ -291,7 +291,7 @@ class DefaultDealerSpec extends RouterBaseSpec {
     val client4 = f.joinRealm("default")
 
     client4.send(f.router, Call(1, procedure = "myapp.procedure"))
-    client4.expectNoMsg(0.seconds)
+    client4.expectNoMessage(0.seconds)
 
     f.router.underlyingActor.registrations must have size(2)
     f.router.underlyingActor.invocations must have size(1)
@@ -301,8 +301,8 @@ class DefaultDealerSpec extends RouterBaseSpec {
      * while the callee which joined a different realm doesn't
      */
     client1.expectMsg(Invocation(1, registrationId1, Invocation.defaultDetails))
-    client2.expectNoMsg(0.seconds)
-    client3.expectNoMsg(0.seconds)
+    client2.expectNoMessage(0.seconds)
+    client3.expectNoMessage(0.seconds)
   }
 
 
