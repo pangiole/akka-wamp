@@ -66,12 +66,8 @@ credentials += Credentials(Path.userHome / ".ivy2" / "sonatype")
 
 enablePlugins(JavaAppPackaging)
 
-mappings in Universal <+= (packageBin in Compile, sourceDirectory ) map {
-  (_, src) =>
-    // we are using the reference.conf as default application.conf
-    // the user can override settings here
-    val conf = src / "main" / "resources" / "reference.conf"
-    conf -> "conf/application.conf"
+mappings in Universal += {
+  ((resourceDirectory in Compile).value) / "reference.conf" -> "conf/application.conf"
 }
 
 bashScriptExtraDefines += """addApp "${app_home}/../conf/application.conf" """

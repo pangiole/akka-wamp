@@ -6,9 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## Unreleased
 
+### Changed
+- Upgrade build to SBT 1.1.1
+
 ### Fixed
 - Not compatible with akka 2.5.2 as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/47)
-
 - Routing occurs between sessions that have joined any realm as reported by [\#46](https://github.com/angiolep/akka-wamp/issues/45)
 
 
