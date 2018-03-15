@@ -1,5 +1,6 @@
 package akka.wamp.router
 
+import akka.testkit.TestProbe
 import akka.wamp.messages._
 
 /**
