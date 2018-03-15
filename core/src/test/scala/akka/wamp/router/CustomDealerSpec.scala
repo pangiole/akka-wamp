@@ -9,7 +9,7 @@ import akka.wamp.messages._
 class CustomDealerSpec extends CustomRouterBaseSpec {
 
   "A dealer configured with custom settings" should "drop incoming REGISTER if peer didn't open session" in { f =>
-    val client = f.joinRealm("default")
+    val client = TestProbe()
     client.send(f.router, Register(1, procedure = "myapp.procedure"))
     client.send(f.router, Hello())
     client.expectMsgType[Welcome]
@@ -18,7 +18,7 @@ class CustomDealerSpec extends CustomRouterBaseSpec {
 
 
   it should "drop incoming UNREGISTER if peer didn't open session" in { f =>
-    val client = f.joinRealm("default")
+    val client = TestProbe()
     client.send(f.router, Unregister(66, 99))
     client.send(f.router, Hello())
     client.expectMsgType[Welcome]
@@ -27,7 +27,7 @@ class CustomDealerSpec extends CustomRouterBaseSpec {
 
 
   it should "drop incoming CALL if peer didn't open session" in { f =>
-    val client = f.joinRealm("default")
+    val client = TestProbe()
     client.send(f.router, Call(444, procedure = "myapp.procedure"))
     client.send(f.router, Hello())
     client.expectMsgType[Welcome]
@@ -36,7 +36,7 @@ class CustomDealerSpec extends CustomRouterBaseSpec {
 
 
   it should "drop incoming YIELD if peer didn't open session" in { f =>
-    val client = f.joinRealm("default")
+    val client = TestProbe()
     client.send(f.router, Yield(1))
     client.send(f.router, Hello())
     client.expectMsgType[Welcome]

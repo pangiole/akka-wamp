@@ -1,5 +1,6 @@
 package akka.wamp.router
 
+import akka.testkit.TestProbe
 import akka.wamp.messages._
 
 /**
@@ -8,16 +9,18 @@ import akka.wamp.messages._
 class CustomBrokerSpec extends CustomRouterBaseSpec {
 
   "A broker configured with custom settings" should "drop incoming SUBSCRIBE if client didn't open session" in { f =>
-    f.router ! Subscribe(1, topic = "mypp.topic")
-    f.router ! Hello()
-    expectMsgType[Welcome]
+    val client = TestProbe()
+    client.send(f.router, Subscribe(1, topic = "mypp.topic"))
+    client.send(f.router, Hello())
+    client.expectMsgType[Welcome]
     f.router.underlyingActor.sessions must have size(1)
   }
   
   it should "drop incoming PUBLISH if client didn't open session" in { f =>
-    f.router ! Publish(1, topic = "mypp.topic1")
-    f.router ! Hello()
-    expectMsgType[Welcome]
+    val client = TestProbe()
+    client.send(f.router, Publish(1, topic = "mypp.topic1"))
+    client.send(f.router, Hello())
+    client.expectMsgType[Welcome]
     f.router.underlyingActor.sessions must have size(1)
   }
 

@@ -36,7 +36,8 @@ gradle
 
 ## Limitations
  * Java >= 1.8.0 
- * Scala >= 2.12.1
+ * Scala >= 2.12.0
+ * Akka >= 2.5.0
  * WebSocket transport only (no raw TCP) 
  * WAMP Basic Profile only (none of the Advanced Profile features yet)
  * JSON serialization only (no MsgPack yet)

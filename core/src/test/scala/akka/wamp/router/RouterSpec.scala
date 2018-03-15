@@ -12,7 +12,7 @@ class RouterSpec extends RouterBaseSpec {
 
   "The default router" should "auto-create realms on incoming HELLO('myrealm') and reply GOODBYE" in { f =>
     f.router ! Hello("myrealm", Dict().withRoles("subscriber", "callee"))
-    expectMsg(Welcome(1, Dict().withRoles("broker", "dealer").withAgent("akka-wamp-0.15.1")))
+    expectMsg(Welcome(1, Dict().withRoles("broker", "dealer").withAgent("akka-wamp-0.15.2")))
     f.router.underlyingActor.realms must have size(2)
     f.router.underlyingActor.realms must contain allOf ("default", "myrealm")
     f.router.underlyingActor.sessions.values.loneElement must have (
@@ -39,7 +39,7 @@ class RouterSpec extends RouterBaseSpec {
 
   it should "open session on incoming HELLO('default') and reply WELCOME" in { f =>
     f.router ! Hello("default", Dict().withRoles("publisher"))
-    expectMsg(Welcome(1, Dict().withRoles("broker", "dealer").withAgent("akka-wamp-0.15.1")))
+    expectMsg(Welcome(1, Dict().withRoles("broker", "dealer").withAgent("akka-wamp-0.15.2")))
     f.router.underlyingActor.realms must have size(1)
     f.router.underlyingActor.realms must contain only ("default")
     f.router.underlyingActor.sessions.values.loneElement must have (

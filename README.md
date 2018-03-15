@@ -15,7 +15,7 @@ Easy to download as dependency from [Maven central](https://search.maven.org/#se
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.1"
+  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.2"
 )
 ```
 
@@ -120,9 +120,9 @@ Akka Wamp provides you with a basic router that can be either embedded into your
 Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
-curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.15.1.tgz
-tar xvfz akka-wamp-0.15.1.tar.gz
-cd akka-wamp-0.15.1
+curl https://dl.bintray.com/angiolep/universal/akka-wamp-0.15.2.tgz
+tar xvfz akka-wamp-0.15.2.tar.gz
+cd akka-wamp-0.15.2
 vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
@@ -130,7 +130,8 @@ vim ./conf/application.conf
 
 ## Limitations
  * Java >= 1.8.0 
- * Scala >= 2.12.1
+ * Scala >= 2.12.0
+ * Akka >= 2.5.0
  * WebSocket transport only (no raw TCP) 
  * WAMP Basic Profile only (none of the Advanced Profile features yet)
  * JSON serialization only (no MsgPack yet)

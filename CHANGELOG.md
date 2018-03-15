@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## Unreleased
+## [v0.15.2] _ 2018-03-15
 
 ### Changed
 - Upgrade build to SBT 1.1.1
@@ -47,7 +47,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Changed
 - Improve the documentation significantly
 - Provide more useful examples
- 
+
 
 ## [v0.12.0] _ 2016-10-23
 
@@ -84,7 +84,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ### Fixed
 - Both router and client shall validate RPC message types [\#34](https://github.com/angiolep/akka-wamp/issues/34)
 
-    
+
 ## [v0.9.0] _ 2016-09-29    
 
 ### Added
@@ -107,7 +107,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ### Changed
 - Improve ScalaDoc comments [\#23](https://github.com/angiolep/akka-wamp/issues/23)
-- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/) 
+- Improve [ReadTheDocs](http://akka-wamp.readthedocs.io/)
 
 
 ## [v0.7.0] _ 2016-09-12
@@ -140,7 +140,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Future based API for writing WAMP Clients with limited features
 - Documentation
 
-[Unreleased]: https://github.com/angiolep/akka-wamp/compare/v0.15.0...HEAD?&diff=split&name=HEAD
+[Unreleased]: https://github.com/angiolep/akka-wamp/compare/HEAD...v0.15.2?&diff=split&name=HEAD
+[v0.15.2]: https://github.com/angiolep/akka-wamp/compare/v0.15.2...v0.15.1?&diff=split&name=v0.15.2
+[v0.15.1]: https://github.com/angiolep/akka-wamp/compare/v0.15.1...v0.15.0?&diff=split&name=v0.15.1
 [v0.15.0]: https://github.com/angiolep/akka-wamp/compare/v0.15.0...v0.14.0?&diff=split&name=v0.15.0
 [v0.14.0]: https://github.com/angiolep/akka-wamp/compare/v0.14.0...v0.13.0?&diff=split&name=v0.14.0
 [v0.13.0]: https://github.com/angiolep/akka-wamp/compare/v0.13.0...v0.12.0?&diff=split&name=v0.13.0

@@ -54,7 +54,7 @@ object Macros {
        | import scala.concurrent._
        |
        | implicitly[Session].subscribe($tpc, event => {
-       |   val errmsg = "Couldn't invoke lambda consumer for ${tpc.replace('"',''')}"
+       |   val errmsg = "Couldn't invoke lambda consumer for ${tpc.replace('"','\'')}"
        |   val args = event.args
        |   if (args.size == $arity) {
        |     try {
@@ -111,7 +111,7 @@ object Macros {
        | import scala.concurrent._
        |
        | implicitly[Session].register($prc, invoc => {
-       |   val errmsg = "Couldn't invoke lambda consumer for ${prc.replace('"',''')}"
+       |   val errmsg = "Couldn't invoke lambda consumer for ${prc.replace('"','\'')}"
        |   val args = invoc.args
        |   if (args.size == $arity) {
        |     try {
