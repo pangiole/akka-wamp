@@ -160,4 +160,5 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 [gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
-[download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion
+[download-url]: https://bintray.com/angiolep/universal/download_file?file_path=akka-wamp-0.15.2.tgz
+

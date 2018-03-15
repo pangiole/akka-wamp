@@ -24,7 +24,7 @@ tgz
 @@snip[application.conf](../../../../core/src/main/resources/reference.conf){ #router }
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
-[download-url]: https://bintray.com/angiolep/universal/akka-wamp/_latestVersion
+[download-url]: https://bintray.com/angiolep/universal/download_file?file_path=akka-wamp-0.15.2.tgz
 
 ### Transports
 An application can bind one or more listeners. Each listener corresponds to a named transport in the configuration file and it will bind to the configured endpoint. Usually, endpoints are configured for different schemes such as ``ws`` for WebSocket or ``wss`` for WebSocket with TLS - Transport Layer Security. Additional transport configuration falls back to the default one for missing keys (e.g. no need to repeat the ``format`` key) 
