@@ -4,8 +4,7 @@
 
 ```bash
 cd akka-wamp
-sbt -Dakka.loglevel=DEBUG
+sbt
 
-project actors
-run
+example-actors/run
 ```

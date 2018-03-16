@@ -1,12 +1,11 @@
-# examples/streams
+# akka-wamp/examples/streams
 
 
 ```bash
 cd akka-wamp
-sbt -Dakka.loglevel=DEBUG
+sbt
 
-> project actors
-> runMain examples.JavaStreamsApp
+example-streams/runMain StreamsScalaApp
 ```
 
 OR

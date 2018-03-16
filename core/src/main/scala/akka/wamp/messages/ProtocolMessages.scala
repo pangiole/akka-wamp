@@ -15,7 +15,7 @@ sealed trait ProtocolMessage extends Message {
 
 /**
   * Sent by a client to initiate opening of a session to a router
-  * attaching to a Realm.
+  * joining to a Realm.
   *
   * ```
   * [HELLO, Realm|uri, Details|dict]

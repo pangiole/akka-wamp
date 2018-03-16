@@ -1,33 +1,28 @@
-# Akka Wamp 
-[![Build Status][travis-image]][travis-url] [![CodeCov Status][codecov-image]][codecov-url] [![Gitter][gitter-image]][gitter-url] 
+# Akka Wamp
+[![Build Status][travis-image]][travis-url] [![CodeCov Status][codecov-image]][codecov-url] [![Gitter][gitter-image]][gitter-url]
 
-Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written to let both [Scala](http://scala-lang.org/) and [Java](http://www.java.com) developers build the next generation of reactive web services on top of [Akka](http://akka.io/) abstractions.
+Akka Wamp is a WAMP - [Web Application Messaging Protocol](http://wamp-proto.org/) implementation written to let both [Java](http://www.java.com) and [Scala](http://scala-lang.org/)  developers build the next generation of reactive web services on top of [Akka](http://akka.io/) abstractions.
 
 Akka Wamp provides you with:
 
-* Simple [Client APIs](https://angiolep.github.io/projects/akka-wamp/client) designed to be used with [Akka](http://akka.io/) actors, futures and streams.
-* Object-oriented representations of all WAMP [Messages](./messages.html),
-* Akka IO extenson driver for the WAMP Protocol.
-* Basic [Router](https://angiolep.github.io/projects/akka-wamp/router) you can embed in your applications or launch as standalone process.
-
-## Usage
-Easy to download as dependency from [Maven central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.github.angiolep%22%20AND%20a%3A%22akka-wamp_2.12%22):
-
-```scala
-libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.2"
-)
-```
-
-## Docs
-* User's guide, code fragments and dozens of examples are published [here](https://angiolep.github.io/projects/akka-wamp).
-* API doc is published [here](https://angiolep.github.io/projects/akka-wamp/api/akka/wamp)
+* [Akka IO](https://doc.akka.io/docs/akka/current/io.html) driver for the WAMP Protocol.
+* Simple to use [Client APIs](https://angiolep.github.io/projects/akka-wamp/client) based on Akka actors, futures and streams.
+* Object-oriented representations and parsers for all WAMP [Messages](https://angiolep.github.io/projects/akka-wamp/messages),
+* Basic [Router](https://angiolep.github.io/projects/akka-wamp/router) you can either embed in your applications or launch as standalone process.
+* [API docs](https://angiolep.github.io/projects/akka-wamp/api/akka/wamp) and [user's guide](https://angiolep.github.io/projects/akka-wamp) to quickly learn how to use it.
+* [Maven central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22com.github.angiolep%22%20AND%20a%3A%22akka-wamp_2.12%22) packages for your build to depend on.
 
 
 ## Client APIs
-Connect to a router, open a session, subscribe to a topic, consume events, register a remote procedure and call it in few lines of Scala or Java code.
+Connect to a router, open a session, subscribe to a topic, consume events, register a remote procedure and call it in few lines of Java or Scala code.
 
-* Actors, Futures and Streams based APIs.
+```scala
+libraryDependencies ++= Seq(
+  "com.github.angiolep" % "akka-wamp-client_2.12" % "0.15.2"
+)
+```
+
+* User either actor, future or stream based APIs.
 * Lambda consumers and handlers support.
 * Lazy and pluggable deserializers.
 * Java 8 support.
@@ -50,22 +45,22 @@ public class JavaClient {
   public static void main(String[] arr) {
     ActorSystem actorSystem = ActorSystem.create();
     Client client = Client.create(actorSystem);
-    
+
     client.connect("endpoint").thenAccept(c -> {
       c.open("realm").thenAccept(s -> {
-    
+
         s.publish("topic", asList("Ciao!"));
-    
+
         s.subscribe("topic", (event) -> {
           out.println("got " + event.args().get(0));
         });
-    
+
         s.register("procedure", (invoc) -> {
           Integer a = (Integer) invoc.args().get(0);
           Integer b = (Integer) invoc.args().get(1);
           return a + b;
         });
-    
+
         s.call("procedure", asList(20, 55)).thenAccept(res -> {
           out.println("20 * 55 = " + res.args().get(0));  
         });
@@ -85,7 +80,7 @@ import akka.actor._
 import akka.wamp.client._
 
 object ScalaClient extends App {
-  
+
   val system = ActorSystem()
   val client = Client(system)
   implicit val executionContext = system.dispatcher
@@ -102,7 +97,7 @@ object ScalaClient extends App {
       call("procedure", List(20, 55)).foreach { res =>
         println(s"20 * 55 = ${res.args(0)}")
       }
-      
+
       register("procedure", (a: Int, b: Int) => {
         a + b
       })
@@ -112,11 +107,20 @@ object ScalaClient extends App {
 ```
 
 ## Router
- 
-[![Download][download-image]][download-url]
- 
 Akka Wamp provides you with a basic router that can be either embedded into your application or launched as standalone server process.
 
+### Embedded
+Connect to a router, open a session, subscribe to a topic, consume events, register a remote procedure and call it in few lines of Scala or Java code.
+
+```scala
+libraryDependencies ++= Seq(
+  "com.github.angiolep" % "akka-wamp-client_2.12" % "0.15.2"
+)
+```
+
+
+### Standalone
+[![Download][download-image]][download-url]
 Download the latest router version, extract, configure and run it as standalone application:
 
 ```bash
@@ -127,16 +131,19 @@ vim ./conf/application.conf
 ./bin/akka-wamp -Dakka.loglevel=DEBUG
 ```
 
+### Docker image
+Working in progress
+
 
 ## Limitations
- * Java >= 1.8.0 
+ * Java >= 1.8.0
  * Scala >= 2.12.0
  * Akka >= 2.5.0
- * WebSocket transport only (no raw TCP) 
+ * WebSocket transport only (no raw TCP)
  * WAMP Basic Profile only (none of the Advanced Profile features yet)
  * JSON serialization only (no MsgPack yet)
  * Not yet ready for production
- 
+
 
 ## Changelog
 Please, read [CHANGELOG.md](CHANGELOG.md)
@@ -144,7 +151,7 @@ Please, read [CHANGELOG.md](CHANGELOG.md)
 ## Contributing
 Please, read [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Licence 
+## Licence
 This software comes with [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 ## Disclaimer
@@ -155,10 +162,9 @@ This software comes with [Apache License 2.0](http://www.apache.org/licenses/LIC
 
 [codecov-image]: https://codecov.io/gh/angiolep/akka-wamp/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/angiolep/akka-wamp
-        
+
 [gitter-image]: https://badges.gitter.im/angiolep/akka-wamp.svg
 [gitter-url]: https://gitter.im/angiolep/akka-wamp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge
 
 [download-image]: https://api.bintray.com/packages/angiolep/universal/akka-wamp/images/download.svg
 [download-url]: https://bintray.com/angiolep/universal/download_file?file_path=akka-wamp-0.15.2.tgz
-

@@ -1,31 +1,24 @@
-# examples/router
+# akka-wamp/examples/router
 
-This examples demonstrate how to spin an embedded Akka Wamp router on both the local unsecured endpoint and the local TLS/SSL endpoint.
+This examples demonstrate how to launch an embedded Akka Wamp router listening onto two endpoints: 
 
-### Local unsecured
-It's the default configuration. Just run it and the router will start accepting connection on ``ws://localhost:8080/wamp``
-
-```bash
-cd akka-wamp
-sbt -Dakka.loglevel=DEBUG
-
-project router
-runMain LocalRouterApp
-```
+ * the ``default`` (unsecured) one whose address is ``ws://localhost:8080/wamp`` 
+ * and an additional ``secured`` TLS endpoint whose address is ``wss://example.com:8433/wamp``
 
 
-## Local TLS/SSL
+### TLS certificates
+This example provides you with a pretty realistic TLS configuration. It assumes your server DNS name is ``example.com`` and it provides you the ``mkcerts.sh`` script to let you create the necessary cryptographic material.
 
-This example provides you with a realistic TLS/SSL configuration. It assumes your server DNS is ``example.com`` and makes you create the necessary cryptographic material.
 
-
-### Setup
-Make ``example.com`` an additional alias name for ``127.0.0.1`` (the loopback interface). Then make a TLS/SSL certificate chain for it.
-  
+First of all, make ``example.com`` an additional alias name for ``127.0.0.1`` (the loopback interface).
   
 ```bash
 sudo echo "127.0.0.1 example.com" >/etc/hosts
+```
 
+Then make a TLS certificate chain for it.
+
+```bash
 cd akka-wamp
 ./examples/router/mkcerts.sh
 ```
@@ -35,13 +28,20 @@ The ``mkcert.sh`` script works on any Unix-like systems able to provide the foll
 * [JDK keytool](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/keytool.html)
 * [OpenSSL](https://github.com/openssl/openssl)
 
+MS Windows systems are not yet supported by this example.
+
 
 ### Run
 
 ```bash
 cd akka-wamp 
-sbt -Dakka.loglevel=DEBUG -Djavax.net.debug=all
+sbt -Djavax.net.debug=all
 
-project router
-runMain SecuredRouterApp
+example-router/runMain RouterScalaApp
 ```
+
+You may also run ``RouterJavaApp`` if you prefer to do so.
+
+
+### Client
+Now give the [examples/futures](../futures) a better try to see if it really connects to the endpoint secured via TLS.

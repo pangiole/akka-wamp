@@ -35,3 +35,6 @@ password
 *.p12
 *.key
 
+
+# Visual paradigm
+*.*bak*

@@ -1,19 +1,20 @@
 # akka-wamp/examples/futures
-This example demonstrates you how to write clients using the [Futures API](http://angiolep.github.io/projects/akka-wamp/client/futures.html). As the clients in this example attempt local connections, you're required to run the [examples/router](../router/README.md) first.
+This example demonstrates you how to write WAMP clients using the [Akka Wamp Futures](http://angiolep.github.io/projects/akka-wamp/client/futures.html) based API. 
+
+Please note that, as the client in this example attempts to establish local connections, you're required to run the [examples/router](../router/README.md) first.
 
 ## Run
 
 ```bash
 cd akka-wamp
-sbt -Dakka.loglevel=DEBUG
+sbt
 
-project futures
-run
+example-futures/runMain FuturesScalaClient default
 ```
 
 
-## TL/SSL
-It requires you to generate the necessary TLS/SSL cryptographic material. Just call the provided ``mkcerts.sh`` AFTER doing the same for the [examples/router](../router/README.md) project. 
+## TLS
+It requires you to generate the necessary TLS cryptographic material. Just call the provided ``mkcerts.sh`` script AFTER having done the same for the [examples/router](../router/README.md) project. 
 
 ```bash
 cd akka-wamp
@@ -23,8 +24,6 @@ cd akka-wamp
 Run the client
 
 ```bash
-sbt -Dakka.loglevel=DEBUG -Djavax.net.debug=all
-
-project futures
-run
+sbt
+example-futures/runMain FuturesScalaClient secured
 ```

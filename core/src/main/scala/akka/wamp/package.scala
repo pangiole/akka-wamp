@@ -9,11 +9,11 @@ import scala.util.Random.{nextDouble => rnd}
 
 /**
   * Contains classes, traits, types and functions to be used to write applications
-  * based on WAMP - Web Application Messaging Protocol
+  * based on the WAMP - Web Application Messaging Protocol
   *
   * == Client ==
   *
-  * Akka Wamp provides you with three distinct Client APIs in the [[wamp.client]] package
+  * Akka Wamp provides you with three distinct Client APIs
   *
   *   - Actor based
   *   - Future based
@@ -21,7 +21,7 @@ import scala.util.Random.{nextDouble => rnd}
   *
   * == Router ==
   *
-  * Akka Wamp provides you with a basic router implementation in the [[wamp.router]] package
+  * Akka Wamp provides you with a basic router implementation
   */
 package object wamp {
 
@@ -188,15 +188,4 @@ package object wamp {
     val maxBackoff: FiniteDuration,
     val randomFactor: Double
   )
-
-
-  private[wamp] trait EndpointConfig {
-    def endpointConfig(name: String, config: Config): (URI, String) = {
-      val c = config.getConfig(s"endpoint.$name").withFallback(config.getConfig("endpoint.local"))
-      (
-        c.getURI("address"),
-        c.getString("format")
-      )
-    }
-  }
 }

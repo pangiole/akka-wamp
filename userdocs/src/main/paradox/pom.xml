@@ -1,0 +1,12 @@
+<dependencies>
+    <dependency>
+        <groupId>com.github.angiolep</groupId>
+        <artifactId>akka-wamp-client_2.12</artifactId>
+        <version>0.15.2</version>
+    </dependency>
+    <dependency>
+        <groupId>com.github.angiolep</groupId>
+        <artifactId>akka-wamp-router_2.12</artifactId>
+        <version>0.15.2</version>
+    </dependency>
+</dependencies>

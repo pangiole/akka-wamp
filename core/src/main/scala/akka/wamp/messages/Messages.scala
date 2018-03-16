@@ -73,7 +73,7 @@ trait Signal extends Message
 case class CommandFailed(cmd: Command, ex: Throwable) extends Signal
 
 /**
-  * This bound signal is replied back whenever a [[Bind]] command succeed.
+  * This bound signal is replied back whenever a [[Bind]] command succeeds.
   *
   * @param listener is the actor reference of the newly spawned connection listener actor
   * @param uri is the locator the connection listener is currently bound at

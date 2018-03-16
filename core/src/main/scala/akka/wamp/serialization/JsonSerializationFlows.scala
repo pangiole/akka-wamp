@@ -1,30 +1,28 @@
 package akka.wamp.serialization
 
 import akka.NotUsed
+import akka.event.{LogSource, Logging}
 import akka.http.scaladsl.model.{ws => websocket}
 import akka.http.scaladsl.model.ws.{BinaryMessage, TextMessage}
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.{Materializer, Supervision}
+import akka.stream.{ActorMaterializer, Materializer, Supervision}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.wamp.Validator
 import akka.wamp.{messages => wamp}
 import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import org.slf4j.LoggerFactory
 
 /**
   * The JSON serialization flows
   * 
   * @param validateStrictUri is the boolean switch (default is false) to validate against strict URIs rather than loose URIs
-  * @param dropOffendingMessages is the boolean switch to drop an offending message and resume to the next one 
+  * @param tolerateProtocolViolations is the boolean switch to drop an offending message and resume to the next one
   * @param materializer is the Akka Stream materializer
   */
-class JsonSerializationFlows(validateStrictUri: Boolean, dropOffendingMessages: Boolean)
-                            (implicit materializer: Materializer) 
+class JsonSerializationFlows(validateStrictUri: Boolean, tolerateProtocolViolations: Boolean)
+                            (implicit materializer: ActorMaterializer)
   extends SerializationFlows 
 {
-  val log = LoggerFactory.getLogger(classOf[SerializationFlows])
+  val log = Logging(materializer.system, this)
 
   /** The Jackson factory */
   private val jsonFactory = new JsonFactory()
@@ -72,14 +70,22 @@ class JsonSerializationFlows(validateStrictUri: Boolean, dropOffendingMessages: 
       }
       .withAttributes(supervisionStrategy {
         case ex: DeserializeException =>
-          if (!dropOffendingMessages) {
+          if (!tolerateProtocolViolations) {
             // default
             log.error(ex.getMessage, ex)
             Supervision.Stop
           }
           else {
-            log.warn("Resume from DeserializeException: {}", ex.getMessage)
+            log.warning("Resume from DeserializeException: {}", ex.getMessage)
             Supervision.Resume
           }
       })
+}
+
+
+object JsonSerializationFlows {
+  implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
+    def genString(o: AnyRef): String = o.getClass.getName
+    override def getClazz(o: AnyRef): Class[_] = o.getClass
+  }
 }
