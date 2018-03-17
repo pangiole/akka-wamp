@@ -136,6 +136,16 @@ class ConnectionHandler(connector: ActorRef, address: URI, format: String, sslCo
       //    such as disconnection from router side
       connector ! Disconnected
       self ! PoisonPill
+
+    case sig @ Status.Failure(ex) =>
+      // NOTE:
+      // As documented for Sink.actorRef(), this signal is sent when
+      // the above AKKA STREAM is completed with a failure, such as
+      //
+      //   - akka.http.scaladsl.model.ws.PeerClosedConnectionException: Peer closed connection with code 1011 'internal error'
+      //
+      connector ! Disconnected
+      self ! PoisonPill
   }
 }
 
