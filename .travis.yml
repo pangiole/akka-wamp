@@ -7,9 +7,9 @@ jdk:
 env:
   - CODECOV_TOKEN=b7421e3a-0317-4044-bd21-3693bb7095cd
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION clean coverage core/test
-  - sbt core/coverageReport
-  - sbt core/coverageAggregate
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
+  - sbt coverageReport
+  - sbt coverageAggregate
 sudo: false
 cache:
   directories:
