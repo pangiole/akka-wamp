@@ -79,8 +79,10 @@ class ConnectionListener(binder: ActorRef, router: ActorRef, endpoint: String, s
   override def receive: Receive = {
     case cmd @ Unbind =>
       this.serverBinding.foreach(b => {
-        b.unbind()
-        context.stop(self)
+        b.unbind().foreach(_ =>
+          // TODO sender() ! Unbound
+          context.stop(self)
+        )
       })
   }
 

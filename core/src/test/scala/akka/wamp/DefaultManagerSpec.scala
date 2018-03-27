@@ -78,8 +78,9 @@ class DefaultManagerSpec
     val watcher = TestProbe()
     watcher.watch(listener)
     listener ! Unbind
-    expectNoMessage()
+    expectNoMessage(0.seconds)
     // TODO expectMsgType[Unbound]
+    expectMsgType[Disconnected] // from client handler
     val terminated = watcher.expectMsgType[Terminated]
     terminated.actor mustBe listener
   }
