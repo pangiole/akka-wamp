@@ -15,7 +15,7 @@ Easy to download as dependency from [Maven central](https://search.maven.org/#se
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.2"
+  "com.github.angiolep" % "akka-wamp_2.12" % "0.15.1"
 )
 ```
 
