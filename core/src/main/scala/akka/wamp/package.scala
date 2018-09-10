@@ -106,17 +106,17 @@ package object wamp {
   final object Dict {
 
     /**
-      * Creates an empty dictionary
+      * Creates an empty [[Dict]] instances
       *
-      * @return the new dictionary
+      * @return new [[Dict]] instances
       */
     def apply(): Dict = Map.empty[String, Any]
 
     /**
-      * Creates a dictionary with given entries
+      * Creates [[Dict]] instances with given entries
       *
       * @param entries are the entries to initialize the new dictionary with
-      * @return the new dictionary
+      * @return new [[Dict]] instances
       */
     def apply(entries: (String, Any)*): Dict = entries.toMap
   }
@@ -128,20 +128,20 @@ package object wamp {
     */
   implicit class RichDict(dict: Dict) {
     /**
-      * Create a new dictionary from this dictionary with the given roles added
+      * Create new [[Dict]] instances from this dictionary with the given roles added
       *
       * @param roles are the roles to add
-      * @return the new dictionary
+      * @return new [[Dict]] instances
       */
     def withRoles(roles: Set[Role]): Dict = {
       withRoles(roles.toList: _*)
     }
 
     /**
-      * Create a new dictionary from this dictionary with the given roles added
+      * Create new [[Dict]] instances from this dictionary with the given roles added
       *
       * @param roles are the roles to add
-      * @return the new dictionary
+      * @return new [[Dict]] instances
       */
     def withRoles(roles: Role*): Dict = {
       dict ++ Map("roles" -> roles.sorted.map(r => (r -> Map())).toMap)
@@ -153,10 +153,10 @@ package object wamp {
     }
 
     /**
-      * Create a new dictionary from this dictionary with the given acknowledge flag
+      * Create a new [[Dict]] instances from this dictionary with the given acknowledge flag
       *
       * @param ack is the acknowledge flag to add
-      * @return the new dictionary
+      * @return new [[Dict]] instances
       */
     def withAcknowledge(ack: Boolean = true): Dict = {
       dict + ("acknowledge" -> ack)
